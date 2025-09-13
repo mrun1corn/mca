@@ -12,7 +12,15 @@ Monorepo
 
 Environment (single .env at repo root)
 
-.env (root)
+Copy example and edit values:
+
+```
+cp .env.example .env
+```
+
+Root .env contents:
+
+```env
 MONGODB_URI="<your_atlas_connection_string>"
 JWT_SECRET="change_me"
 JWT_ACCESS_TTL_MIN=30
@@ -27,11 +35,11 @@ ADMIN_PASSWORD="StrongPassword123!"
 DEFAULT_USER_PASSWORD="ChangeMe123!"
 EXCEL_PATH="/absolute/path/to/all_payments_summary_admin.xlsx"
 
-
 # Frontend branding/API base
 VITE_API_BASE="http://localhost:4000/api"
 VITE_APP_NAME="Community Savings"
 VITE_APP_LOGO=""  # optional URL or /path
+```
 
 Install & Run (single command)
 - From repo root:

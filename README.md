@@ -111,3 +111,23 @@ Raspberry Pi / Low‑Power Device Tips
 - System:
   - Ensure swap is enabled (e.g., 1–2 GB) to prevent OOM during first build.
   - Keep `ca-certificates` and time synced (TLS to Atlas depends on it).
+
+Production Run (single process)
+- Set production env in root `.env`:
+  - `MONGODB_URI` (Atlas URI; allow‑list this server’s PUBLIC IP in Atlas)
+  - `JWT_SECRET` (strong random)
+  - `CORS_ORIGIN="https://your.domain"` (and any extra origins as needed)
+  - `VITE_API_BASE="/api"` (recommended when serving web + api from one process)
+- Build (repo root, outputs `api/dist` and `web/dist`):
+  - `npm i && npm run install:all`
+  - `npm run build`
+- Start everything (one process on :4000):
+  - All‑in‑one: `npm run deploy:prod` (builds + starts with env from `.env`)
+  - Or manually:
+    - `export $(grep -v '^#' .env | xargs)`
+    - `npm run start:prod`
+  - Visit `http://<SERVER_IP>:4000` (the API serves `web/dist` and handles `/api/*`)
+- Notes:
+  - The API serves the built web app when `NODE_ENV=production` and `web/dist` exists.
+  - Set `VITE_API_BASE="/api"` so the client calls the same origin.
+  - You can still put Nginx in front for TLS/HTTP/2; proxy pass everything to `127.0.0.1:4000`.

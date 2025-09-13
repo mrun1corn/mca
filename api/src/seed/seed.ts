@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "../lib/env";
+loadEnv();
 import { connectDb } from "../lib/db";
 import User from "../models/User";
 import Transaction from "../models/Transaction";

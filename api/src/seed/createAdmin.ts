@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "../lib/env";
+loadEnv();
 import { connectDb } from "../lib/db";
 import User from "../models/User";
 import { hashPassword } from "../lib/auth";
@@ -32,4 +33,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

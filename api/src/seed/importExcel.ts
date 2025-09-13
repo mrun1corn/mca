@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "../lib/env";
+loadEnv();
 import path from "node:path";
 import fs from "node:fs";
 import { connectDb } from "../lib/db";
@@ -108,4 +109,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

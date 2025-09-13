@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { loadEnv } from "../lib/env";
+loadEnv();
 import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx";
@@ -109,4 +110,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

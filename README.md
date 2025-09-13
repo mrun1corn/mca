@@ -127,7 +127,17 @@ Production Run (single process)
     - `export $(grep -v '^#' .env | xargs)`
     - `npm run start:prod`
   - Visit `http://<SERVER_IP>:4000` (the API serves `web/dist` and handles `/api/*`)
-- Notes:
-  - The API serves the built web app when `NODE_ENV=production` and `web/dist` exists.
-  - Set `VITE_API_BASE="/api"` so the client calls the same origin.
-  - You can still put Nginx in front for TLS/HTTP/2; proxy pass everything to `127.0.0.1:4000`.
+  - Notes:
+    - The API serves the built web app when `NODE_ENV=production` and `web/dist` exists.
+    - Set `VITE_API_BASE="/api"` so the client calls the same origin.
+    - You can still put Nginx in front for TLS/HTTP/2; proxy pass everything to `127.0.0.1:4000`.
+
+PM2: run API + Web preview together (optional)
+- Build once: `npm i && npm run install:all && npm run build`
+- Start with PM2 (loads .env):
+  - `export $(grep -v '^#' .env | xargs)`
+  - `npx pm2 start ecosystem.config.js --update-env`
+  - `npx pm2 save`
+- Apps:
+  - `savings-api` → api/dist/server.js on :4000
+  - `savings-web` → Vite preview on :5173 (serves web/dist)

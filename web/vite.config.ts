@@ -33,6 +33,18 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_APP_NAME": JSON.stringify(env.VITE_APP_NAME || "Community Savings"),
       "import.meta.env.VITE_APP_LOGO": JSON.stringify(env.VITE_APP_LOGO || ""),
     },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@tanstack/react-query",
+        "axios"
+      ]
+    },
+    esbuild: {
+      target: "es2018"
+    },
     server,
   };
 });

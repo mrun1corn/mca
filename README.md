@@ -99,3 +99,15 @@ Troubleshooting
 - CORS/cookies: ensure `CORS_ORIGIN` matches `http://localhost:5173`
 - Atlas connectivity: verify URI + IP allowlist; watch API logs for `API listening on :4000`
 - Login: change password from the Login page (toggle "Change password")
+
+Raspberry Pi / Low‑Power Device Tips
+- Prefer production mode for best performance:
+  - Build on a faster machine and copy `api/dist` + `web/dist` to the Pi.
+  - Run API with `NODE_ENV=production node api/dist/server.js` and serve `web/dist` via Nginx.
+- Faster dev on Pi:
+  - API uses `tsx` (esbuild) for quicker startup (`npm run dev`).
+  - Vite pre‑bundles deps (optimizeDeps) and binds to 0.0.0.0 by default.
+  - Avoid watching large folders; keep the repo on local storage (not network).
+- System:
+  - Ensure swap is enabled (e.g., 1–2 GB) to prevent OOM during first build.
+  - Keep `ca-certificates` and time synced (TLS to Atlas depends on it).

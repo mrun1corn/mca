@@ -1,0 +1,58 @@
+Mobile App TODO — Community Savings (Ubuntu CLI Build)
+
+Summary
+- Build an Android app for members to view balances, deposit (including Due Payment), request withdraw, and view dues.
+- Recommended: use the existing REST API. Direct use of a Mongo URI in a mobile app is insecure.
+- If you must use “only the Mongo URI”, use Atlas App Services (Realm) or the Atlas Data API as a secure layer — do not embed raw cluster credentials.
+
+Option A (Recommended): React Native + REST API
+1) Stack
+   - React Native (TypeScript), React Navigation, React Query, Axios
+2) Screens
+   - Login; Home; Member (Ledger, Deposit, Dues); Withdraw; People (Admin); Export
+3) API tweaks for mobile
+   - Add/accept Authorization: Bearer tokens (keep cookie auth for web).
+4) Ubuntu CLI Build
+   - sudo apt update && sudo apt install -y openjdk-17-jdk unzip git
+   - Install Node 20 (nvm), Yarn optional
+   - Install Android SDK (commandline-tools) and set env:
+       export ANDROID_HOME=$HOME/Android/Sdk
+       export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+       yes | sdkmanager --licenses
+   - Bootstrap app:
+       npx react-native@latest init SavingsMobile --template react-native-template-typescript
+       cd SavingsMobile
+       yarn add @react-navigation/native @react-navigation/native-stack @tanstack/react-query axios react-native-safe-area-context react-native-screens
+   - Config: .env (via react-native-config) with API_BASE=https://your-api.example.com/api
+   - Debug: yarn android
+   - Release signing:
+       keytool -genkeypair -v -storetype PKCS12 -keystore savings.keystore -alias savings -keyalg RSA -keysize 2048 -validity 3650
+       mv savings.keystore android/app/
+       echo 'MYAPP_UPLOAD_STORE_FILE=savings.keystore' >> android/gradle.properties
+       echo 'MYAPP_UPLOAD_KEY_ALIAS=savings' >> android/gradle.properties
+       echo 'MYAPP_UPLOAD_STORE_PASSWORD=***' >> android/gradle.properties
+       echo 'MYAPP_UPLOAD_KEY_PASSWORD=***' >> android/gradle.properties
+       # configure android/app/build.gradle signingConfigs.release & buildTypes.release
+       cd android && ./gradlew assembleRelease
+       # APK: app/build/outputs/apk/release/app-release.apk
+
+Option B (URI-Only via Atlas App Services)
+1) Realm or Data API instead of raw Mongo URI
+   - Realm: create App, link cluster, define rules/roles, use Realm RN SDK; implement dues/split logic as Functions.
+   - Data API: enable in Atlas; call HTTPS endpoints with API key; still enforce business rules server-side.
+2) Ubuntu build steps are identical; replace API client with Realm/Data API.
+
+Deliverables
+- [ ] RN app scaffolded (TS)
+- [ ] Auth + secure token storage
+- [ ] Home KPIs + member cards
+- [ ] Member screen: ledger, deposit (simple/due payment), dues
+- [ ] Withdraw: amount, months/rate, exclusions + preview
+- [ ] People (admin): list + create/edit/delete
+- [ ] Settings: theme + change password
+- [ ] Signed Android APK via Ubuntu CLI
+
+Security Notes
+- Never embed MongoDB user/URI in the app. Use HTTPS APIs or App Services.
+- Keep split/dues/penalty logic on trusted backend to prevent manipulation.
+

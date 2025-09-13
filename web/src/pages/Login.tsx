@@ -27,7 +27,7 @@ export default function Login() {
     e.preventDefault();
     setError("");
     try {
-      await api.post("/auth/change-password", { email, currentPassword: password, newPassword });
+      await api.post("/auth/change-password", { email: identifier, currentPassword: password, newPassword });
       notify("Password updated", "success");
       setShowChange(false);
       setNewPassword("");

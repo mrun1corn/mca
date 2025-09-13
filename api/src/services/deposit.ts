@@ -71,12 +71,13 @@ export async function handleDeposit(input: DepositInput) {
       if (remaining <= 0) break;
       if (item.status === "paid") continue;
 
-      const grace = input.graceDays ?? due.penaltyRule.graceDays;
-      const penaltyPct = input.penaltyPctPerMonth ?? due.penaltyRule.monthlyPenaltyPct;
+      const rule: any = (due as any).penaltyRule || { enabled: true, monthlyPenaltyPct: 1.0, graceDays: 3 };
+      const grace = input.graceDays ?? rule.graceDays;
+      const penaltyPct = input.penaltyPctPerMonth ?? rule.monthlyPenaltyPct;
       let totalDue = item.totalDuePoisha;
       // Penalty applies only if overdue and includePenalty true
       if (input.includePenalty) {
-        if (isOverdue(new Date(item.dueDate), occurredAt, grace) && due.penaltyRule.enabled) {
+        if (isOverdue(new Date(item.dueDate), occurredAt, grace) && rule.enabled) {
           // Simple monthly penalty on totalDue
           const penalty = Math.floor((totalDue * penaltyPct) / 100);
           totalDue += penalty;

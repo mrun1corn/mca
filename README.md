@@ -56,6 +56,15 @@ Allowing access from other devices (same network)
 - Restart API so CORS updates are applied.
 - Vite dev already binds to `0.0.0.0:5173`; the web app will default API calls to `http://<MACHINE_IP>:4000/api` if `VITE_API_BASE` is not set or points at localhost.
 
+Cloudflare Zero Trust / Custom Hostnames
+- Vite dev blocks unknown hosts by default. Configure allowed hostnames via `.env`:
+  - `VITE_ALLOWED_HOSTS="mydomain.com"`
+  - For HMR over Cloudflare (HTTPS), add:
+    - `VITE_HMR_HOST="mydomain.com"`
+    - `VITE_HMR_PROTOCOL="wss"`
+    - `VITE_HMR_CLIENT_PORT=443`
+- Include your web origin in `CORS_ORIGIN`, e.g. `https://mydomain.com`.
+
 Seeding, Admin, Import
 - Seed sample users: `npm run seed` (pwd: `ChangeMe123!`)
 - Create admin: set `ADMIN_EMAIL/ADMIN_PASSWORD` then `npm run create-admin`

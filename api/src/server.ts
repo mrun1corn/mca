@@ -18,9 +18,19 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+// CORS: allow one or more origins via CORS_ORIGIN (comma-separated)
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // non-browser or same-origin
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
@@ -43,7 +53,7 @@ const PORT = Number(process.env.PORT || 4000);
 
 async function start() {
   await connectDb();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
     console.log(`API listening on :${PORT}`);
   });

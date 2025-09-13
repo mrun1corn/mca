@@ -25,6 +25,8 @@ MONGODB_URI="<your_atlas_connection_string>"
 JWT_SECRET="change_me"
 JWT_ACCESS_TTL_MIN=30
 JWT_REFRESH_TTL_DAYS=7
+# CORS can accept multiple origins (comma‑separated). Use your MACHINE_IP for dev access from other devices.
+# Example: "http://<MACHINE_IP>:5173,http://localhost:5173"
 CORS_ORIGIN="http://localhost:5173"
 PORT=4000
 
@@ -36,7 +38,7 @@ DEFAULT_USER_PASSWORD="ChangeMe123!"
 EXCEL_PATH="/absolute/path/to/all_payments_summary_admin.xlsx"
 
 # Frontend branding/API base
-VITE_API_BASE="http://localhost:4000/api"
+VITE_API_BASE="http://localhost:4000/api"  # optional; omit to auto‑fallback to http://<MACHINE_IP>:4000/api in dev
 VITE_APP_NAME="Community Savings"
 VITE_APP_LOGO=""  # optional URL or /path
 ```
@@ -47,6 +49,12 @@ Install & Run (single command)
   - `npm run dev`
     - API: http://localhost:4000
     - Web: http://localhost:5173
+
+Allowing access from other devices (same network)
+- Set `CORS_ORIGIN` in `.env` to include your machine IP origin, e.g.
+  - `CORS_ORIGIN="http://<MACHINE_IP>:5173,http://localhost:5173"`
+- Restart API so CORS updates are applied.
+- Vite dev already binds to `0.0.0.0:5173`; the web app will default API calls to `http://<MACHINE_IP>:4000/api` if `VITE_API_BASE` is not set or points at localhost.
 
 Seeding, Admin, Import
 - Seed sample users: `npm run seed` (pwd: `ChangeMe123!`)

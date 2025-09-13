@@ -10,9 +10,9 @@ Monorepo
 - api/ — Express + TypeScript + Mongoose
 - web/ — React + Vite + TypeScript + Tailwind
 
-Environment (create these .env files)
+Environment (single .env at repo root)
 
-api/.env
+.env (root)
 MONGODB_URI="<your_atlas_connection_string>"
 JWT_SECRET="change_me"
 JWT_ACCESS_TTL_MIN=30
@@ -27,7 +27,8 @@ ADMIN_PASSWORD="StrongPassword123!"
 DEFAULT_USER_PASSWORD="ChangeMe123!"
 EXCEL_PATH="/absolute/path/to/all_payments_summary_admin.xlsx"
 
-web/.env
+
+# Frontend branding/API base
 VITE_API_BASE="http://localhost:4000/api"
 VITE_APP_NAME="Community Savings"
 VITE_APP_LOGO=""  # optional URL or /path
@@ -67,7 +68,7 @@ API Endpoints (selected)
 - GET `/api/export/summary.csv`; GET `/api/export/ledger.csv`
 
 Branding
-- Set `VITE_APP_NAME` and `VITE_APP_LOGO` in `web/.env` to update navbar brand and page title.
+- Set `VITE_APP_NAME` and `VITE_APP_LOGO` in the root `.env` to update navbar brand and page title.
 
 Troubleshooting
 - CORS/cookies: ensure `CORS_ORIGIN` matches `http://localhost:5173`

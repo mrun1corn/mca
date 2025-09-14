@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
+import Button from "./Button";
 import { useToast } from "./Toast";
 import { useEffect, useMemo, useState } from "react";
 
@@ -89,7 +90,7 @@ export default function DepositForm({ userId }: { userId: string }) {
       )}
       {mode === 'pay_due' && hasOpenDues && (
         <div className="space-y-2">
-          <select className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" value={dueId || (dues.data?.[0]?._id ?? '')} onChange={(e) => setDueId(e.target.value)}>
+          <select className="input w-full" value={dueId || (dues.data?.[0]?._id ?? '')} onChange={(e) => setDueId(e.target.value)}>
             <option value="">Select due…</option>
             {dues.data?.map((d: any) => (
               <option key={d._id} value={d._id}>Principal {formatBDT(d.principal)} | {d.months} mo @ {d.monthlyRatePct}%</option>
@@ -99,10 +100,10 @@ export default function DepositForm({ userId }: { userId: string }) {
           <div className="text-xs text-gray-600">Auto-filled: {formatBDT(suggested)} (editable)</div>
         </div>
       )}
-      <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" type="number" step="0.01" placeholder="Amount (BDT)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-      <button className="bg-green-600 text-white px-3 py-1 rounded transition-transform active:scale-[0.98]" onClick={onSubmit}>Deposit</button>
+      <input className="input w-full" type="number" step="0.01" placeholder="Amount (BDT)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+      <input className="input w-full" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <input className="input w-full" placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
+      <Button onClick={onSubmit}>Deposit</Button>
     </div>
   );
 }

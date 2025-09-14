@@ -4,7 +4,7 @@ import { avatarColor, initials } from "../lib/ui";
 export default function MemberCard({ card, onClick }: { card: any; onClick?: () => void }) {
   return (
     <div
-      className="bg-white dark:bg-gray-800 p-4 shadow rounded cursor-pointer transition-transform duration-150 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99] animate-scale-in"
+      className="card cursor-pointer transition-transform duration-150 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
       onClick={onClick}
     >
       <div className="flex items-center gap-3">

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "./Toast";
+import Button from "./Button";
 
 export default function WithdrawForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
@@ -53,15 +54,15 @@ export default function WithdrawForm({ userId }: { userId: string }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" type="number" step="0.01" placeholder="Amount (BDT)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="number" min={1} placeholder="Months" value={months} onChange={(e) => setMonths(Number(e.target.value))} />
-        <input className="border p-2 w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="number" step="0.1" placeholder="Monthly Rate %" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+        <input className="input w-full" type="number" step="0.01" placeholder="Amount (BDT)" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input className="input w-full" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input className="input w-full" type="number" min={1} placeholder="Months" value={months} onChange={(e) => setMonths(Number(e.target.value))} />
+        <input className="input w-full" type="number" step="0.1" placeholder="Monthly Rate %" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
       </div>
       <div className="grid grid-cols-3 gap-2 items-center text-sm">
         <label className="col-span-3 inline-flex items-center gap-2"><input type="checkbox" checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} /> Apply penalty when overdue</label>
-        <input className="border p-2 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="number" step="0.1" placeholder="Penalty %/mo" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
-        <input className="border p-2 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100" type="number" placeholder="Grace days" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
+        <input className="input" type="number" step="0.1" placeholder="Penalty %/mo" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
+        <input className="input" type="number" placeholder="Grace days" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
       </div>
       <div>
         <div className="text-sm font-medium mb-1">Exclude members from split</div>
@@ -89,7 +90,7 @@ export default function WithdrawForm({ userId }: { userId: string }) {
         </div>
       )}
       <div className="text-right">
-        <button className="bg-red-600 text-white px-3 py-1 rounded transition-transform active:scale-[0.98]" onClick={onSubmit}>Withdraw</button>
+        <Button variant="danger" onClick={onSubmit}>Withdraw</Button>
       </div>
     </div>
   );

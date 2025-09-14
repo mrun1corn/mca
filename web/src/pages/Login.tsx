@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
@@ -23,13 +24,13 @@ export default function Login() {
   
 
   return (
-    <div className="max-w-sm mx-auto bg-white dark:bg-gray-800 p-6 shadow rounded mt-10 animate-fade-in">
+    <div className="max-w-sm mx-auto glass p-6 rounded mt-10 animate-fade-in">
       <h1 className="text-xl font-semibold mb-4">Login</h1>
       <form onSubmit={onSubmit} className="space-y-3">
-        <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Email or Username" className="w-full border p-2 rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full border p-2 rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
+        <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Email or Username" className="w-full input" />
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full input" />
         {error && <div className="text-red-600 text-sm">{error}</div>}
-        <button className="bg-blue-600 text-white px-4 py-2 rounded transition-transform active:scale-[0.98]">Sign in</button>
+        <Button className="w-full">Sign in</Button>
       </form>
       
     </div>

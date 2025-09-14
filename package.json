@@ -8,6 +8,7 @@
     "dev:web": "npm --prefix web run dev",
     "build": "npm --prefix api run build && npm --prefix web run build",
     "deploy:prod": "npm run build && pm2 start ecosystem.config.js",
+    "start:prod": "node api/dist/server.js",
     "preview:web": "npm --prefix web run preview -- --host 0.0.0.0 --port 5173",
     "deploy:web": "npm --prefix web run build && npm --prefix web run preview -- --host 0.0.0.0 --port 5173",
     "seed": "npm --prefix api run seed",

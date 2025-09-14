@@ -112,25 +112,33 @@ Raspberry Pi / Low‑Power Device Tips
   - Ensure swap is enabled (e.g., 1–2 GB) to prevent OOM during first build.
   - Keep `ca-certificates` and time synced (TLS to Atlas depends on it).
 
-Production Run (single process)
+Production Run (single port)
 - Set production env in root `.env`:
   - `MONGODB_URI` (Atlas URI; allow‑list this server’s PUBLIC IP in Atlas)
   - `JWT_SECRET` (strong random)
-  - `CORS_ORIGIN="https://your.domain"` (and any extra origins as needed)
-  - `VITE_API_BASE="/api"` (recommended when serving web + api from one process)
-- Build (repo root, outputs `api/dist` and `web/dist`):
+  - `CORS_ORIGIN="https://your.domain"` (e.g., `https://grs.mrunicorn.xyz`)
+  - `VITE_API_BASE="/api"` (serves API + web from one origin)
+- Build (repo root; outputs `api/dist` and `web/dist`):
   - `npm i && npm run install:all`
   - `npm run build`
-- Start everything (one process on :4000):
-  - All‑in‑one: `npm run deploy:prod` (builds + starts with env from `.env`)
-  - Or manually:
-    - `export $(grep -v '^#' .env | xargs)`
-    - `npm run start:prod`
-  - Visit `http://<SERVER_IP>:4000` (the API serves `web/dist` and handles `/api/*`)
+- Start on :4000 (API also serves `web/dist` in production):
+  - PM2: `npx pm2 start ecosystem.config.js --update-env && npx pm2 save`
+  - Or manual: `npm run start:prod`
+  - Visit `http://<SERVER_IP>:4000` (Cloudflare/NGINX can front this for HTTPS)
   - Notes:
-    - The API serves the built web app when `NODE_ENV=production` and `web/dist` exists.
-    - Set `VITE_API_BASE="/api"` so the client calls the same origin.
-    - You can still put Nginx in front for TLS/HTTP/2; proxy pass everything to `127.0.0.1:4000`.
+    - With `NODE_ENV=production`, the API serves static files from `web/dist` and SPA fallback.
+    - Use `VITE_API_BASE="/api"` so the client calls the same origin.
+    - Reverse proxies (Cloudflare Tunnel/NGINX) can map your domain to `127.0.0.1:4000`.
+
+Cloudflare Zero Trust (single hostname)
+- Domain: set your app hostname (e.g., `grs.mrunicorn.xyz`).
+- Tunnel:
+  - Install `cloudflared` on the server; authenticate and create a tunnel.
+  - Route the tunnel to `http://127.0.0.1:4000` and bind it to `grs.mrunicorn.xyz`.
+  - In Access, define policies (emails/groups) to allow.
+- Env:
+  - `.env`: `CORS_ORIGIN="https://grs.mrunicorn.xyz"`, `VITE_API_BASE="/api"`.
+  - Cookies are `Secure` when `NODE_ENV=production`; ensure HTTPS at the edge.
 
 PM2: run API + Web preview together (optional)
 - Build once: `npm i && npm run install:all && npm run build`

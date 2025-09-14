@@ -49,6 +49,19 @@ app.use("/api", duesRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api", previewRoutes);
 
+// In production, serve the built web app (single-port deploy)
+const isProd = process.env.NODE_ENV === "production";
+const webDist = path.resolve(__dirname, "../../web/dist");
+
+if (isProd && fs.existsSync(webDist)) {
+  app.use(express.static(webDist));
+  // SPA fallback for non-API routes
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+    res.sendFile(path.join(webDist, "index.html"));
+  });
+}
+
 app.use(errorHandler);
 
 const PORT = Number(process.env.PORT || 4000);

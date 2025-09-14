@@ -1,3 +1,5 @@
+require("dotenv").config({ path: ".env" });
+
 module.exports = {
   apps: [
     {
@@ -5,7 +7,7 @@ module.exports = {
       script: "api/dist/server.js",
       exec_mode: "fork",
       instances: 1,
-      env: { NODE_ENV: "production" }
+      env: { NODE_ENV: "production", ...process.env }
     },
     {
       name: "savings-web",
@@ -14,7 +16,7 @@ module.exports = {
       args: "preview --host 0.0.0.0 --port 5173",
       exec_mode: "fork",
       instances: 1,
-      env: { NODE_ENV: "production" }
+      env: { NODE_ENV: "production", ...process.env }
     }
   ]
 };

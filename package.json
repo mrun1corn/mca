@@ -7,8 +7,7 @@
     "dev:api": "npm --prefix api run dev",
     "dev:web": "npm --prefix web run dev",
     "build": "npm --prefix api run build && npm --prefix web run build",
-    "start:prod": "NODE_ENV=production node api/dist/server.js",
-    "deploy:prod": "npm run build && bash -lc 'export $(grep -v '^#' .env | xargs) && NODE_ENV=production node api/dist/server.js'",
+    "deploy:prod": "npm run build && pm2 start ecosystem.config.js",
     "preview:web": "npm --prefix web run preview -- --host 0.0.0.0 --port 5173",
     "deploy:web": "npm --prefix web run build && npm --prefix web run preview -- --host 0.0.0.0 --port 5173",
     "seed": "npm --prefix api run seed",
@@ -18,6 +17,7 @@
     "install:all": "npm --prefix api i && npm --prefix web i"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.4.5"
   }
 }

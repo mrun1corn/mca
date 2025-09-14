@@ -55,15 +55,6 @@ const PORT = Number(process.env.PORT || 4000);
 
 async function start() {
   await connectDb();
-  // In production, serve the built web app from web/dist so one process runs everything
-  const webDist = path.resolve(__dirname, "../../web/dist");
-  if (process.env.NODE_ENV === "production" && fs.existsSync(webDist)) {
-    app.use(express.static(webDist));
-    // For non-API routes, serve index.html (client-side routing)
-    app.get(/^(?!\/api).*/, (_req, res) => {
-      res.sendFile(path.join(webDist, "index.html"));
-    });
-  }
   app.listen(PORT, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
     console.log(`API listening on :${PORT}`);

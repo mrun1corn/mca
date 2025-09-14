@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth, requireRole } from "../lib/auth";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
 
@@ -18,7 +19,7 @@ function toCsv(rows: any[], headers: string[]) {
 const router = Router();
 
 // GET /api/export/summary.csv?from=&to=
-router.get("/summary.csv", async (req, res, next) => {
+router.get("/summary.csv", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
     const to = req.query.to ? new Date(String(req.query.to)) : undefined;
@@ -30,9 +31,12 @@ router.get("/summary.csv", async (req, res, next) => {
     const rows: any[] = [];
     for (const u of users) {
       const txs = await Transaction.find({ ...q, userId: u._id });
-      const deposits = txs.filter((t) => t.type === "deposit").reduce((a, t) => a + t.amountPoisha, 0);
-      const withdraws = txs.filter((t) => t.type === "withdraw").reduce((a, t) => a + t.amountPoisha, 0);
-      const balance = txs.reduce((a, t) => a + t.amountPoisha, 0);
+      const depositsPoisha = txs.filter((t) => t.type === "deposit").reduce((a, t) => a + t.amountPoisha, 0);
+      const withdrawsPoisha = txs.filter((t) => t.type === "withdraw").reduce((a, t) => a + t.amountPoisha, 0);
+      const balancePoisha = txs.reduce((a, t) => a + t.amountPoisha, 0);
+      const deposits = (depositsPoisha / 100).toFixed(2);
+      const withdraws = (withdrawsPoisha / 100).toFixed(2);
+      const balance = (balancePoisha / 100).toFixed(2);
       rows.push({ name: u.name, email: u.email || "", deposits, withdraws, balance });
     }
     const csv = toCsv(rows, ["name", "email", "deposits", "withdraws", "balance"]);
@@ -45,7 +49,7 @@ router.get("/summary.csv", async (req, res, next) => {
 });
 
 // GET /api/export/ledger.csv?userId=&from=&to=
-router.get("/ledger.csv", async (req, res, next) => {
+router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const userId = String(req.query.userId || "");
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
@@ -60,10 +64,10 @@ router.get("/ledger.csv", async (req, res, next) => {
       date: t.occurredAt.toISOString().slice(0, 10),
       userId: String(t.userId),
       type: t.type,
-      amountPoisha: t.amountPoisha,
+      amount: (t.amountPoisha / 100).toFixed(2),
       note: t.note || "",
     }));
-    const csv = toCsv(rows, ["date", "userId", "type", "amountPoisha", "note"]);
+    const csv = toCsv(rows, ["date", "userId", "type", "amount", "note"]);
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=ledger.csv");
     res.send(csv);

@@ -32,7 +32,7 @@ export default function Home() {
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800 p-4 shadow rounded animate-fade-in">
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><MoneyIcon/> Total Balance</div>
-          <div className="text-2xl font-medium">{formatBDT(data.groupBalancePoisha)}</div>
+          <div className="text-2xl font-medium">{formatBDT(data.groupBalance)}</div>
         </div>
         <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-800 p-4 shadow rounded animate-fade-in">
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><HomeIcon/> Open Dues</div>
@@ -42,7 +42,7 @@ export default function Home() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-gray-800 p-4 shadow rounded animate-fade-in">
           <div className="text-gray-600 dark:text-gray-300">Remaining Balance</div>
-          <div className="text-2xl font-medium">{formatBDT(data.remainingBalancePoisha)}</div>
+          <div className="text-2xl font-medium">{formatBDT(data.remainingBalance)}</div>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

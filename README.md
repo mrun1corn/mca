@@ -22,13 +22,17 @@ Root .env contents:
 
 ```env
 MONGODB_URI="<your_atlas_connection_string>"
-JWT_SECRET="change_me"
+# REQUIRED: set a strong random secret (no default in production)
+JWT_SECRET="<generate_a_strong_random_string>"
 JWT_ACCESS_TTL_MIN=30
 JWT_REFRESH_TTL_DAYS=7
 # CORS can accept multiple origins (comma‑separated). Use your MACHINE_IP for dev access from other devices.
 # Example: "http://<MACHINE_IP>:5173,http://localhost:5173"
 CORS_ORIGIN="http://localhost:5173"
 PORT=4000
+
+# Optional cookie domain (e.g., .example.com for subdomains)
+COOKIE_DOMAIN=""
 
 # Optional (used by scripts)
 ADMIN_NAME="Robin"
@@ -80,17 +84,18 @@ Core Features
 - Deposit: Simple; Due Payment (only shown if member has open dues), auto‑fills suggested amount (editable)
 - Withdraw: taker cash‑out; split across others (exclusions + live preview); creates dues schedule
 - Dues: schedules with penalty rules; penalty applied on overdue payments when enabled
-- Export: `summary.csv`, `ledger.csv` with optional date/user filters
+- Export: `summary.csv`, `ledger.csv` (amounts in BDT) with optional date/user filters
 - Dark mode, mobile‑friendly, subtle animations
 
 API Endpoints (selected)
 - POST `/api/auth/login` { identifier, password }
 - POST `/api/auth/change-password` { email, currentPassword, newPassword }
-- GET `/api/home`
+- GET `/api/home` (auth required)
 - GET `/api/users?q=`; POST `/api/users`; PATCH/DELETE `/api/users/:id`; GET `/api/me`
 - GET `/api/transactions`; POST `/api/deposit`; POST `/api/withdraw`
 - GET `/api/users/:id/dues?status=open|all`
-- GET `/api/export/summary.csv`; GET `/api/export/ledger.csv`
+- GET `/api/export/summary.csv` (admin/accountant) — amounts in BDT
+- GET `/api/export/ledger.csv` (admin/accountant) — amounts in BDT
 
 Branding
 - Set `VITE_APP_NAME` and `VITE_APP_LOGO` in the root `.env` to update navbar brand and page title.
@@ -99,6 +104,7 @@ Troubleshooting
 - CORS/cookies: ensure `CORS_ORIGIN` matches `http://localhost:5173`
 - Atlas connectivity: verify URI + IP allowlist; watch API logs for `API listening on :4000`
 - Login: change password from the Login page (toggle "Change password")
+ - JWT secret: set `JWT_SECRET`; in dev a temporary insecure default is used but production requires it and will refuse to start.
 
 Raspberry Pi / Low‑Power Device Tips
 - Prefer production mode for best performance:

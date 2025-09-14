@@ -13,10 +13,10 @@ export default function MemberCard({ card, onClick }: { card: any; onClick?: () 
         </div>
         <div>
           <div className="font-medium leading-tight">{card.name}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-300">Last Month: {formatBDT(card.lastMonthPoisha)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-300">Last Month: {formatBDT(card.lastMonth)}</div>
         </div>
       </div>
-      <div className="mt-2 text-sm text-gray-700 dark:text-gray-200">Balance: <span className="font-medium">{formatBDT(card.balancePoisha)}</span></div>
+      <div className="mt-2 text-sm text-gray-700 dark:text-gray-200">Balance: <span className="font-medium">{formatBDT(card.balance)}</span></div>
     </div>
   );
 }

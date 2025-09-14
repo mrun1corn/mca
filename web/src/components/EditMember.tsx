@@ -1,10 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { useToast } from "./Toast";
 
 type UserRow = { id: string; name: string; email?: string; phone?: string; role: "admin"|"accountant"|"user"; status?: "active"|"inactive" };
 
 export default function EditMember({ user, onClose, onSaved }: { user: UserRow; onClose: () => void; onSaved: () => void }) {
+  const { notify } = useToast();
   const [form, setForm] = useState({
     name: user.name || "",
     email: user.email || "",
@@ -34,7 +36,8 @@ export default function EditMember({ user, onClose, onSaved }: { user: UserRow; 
       status: form.status,
       password: form.password || undefined,
     }),
-    onSuccess: () => onSaved(),
+    onSuccess: () => { notify("Member updated", "success"); onSaved(); },
+    onError: () => notify("Update failed", "error"),
   });
 
   return (
@@ -69,4 +72,3 @@ export default function EditMember({ user, onClose, onSaved }: { user: UserRow; 
     </div>
   );
 }
-

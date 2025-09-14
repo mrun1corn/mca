@@ -3,13 +3,23 @@ import { api } from "../lib/api";
 import { SearchIcon } from "../components/Icon";
 import { useState } from "react";
 import EditMember from "../components/EditMember";
+import { useToast } from "../components/Toast";
 
 export default function People() {
   const qc = useQueryClient();
+  const { notify } = useToast();
   const [q, setQ] = useState("");
   const { data } = useQuery({ queryKey: ["users", q], queryFn: async () => (await api.get(`/users?q=${encodeURIComponent(q)}`)).data });
-  const create = useMutation({ mutationFn: (body: any) => api.post("/users", body), onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }) });
-  const remove = useMutation({ mutationFn: (id: string) => api.delete(`/users/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }) });
+  const create = useMutation({
+    mutationFn: (body: any) => api.post("/users", body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); notify("Member created", "success"); },
+    onError: () => notify("Create failed", "error"),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); notify("Member deleted", "success"); },
+    onError: () => notify("Delete failed", "error"),
+  });
   const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
   const isAdmin = me.data?.role === "admin";
 

@@ -40,9 +40,9 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
         phone: u.phone,
         email: u.email,
         role: u.role,
-        balancePoisha: balance,
-        lastMonthPoisha: lastMonth.at(0)?.s || 0,
-        recent: txs.slice(0, 3).map((t) => ({ date: t.occurredAt, type: t.type, amountPoisha: t.amountPoisha, note: t.note })),
+        balance: balance,
+        lastMonth: lastMonth.at(0)?.s || 0,
+        recent: txs.slice(0, 3).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
       });
     }
     res.json(result);

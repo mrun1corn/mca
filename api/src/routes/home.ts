@@ -1,11 +1,12 @@
 import { Router } from "express";
+import { requireAuth } from "../lib/auth";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
 import Due from "../models/Due";
 
 const router = Router();
 
-router.get("/", async (req, res, next) => {
+router.get("/", requireAuth as any, async (req, res, next) => {
   try {
     const recentCount = Number(req.query.recent || 3);
     const lastMonthMode = String(req.query.lastMonthMode || "deposit");
@@ -36,13 +37,13 @@ router.get("/", async (req, res, next) => {
       const balance = txs.reduce((acc, t) => acc + t.amountPoisha, 0);
       groupBalance += balance;
 
-      let lastMonthPoisha = 0;
+      let lastMonth = 0;
       if (lastMonthMode === "deposit") {
-        lastMonthPoisha = txs
+        lastMonth = txs
           .filter((t) => t.type === "deposit" && t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
           .reduce((acc, t) => acc + t.amountPoisha, 0);
       } else {
-        lastMonthPoisha = txs
+        lastMonth = txs
           .filter((t) => t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
           .reduce((acc, t) => acc + t.amountPoisha, 0);
       }
@@ -50,12 +51,12 @@ router.get("/", async (req, res, next) => {
       cards.push({
         userId: u._id,
         name: u.name,
-        lastMonthPoisha,
-        balancePoisha: balance,
+        lastMonth,
+        balance,
         recent: txs.slice(0, recentCount).map((t) => ({
           date: t.occurredAt,
           type: t.type,
-          amountPoisha: t.amountPoisha,
+          amount: t.amountPoisha,
           note: t.note,
         })),
       });
@@ -63,10 +64,10 @@ router.get("/", async (req, res, next) => {
 
     res.json({
       membersCount: users.length,
-      groupBalancePoisha: groupBalance,
-      totalDepositsPoisha: totals.deposits,
-      totalWithdrawsPoisha: totals.withdraws,
-      remainingBalancePoisha: totals.balance,
+      groupBalance: groupBalance,
+      totalDeposits: totals.deposits,
+      totalWithdraws: totals.withdraws,
+      remainingBalance: totals.balance,
       arrearsCount,
       cards,
     });

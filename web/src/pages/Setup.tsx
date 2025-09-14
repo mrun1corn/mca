@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { api } from "../lib/api";
+import { useToast } from "../components/Toast";
 
 export default function Setup() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+  const { notify } = useToast();
 
   const changePassword = async () => {
     try {
@@ -11,8 +13,10 @@ export default function Setup() {
       await api.patch(`/users/${me.data.id}`, { password });
       setMsg("Password changed");
       setPassword("");
+      notify("Password updated", "success");
     } catch (e) {
       setMsg("Failed");
+      notify("Password update failed", "error");
     }
   };
   return (

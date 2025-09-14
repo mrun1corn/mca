@@ -3,46 +3,64 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/User";
 import { AppError } from "./errors";
+import type { Role } from "../models/User";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change_me";
+// Require a JWT secret; fail hard in production, warn in dev
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set in production");
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn("[auth] Warning: JWT_SECRET not set. Using insecure default for development only.");
+  }
+}
+const JWT_SECRET_VALUE = JWT_SECRET || "insecure_dev_secret_change_me";
 const ACCESS_TTL_MIN = Number(process.env.JWT_ACCESS_TTL_MIN || 30);
 const REFRESH_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
 
 export type JwtPayload = { sub: string; role: string; name: string };
 
 export function signAccessToken(payload: JwtPayload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: `${ACCESS_TTL_MIN}m` });
+  return jwt.sign(payload, JWT_SECRET_VALUE, { expiresIn: `${ACCESS_TTL_MIN}m` });
 }
 export function signRefreshToken(payload: JwtPayload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: `${REFRESH_TTL_DAYS}d` });
+  return jwt.sign(payload, JWT_SECRET_VALUE, { expiresIn: `${REFRESH_TTL_DAYS}d` });
 }
 
 export function setAuthCookies(res: Response, access: string, refresh: string) {
   const isProd = process.env.NODE_ENV === "production";
-  res.cookie("access", access, {
+  const domain = process.env.COOKIE_DOMAIN || undefined;
+  const cookieBase = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: isProd,
+    domain,
+    path: "/",
+  };
+  res.cookie("access", access, {
+    ...cookieBase,
     maxAge: ACCESS_TTL_MIN * 60 * 1000,
   });
   res.cookie("refresh", refresh, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isProd,
+    ...cookieBase,
     maxAge: REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
   });
 }
 
 export function clearAuthCookies(res: Response) {
-  res.clearCookie("access");
-  res.clearCookie("refresh");
+  const isProd = process.env.NODE_ENV === "production";
+  const domain = process.env.COOKIE_DOMAIN || undefined;
+  const opts = { httpOnly: true, sameSite: "lax" as const, secure: isProd, domain, path: "/" };
+  res.clearCookie("access", opts);
+  res.clearCookie("refresh", opts);
 }
 
 export function requireAuth(req: Request & { user?: JwtPayload }, _res: Response, next: NextFunction) {
   const token = (req.cookies && req.cookies["access"]) || null;
   if (!token) return next(new AppError("Unauthorized", 401));
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const payload = jwt.verify(token, JWT_SECRET_VALUE) as JwtPayload;
     req.user = payload;
     next();
   } catch (e) {
@@ -50,9 +68,9 @@ export function requireAuth(req: Request & { user?: JwtPayload }, _res: Response
   }
 }
 
-export function requireRole(roles: ("admin" | "accountant" | "user")[]) {
+export function requireRole(roles: Role[]) {
   return (req: Request & { user?: JwtPayload }, _res: Response, next: NextFunction) => {
-    const role = req.user?.role as any;
+    const role = req.user?.role as Role | undefined;
     if (!role || !roles.includes(role)) return next(new AppError("Forbidden", 403));
     next();
   };
@@ -99,7 +117,7 @@ export async function authenticateByIdentifierPassword(identifier: string, passw
 export function tryDecode(token?: string): JwtPayload | null {
   if (!token) return null;
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return jwt.verify(token, JWT_SECRET_VALUE) as JwtPayload;
   } catch {
     return null;
   }

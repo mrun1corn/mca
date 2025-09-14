@@ -7,7 +7,7 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-export function formatBDT(poisha: number) {
-  const taka = poisha / 100;
+export function formatBDT(amountMinor: number) {
+  const taka = amountMinor / 100;
   return new Intl.NumberFormat("en-BD", { style: "currency", currency: "BDT" }).format(taka);
 }

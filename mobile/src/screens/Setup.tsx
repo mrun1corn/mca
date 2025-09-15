@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import ThemeInput from '../components/ui/ThemeInput';
 import { useTheme } from '../theme';
 import { api } from '../lib/api';
 
@@ -26,7 +27,7 @@ export default function Setup() {
         <Button title={`System ${mode==='system'?'✓':''}`} onPress={() => setMode('system')} />
       </View>
       <Text>Password</Text>
-      <TextInput style={s.input} value={password} onChangeText={setPassword} secureTextEntry />
+      <ThemeInput value={password} onChangeText={setPassword} secureTextEntry />
       <Button title='Update' onPress={update} />
     </View>
   );

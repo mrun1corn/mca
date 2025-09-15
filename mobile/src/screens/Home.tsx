@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, formatBDT } from '../lib/api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
-import Card from '../components/Card';
+import ThemedCard from '../components/ui/ThemedCard';
 import MemberDrawer from '../components/MemberDrawer';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -33,8 +33,8 @@ export default function Home({ navigation }: Props) {
       {role === 'user' ? (
         <View>
           <View style={s.cardRow}>
-            <Card style={s.card}><Text style={s.label}>Current Balance</Text><Text style={s.value}>{formatBDT(home.data?.remainingBalance || 0)}</Text></Card>
-            <Card style={s.card}><Text style={s.label}>Total Deposits</Text><Text style={s.value}>{formatBDT(home.data?.totalDeposits || 0)}</Text></Card>
+            <ThemedCard style={s.card}><Text style={s.label}>Current Balance</Text><Text style={s.value}>{formatBDT(home.data?.remainingBalance || 0)}</Text></ThemedCard>
+            <ThemedCard style={s.card}><Text style={s.label}>Total Deposits</Text><Text style={s.value}>{formatBDT(home.data?.totalDeposits || 0)}</Text></ThemedCard>
             {(() => {
               let nextEmi = 0;
               try {
@@ -49,7 +49,7 @@ export default function Home({ navigation }: Props) {
                   }
                 }
               } catch {}
-              return nextEmi > 0 ? (<Card style={s.card}><Text style={s.label}>Next EMI</Text><Text style={s.value}>{formatBDT(nextEmi)}</Text></Card>) : null;
+              return nextEmi > 0 ? (<ThemedCard style={s.card}><Text style={s.label}>Next EMI</Text><Text style={s.value}>{formatBDT(nextEmi)}</Text></ThemedCard>) : null;
             })()}
           </View>
           <View style={{ marginTop: 12 }}>
@@ -70,9 +70,9 @@ export default function Home({ navigation }: Props) {
         </View>
       ) : (
         <View style={s.cardRow}>
-          <Card style={s.card}><Text style={s.label}>Members</Text><Text style={s.value}>{home.data.membersCount}</Text></Card>
-          <Card style={s.card}><Text style={s.label}>Total Balance</Text><Text style={s.value}>{formatBDT(home.data.groupBalance)}</Text></Card>
-          <Card style={s.card}><Text style={s.label}>Unpaid Dues</Text><Text style={s.value}>{home.data.arrearsCount}</Text></Card>
+          <ThemedCard style={s.card}><Text style={s.label}>Members</Text><Text style={s.value}>{home.data.membersCount}</Text></ThemedCard>
+          <ThemedCard style={s.card}><Text style={s.label}>Total Balance</Text><Text style={s.value}>{formatBDT(home.data.groupBalance)}</Text></ThemedCard>
+          <ThemedCard style={s.card}><Text style={s.label}>Unpaid Dues</Text><Text style={s.value}>{home.data.arrearsCount}</Text></ThemedCard>
         </View>
       )}
 

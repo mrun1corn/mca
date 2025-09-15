@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import ThemeInput from '../components/ui/ThemeInput';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTheme } from '../theme';
@@ -32,11 +33,11 @@ export default function Withdraw() {
       <UserSelect value={takerId} onChange={(id, u) => { setTakerId(id); setTakerName(u?.name || ''); }} />
       {!!takerName && <Text style={[s.helper,{color:colors.textDim}]}>Selected: {takerName}</Text>}
       <Text style={[s.label,{color:colors.textDim}]}>Amount (BDT)</Text>
-      <TextInput style={[s.input,{color:colors.text,borderColor:colors.border,backgroundColor:'#00000000'}]} placeholderTextColor={colors.textDim} value={amount} onChangeText={setAmount} keyboardType='numeric' />
+      <ThemeInput value={amount} onChangeText={setAmount} keyboardType='numeric' />
       <Text style={[s.label,{color:colors.textDim}]}>Months</Text>
-      <TextInput style={[s.input,{color:colors.text,borderColor:colors.border,backgroundColor:'#00000000'}]} placeholderTextColor={colors.textDim} value={months} onChangeText={setMonths} keyboardType='numeric' />
+      <ThemeInput value={months} onChangeText={setMonths} keyboardType='numeric' />
       <Text style={[s.label,{color:colors.textDim}]}>Monthly Rate %</Text>
-      <TextInput style={[s.input,{color:colors.text,borderColor:colors.border,backgroundColor:'#00000000'}]} placeholderTextColor={colors.textDim} value={rate} onChangeText={setRate} keyboardType='numeric' />
+      <ThemeInput value={rate} onChangeText={setRate} keyboardType='numeric' />
       <Text style={[s.section,{color:colors.text}]}>Exclude From Deduction</Text>
       <FlatList
         data={(users.data||[])}

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, FlatList } from 'react-native';
+import { useTheme } from '../theme';
 import { useQuery } from '@tanstack/react-query';
 import { api, formatBDT } from '../lib/api';
 
 export default function MemberDrawer({ userId, onClose }: { userId: string | null; onClose: () => void }) {
   const open = !!userId;
+  const { colors } = useTheme();
   const txs = useQuery({
     queryKey: ['txs', userId],
     queryFn: async () => (await api.get('/transactions', { params: { userId, limit: 20 } })).data,
@@ -17,35 +19,35 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
   });
   return (
     <Modal visible={open} animationType="slide" onRequestClose={onClose}>
-      <View style={s.container}>
-        <Text style={s.title}>Member Details</Text>
-        <Text style={s.section}>Recent Activity</Text>
+      <View style={[s.container,{backgroundColor:colors.bg}]}>
+        <Text style={[s.title,{color:colors.text}]}>Member Details</Text>
+        <Text style={[s.section,{color:colors.text}]}>Recent Activity</Text>
         <FlatList
           data={txs.data || []}
           keyExtractor={(it) => String(it._id)}
           renderItem={({ item }) => (
             <View style={s.row}>
-              <Text style={s.cell}>{new Date(item.occurredAt).toISOString().slice(0,10)}</Text>
-              <Text style={[s.cell, { color: item.type==='deposit' ? '#166534' : '#b91c1c' }]}>{item.note || item.type}</Text>
-              <Text style={[s.cellRight]}>{formatBDT(item.amount)}</Text>
+              <Text style={[s.cell,{color:colors.textDim}]}>{new Date(item.occurredAt).toISOString().slice(0,10)}</Text>
+              <Text style={[s.cell, { color: item.type==='deposit' ? colors.success : colors.danger }]}>{item.note || item.type}</Text>
+              <Text style={[s.cellRight,{color:colors.text}]}>{formatBDT(item.amount)}</Text>
             </View>
           )}
           ListEmptyComponent={<Text style={s.meta}>No recent transactions</Text>}
         />
-        <Text style={s.section}>Open Dues</Text>
+        <Text style={[s.section,{color:colors.text}]}>Open Dues</Text>
         <FlatList
           data={(dues.data || []).flatMap((d: any) => d.schedule.map((it: any, idx: number) => ({...it, _dueId: d._id, _idx: idx}))).filter((it: any) => it.status !== 'paid')}
           keyExtractor={(_, i) => String(i)}
           renderItem={({ item }) => (
             <View style={s.rowSmall}>
-              <Text style={s.smallCell}>{new Date(item.dueDate).toISOString().slice(0,10)}</Text>
-              <Text style={s.smallCellRight}>{formatBDT((item.totalDue || 0) - (item.paid || 0))}</Text>
+              <Text style={[s.smallCell,{color:colors.textDim}]}>{new Date(item.dueDate).toISOString().slice(0,10)}</Text>
+              <Text style={[s.smallCellRight,{color:colors.text}]}>{formatBDT((item.totalDue || 0) - (item.paid || 0))}</Text>
             </View>
           )}
           ListEmptyComponent={<Text style={s.meta}>No open dues</Text>}
         />
         <View style={{ height: 8 }} />
-        <Text onPress={onClose} style={s.closeBtn}>Close</Text>
+        <Text onPress={onClose} style={[s.closeBtn,{color:colors.primary}]}>Close</Text>
       </View>
     </Modal>
   );
@@ -64,4 +66,3 @@ const s = StyleSheet.create({
   meta: { color: '#64748b', marginVertical: 6 },
   closeBtn: { color: '#2563eb', textAlign: 'center', paddingVertical: 10, fontWeight: '600' },
 });
-

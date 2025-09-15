@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet, Alert, Modal } from 'react-native';
+import ThemeInput from '../components/ui/ThemeInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
@@ -26,11 +27,11 @@ export default function People() {
   });
   return (
     <View style={s.container}>
-      <TextInput placeholder='Search' value={q} onChangeText={setQ} style={s.input} />
+      <ThemeInput placeholder='Search' value={q} onChangeText={setQ} />
       <View style={{ gap: 8 }}>
         <Text style={s.section}>Add Member</Text>
-        <TextInput placeholder='Name' value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} style={s.input} />
-        <TextInput placeholder='Email' autoCapitalize='none' value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} style={s.input} />
+        <ThemeInput placeholder='Name' value={form.name} onChangeText={(v) => setForm({ ...form, name: v as any })} />
+        <ThemeInput placeholder='Email' autoCapitalize='none' value={form.email} onChangeText={(v) => setForm({ ...form, email: v as any })} />
         <Button title='Create' onPress={() => create.mutate({ ...form, password: 'ChangeMe123!' })} />
       </View>
       <Text style={s.section}>Members</Text>
@@ -66,9 +67,9 @@ function EditModal({ user, onClose, onSave }: { user: any | null; onClose: () =>
     <Modal visible={!!user} animationType='slide' onRequestClose={onClose}>
       <View style={s.modal}>
         <Text style={s.title}>Edit Member</Text>
-        <TextInput style={s.input} placeholder='Name' value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} />
-        <TextInput style={s.input} placeholder='Email' autoCapitalize='none' value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} />
-        <TextInput style={s.input} placeholder='New password (optional)' secureTextEntry value={form.password} onChangeText={(v) => setForm({ ...form, password: v })} />
+        <ThemeInput placeholder='Name' value={form.name} onChangeText={(v) => setForm({ ...form, name: v as any })} />
+        <ThemeInput placeholder='Email' autoCapitalize='none' value={form.email} onChangeText={(v) => setForm({ ...form, email: v as any })} />
+        <ThemeInput placeholder='New password (optional)' secureTextEntry value={form.password} onChangeText={(v) => setForm({ ...form, password: v as any })} />
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Button title='Cancel' onPress={onClose} />
           <Button title='Save' onPress={() => onSave({ name: form.name, email: form.email, ...(form.password ? { password: form.password } : {}) })} />

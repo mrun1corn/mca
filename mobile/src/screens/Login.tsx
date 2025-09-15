@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import ThemeInput from '../components/ui/ThemeInput';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
 import { api, saveTokens } from '../lib/api';
@@ -32,8 +33,8 @@ export default function Login({ navigation }: Props) {
   return (
     <View style={s.container}>
       <Text style={s.title}>Sign in</Text>
-      <TextInput placeholder="Email or Username" autoCapitalize='none' style={s.input} value={identifier} onChangeText={setIdentifier} />
-      <TextInput placeholder="Password" secureTextEntry style={s.input} value={password} onChangeText={setPassword} />
+      <ThemeInput placeholder="Email or Username" autoCapitalize='none' value={identifier} onChangeText={setIdentifier} />
+      <ThemeInput placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
       <Button title={loading ? 'Signing in...' : 'Sign in'} onPress={onSubmit} disabled={loading} />
     </View>
   );

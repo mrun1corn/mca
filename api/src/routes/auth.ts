@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { authenticateByEmailPassword, authenticateByIdentifierPassword, clearAuthCookies, setAuthCookies, signAccessToken, signRefreshToken, tryDecode, verifyPassword, hashPassword } from "../lib/auth";
+import { authenticateByEmailPassword, authenticateByIdentifierPassword, clearAuthCookies, setAuthCookies, signAccessToken, signRefreshToken, tryDecode, verifyPassword, hashPassword, getRefreshTokenFromReq } from "../lib/auth";
 import { parseBody } from "../lib/validation";
 import User from "../models/User";
 
@@ -13,7 +13,8 @@ router.post("/login", async (req, res, next) => {
     const body = parseBody(LoginSchema, req.body);
     const { user, access, refresh } = await authenticateByIdentifierPassword(body.identifier, body.password);
     setAuthCookies(res, access, refresh);
-    res.json({ user: { id: user._id, name: user.name, role: user.role } });
+    // Return tokens in JSON for mobile apps (cookies remain for web)
+    res.json({ user: { id: user._id, name: user.name, role: user.role }, tokens: { access, refresh } });
   } catch (e) {
     next(e);
   }
@@ -21,7 +22,7 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/refresh", async (req, res, next) => {
   try {
-    const refresh = req.cookies?.["refresh"];
+    const refresh = getRefreshTokenFromReq(req as any);
     const payload = tryDecode(refresh);
     if (!payload) return res.status(401).json({ error: "Unauthorized" });
     // ensure user still exists and active
@@ -30,7 +31,7 @@ router.post("/refresh", async (req, res, next) => {
     const access = signAccessToken({ sub: String(user._id), role: user.role, name: user.name });
     const newRefresh = signRefreshToken({ sub: String(user._id), role: user.role, name: user.name });
     setAuthCookies(res, access, newRefresh);
-    res.json({ ok: true });
+    res.json({ ok: true, tokens: { access, refresh: newRefresh } });
   } catch (e) {
     next(e);
   }

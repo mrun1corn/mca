@@ -9,6 +9,11 @@ pnpm-debug.log*
 dist/
 build/
 .cache/
+# Nested build folders
+**/dist/
+**/build/
+web/dist/
+api/dist/
 
 # Env
 *.env
@@ -28,3 +33,11 @@ logs/
 # Coverage
 coverage/
 
+# Android/Expo (mobile)
+mobile/.android-sdk/
+mobile/android/local.properties
+mobile/android/.gradle/
+mobile/android/.cxx/
+mobile/android/app/build/
+mobile/android/app/debug.keystore
+mobile/.expo/

@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "SavingsMobile",
+    "slug": "savings-mobile",
+    "version": "0.1.0",
+    "scheme": "savingsmobile",
+    "orientation": "portrait",
+    "android": {
+      "package": "xyz.mrunicorn.deposit",
+      "versionCode": 1
+    },
+    "plugins": [
+      ["expo-secure-store"]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "local-dev"
+      }
+    }
+  }
+}

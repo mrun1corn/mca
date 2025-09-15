@@ -56,8 +56,27 @@ export function clearAuthCookies(res: Response) {
   res.clearCookie("refresh", opts);
 }
 
+function getBearerToken(req: Request): string | undefined {
+  const auth = req.headers["authorization"];
+  if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+    return auth.slice(7).trim();
+  }
+  return undefined;
+}
+
+export function getAccessTokenFromReq(req: Request): string | undefined {
+  // Prefer cookie for web, else Authorization header for mobile
+  const cookie = (req as any).cookies?.["access"] as string | undefined;
+  return cookie ?? getBearerToken(req);
+}
+
+export function getRefreshTokenFromReq(req: Request): string | undefined {
+  const cookie = (req as any).cookies?.["refresh"] as string | undefined;
+  return cookie ?? getBearerToken(req);
+}
+
 export function requireAuth(req: Request & { user?: JwtPayload }, _res: Response, next: NextFunction) {
-  const token = (req.cookies && req.cookies["access"]) || null;
+  const token = getAccessTokenFromReq(req);
   if (!token) return next(new AppError("Unauthorized", 401));
   try {
     const payload = jwt.verify(token, JWT_SECRET_VALUE) as JwtPayload;

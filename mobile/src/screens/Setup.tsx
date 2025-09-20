@@ -1,41 +1,78 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import ThemeInput from '../components/ui/ThemeInput';
+import ThemeButton from '../components/ui/ThemeButton';
+import Screen from '../components/ui/Screen';
+import ThemeText from '../components/ui/ThemeText';
+import ThemedCard from '../components/ui/ThemedCard';
 import { useTheme } from '../theme';
 import { api } from '../lib/api';
+import { Alert, View } from 'react-native';
 
 export default function Setup() {
-  const [password, setPassword] = useState('');
   const { mode, setMode } = useTheme();
-  const update = async () => {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const changePassword = async () => {
     try {
+      setLoading(true);
       const me = await api.get('/me');
       await api.patch(`/users/${me.data.id}`, { password });
       setPassword('');
-      Alert.alert('Success', 'Password updated');
+      Alert.alert('Settings', 'Password updated successfully.');
     } catch {
-      Alert.alert('Error', 'Update failed');
+      Alert.alert('Settings', 'Password update failed.');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
-    <View style={s.container}>
-      <Text style={s.title}>Settings</Text>
-      <Text style={s.label}>Theme</Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-        <Button title={`Light ${mode==='light'?'✓':''}`} onPress={() => setMode('light')} />
-        <Button title={`Dark ${mode==='dark'?'✓':''}`} onPress={() => setMode('dark')} />
-        <Button title={`System ${mode==='system'?'✓':''}`} onPress={() => setMode('system')} />
-      </View>
-      <Text>Password</Text>
-      <ThemeInput value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title='Update' onPress={update} />
-    </View>
+    <Screen scroll>
+      <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 16 }}>
+        Settings
+      </ThemeText>
+
+      <ThemedCard tone="surface">
+        <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+          App appearance
+        </ThemeText>
+        <ThemeText tone="dim" style={{ marginBottom: 12 }}>
+          Choose how the app adapts to light or dark mode.
+        </ThemeText>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          {(['light', 'dark', 'system'] as const).map((opt) => (
+            <ThemeButton
+              key={opt}
+              title={opt.charAt(0).toUpperCase() + opt.slice(1)}
+              variant={mode === opt ? 'primary' : 'secondary'}
+              size="sm"
+              onPress={() => setMode(opt)}
+            />
+          ))}
+        </View>
+      </ThemedCard>
+
+      <ThemedCard tone="surface" style={{ marginTop: 20 }}>
+        <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+          Change password
+        </ThemeText>
+        <ThemeText tone="dim" style={{ marginBottom: 12 }}>
+          Set a new password for your account.
+        </ThemeText>
+        <ThemeInput
+          secureTextEntry
+          placeholder="New password"
+          value={password}
+          onChangeText={setPassword}
+        />
+        <ThemeButton
+          title={loading ? 'Updating…' : 'Update password'}
+          onPress={changePassword}
+          disabled={!password || loading}
+          style={{ marginTop: 16 }}
+        />
+      </ThemedCard>
+    </Screen>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, padding: 12, gap: 10 },
-  title: { fontSize: 18, fontWeight: '600' },
-  label: { color: '#475569' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
-});

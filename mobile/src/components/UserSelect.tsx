@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTheme } from '../theme';
+import ThemeText from './ui/ThemeText';
+import ThemeInput from './ui/ThemeInput';
+import ThemeButton from './ui/ThemeButton';
+import ThemedCard from './ui/ThemedCard';
 
 type User = { id: string; name: string; email?: string };
 
@@ -12,55 +16,75 @@ export default function UserSelect({ value, onChange, label = 'Member' }: { valu
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const users: User[] = data || [];
-  const current = users.find(u => u.id === value);
+  const current = users.find((u) => u.id === value);
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return users;
-    return users.filter(u => u.name.toLowerCase().includes(t) || (u.email || '').toLowerCase().includes(t));
+    return users.filter((u) => u.name.toLowerCase().includes(t) || (u.email || '').toLowerCase().includes(t));
   }, [users, q]);
+
   return (
     <View>
-      <Text style={[s.label,{color:colors.textDim}]}>{label}</Text>
-      <TouchableOpacity activeOpacity={0.7} onPress={() => setOpen(true)} style={[s.selectBox,{borderColor:colors.border}]}> 
-        <Text style={[s.selectText,{color: current ? colors.text : colors.textDim}]}>
-          {current ? current.name + (current.email ? ' · ' + current.email : '') : 'Select a member'}
-        </Text>
-        <Text style={{ color: colors.textDim }}>▾</Text>
+      <ThemeText variant="label" style={{ marginBottom: 6 }}>
+        {label}
+      </ThemeText>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setOpen(true)}
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          backgroundColor: colors.card,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <ThemeText tone={current ? 'default' : 'dim'}>
+          {current ? `${current.name}${current.email ? ' · ' + current.email : ''}` : 'Select a member'}
+        </ThemeText>
+        <ThemeText tone="dim">▾</ThemeText>
       </TouchableOpacity>
+
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={[s.modal,{backgroundColor:colors.bg}] }>
-          <Text style={s.title}>Select Member</Text>
-          <TextInput placeholder='Search' value={q} onChangeText={setQ} style={[s.input,{borderColor:colors.border}]} />
-          <FlatList
-            data={filtered}
-            keyExtractor={(u) => u.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={s.item} onPress={() => { onChange(item.id, item); setOpen(false); }}>
-                <Text style={s.name}>{item.name}</Text>
-                {!!item.email && <Text style={s.meta}>{item.email}</Text>}
-              </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: colors.bg, padding: 16 }}>
+          <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 12 }}>
+            Choose a member
+          </ThemeText>
+          <ThemeInput placeholder="Search" value={q} onChangeText={setQ} style={{ marginBottom: 16 }} />
+          <ThemedCard tone="surface" style={{ flex: 1, padding: 0 }}>
+            {filtered.length ? (
+              filtered.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => {
+                    onChange(item.id, item);
+                    setOpen(false);
+                    setQ('');
+                  }}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <ThemeText style={{ fontWeight: '600' }}>{item.name}</ThemeText>
+                  {item.email ? <ThemeText tone="dim">{item.email}</ThemeText> : null}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={{ padding: 16 }}>
+                <ThemeText tone="dim">No members match your search.</ThemeText>
+              </View>
             )}
-          />
-          <TouchableOpacity onPress={() => setOpen(false)} style={s.closeBtn}> 
-            <Text>Close</Text>
-          </TouchableOpacity>
+          </ThemedCard>
+          <ThemeButton title="Close" variant="secondary" onPress={() => setOpen(false)} style={{ marginTop: 16 }} />
         </View>
       </Modal>
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  label: { color: '#475569' },
-  value: { fontWeight: '600', marginTop: 2 },
-  modal: { flex: 1, padding: 12, gap: 8 },
-  title: { fontSize: 18, fontWeight: '600' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
-  selectBox: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  selectText: { fontSize: 16 },
-  item: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  name: { fontWeight: '600' },
-  meta: { color: '#64748b' },
-  closeBtn: { alignSelf: 'center', marginTop: 8, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
-});

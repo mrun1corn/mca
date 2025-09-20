@@ -9,24 +9,42 @@ import ExportCsv from '../screens/ExportCsv';
 import Setup from '../screens/Setup';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { View, Text } from 'react-native';
+import Screen from '../components/ui/Screen';
+import ThemeText from '../components/ui/ThemeText';
+import { useTheme } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
 function Loading() {
-  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>Loading...</Text></View>;
+  return (
+    <Screen style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <ThemeText tone="dim">Loading your workspace…</ThemeText>
+    </Screen>
+  );
 }
 
 export default function MainTabs() {
+  const { colors } = useTheme();
   const me = useQuery({ queryKey: ['me'], queryFn: async () => (await api.get('/me')).data });
   if (me.isLoading) return <Loading />;
   const role = me.data?.role as 'admin' | 'accountant' | 'user' | undefined;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: true,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarLabelStyle: { fontSize: 11 },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textDim,
+        tabBarLabelStyle: { fontSize: 12, marginBottom: 4 },
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+          paddingTop: 4,
+          height: 60,
+        },
+        headerStyle: { backgroundColor: colors.card },
+        headerTitleStyle: { color: colors.text },
+        headerTintColor: colors.primary,
         tabBarIcon: ({ color, size }) => {
           const map: Record<string, string> = {
             Home: 'home',
@@ -42,9 +60,9 @@ export default function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={Home} />
-      {(role === 'admin') && <Tab.Screen name="People" component={People} />}
+      {role === 'admin' && <Tab.Screen name="People" component={People} />}
       {(role === 'admin' || role === 'accountant') && <Tab.Screen name="Deposit" component={Deposit} />}
-      {(role === 'admin' || role === 'accountant') && <Tab.Screen name="Withdraw" component={Withdraw} />}      
+      {(role === 'admin' || role === 'accountant') && <Tab.Screen name="Withdraw" component={Withdraw} />}
       {(role === 'admin' || role === 'accountant') && <Tab.Screen name="Export" component={ExportCsv} />}
       <Tab.Screen name="Settings" component={Setup} />
     </Tab.Navigator>

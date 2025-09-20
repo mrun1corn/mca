@@ -7,9 +7,19 @@ export default function ThemeInput({ style, ...props }: TextInputProps) {
   return (
     <TextInput
       {...props}
-      placeholderTextColor={colors.textDim}
-      style={[{ color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12 }, style]}
+      placeholderTextColor={colors.textMuted}
+      style={[
+        {
+          color: colors.text,
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+        },
+        style,
+      ]}
     />
   );
 }
-

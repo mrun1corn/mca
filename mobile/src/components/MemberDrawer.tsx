@@ -1,8 +1,14 @@
-import React from 'react';
-import { Modal, View, Text, StyleSheet, FlatList } from 'react-native';
+import React, { useMemo } from 'react';
+import { Modal, View } from 'react-native';
 import { useTheme } from '../theme';
 import { useQuery } from '@tanstack/react-query';
 import { api, formatBDT } from '../lib/api';
+import ThemeText from './ui/ThemeText';
+import ThemeButton from './ui/ThemeButton';
+import ThemedCard from './ui/ThemedCard';
+
+type TxRow = { _id: string; occurredAt: string; type: string; amount: number };
+type DueRow = { dueDate: string; totalDue: number; paid: number; status: string };
 
 export default function MemberDrawer({ userId, onClose }: { userId: string | null; onClose: () => void }) {
   const open = !!userId;
@@ -17,52 +23,81 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
     enabled: open,
   });
+
+  const txRows: TxRow[] = (txs.data as TxRow[] | undefined) ?? [];
+
+  const upcomingDues: DueRow[] = useMemo(() => {
+    if (!dues.data) return [];
+    return (dues.data as any[])
+      .flatMap((d: any) =>
+        d.schedule.map((it: any) => ({
+          dueDate: String(it.dueDate),
+          totalDue: Number(it.totalDue || 0),
+          paid: Number(it.paid || 0),
+          status: String(it.status || 'pending'),
+        }))
+      )
+      .filter((it: DueRow) => it.status !== 'paid');
+  }, [dues.data]);
+
+  if (!open) return null;
+
   return (
-    <Modal visible={open} animationType="slide" onRequestClose={onClose}>
-      <View style={[s.container,{backgroundColor:colors.bg}]}>
-        <Text style={[s.title,{color:colors.text}]}>Member Details</Text>
-        <Text style={[s.section,{color:colors.text}]}>Recent Activity</Text>
-        <FlatList
-          data={txs.data || []}
-          keyExtractor={(it) => String(it._id)}
-          renderItem={({ item }) => (
-            <View style={s.row}>
-              <Text style={[s.cell,{color:colors.textDim}]}>{new Date(item.occurredAt).toISOString().slice(0,10)}</Text>
-              <Text style={[s.cell, { color: item.type==='deposit' ? colors.success : colors.danger }]}>{item.note || item.type}</Text>
-              <Text style={[s.cellRight,{color:colors.text}]}>{formatBDT(item.amount)}</Text>
+    <Modal visible animationType="fade" onRequestClose={onClose} transparent>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.overlay,
+          justifyContent: 'center',
+          padding: 16,
+        }}
+      >
+        <ThemedCard tone="default" title="Member details" style={{ maxHeight: '85%' }}>
+          <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+            Recent activity
+          </ThemeText>
+          {txRows.length ? (
+            <View style={{ gap: 8, marginBottom: 16 }}>
+              {txRows.map((item) => (
+                <View
+                  key={item._id}
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
+                >
+                  <ThemeText tone="dim">{new Date(item.occurredAt).toISOString().slice(0, 10)}</ThemeText>
+                  <ThemeText tone={item.type === 'deposit' ? 'success' : 'danger'}>
+                    {formatBDT(item.amount)}
+                  </ThemeText>
+                </View>
+              ))}
             </View>
+          ) : (
+            <ThemeText tone="dim" style={{ marginBottom: 16 }}>
+              No recent transactions.
+            </ThemeText>
           )}
-          ListEmptyComponent={<Text style={s.meta}>No recent transactions</Text>}
-        />
-        <Text style={[s.section,{color:colors.text}]}>Open Dues</Text>
-        <FlatList
-          data={(dues.data || []).flatMap((d: any) => d.schedule.map((it: any, idx: number) => ({...it, _dueId: d._id, _idx: idx}))).filter((it: any) => it.status !== 'paid')}
-          keyExtractor={(_, i) => String(i)}
-          renderItem={({ item }) => (
-            <View style={s.rowSmall}>
-              <Text style={[s.smallCell,{color:colors.textDim}]}>{new Date(item.dueDate).toISOString().slice(0,10)}</Text>
-              <Text style={[s.smallCellRight,{color:colors.text}]}>{formatBDT((item.totalDue || 0) - (item.paid || 0))}</Text>
+
+          <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+            Open dues
+          </ThemeText>
+          {upcomingDues.length ? (
+            <View style={{ gap: 8 }}>
+              {upcomingDues.map((item, index) => (
+                <View
+                  key={`${item.dueDate}-${index}`}
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
+                >
+                  <ThemeText tone="dim">{new Date(item.dueDate).toISOString().slice(0, 10)}</ThemeText>
+                  <ThemeText>{formatBDT((item.totalDue || 0) - (item.paid || 0))}</ThemeText>
+                </View>
+              ))}
             </View>
+          ) : (
+            <ThemeText tone="dim">No open dues.</ThemeText>
           )}
-          ListEmptyComponent={<Text style={s.meta}>No open dues</Text>}
-        />
-        <View style={{ height: 8 }} />
-        <Text onPress={onClose} style={[s.closeBtn,{color:colors.primary}]}>Close</Text>
+
+          <ThemeButton title="Close" variant="secondary" onPress={onClose} style={{ marginTop: 20 }} />
+        </ThemedCard>
       </View>
     </Modal>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, padding: 12, gap: 8 },
-  title: { fontSize: 18, fontWeight: '600' },
-  section: { fontWeight: '600', marginTop: 8 },
-  row: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  cell: { flex: 1 },
-  cellRight: { flex: 1, textAlign: 'right' },
-  rowSmall: { flexDirection: 'row', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  smallCell: { flex: 1, fontSize: 13, color: '#334155' },
-  smallCellRight: { flex: 1, fontSize: 13, textAlign: 'right', color: '#334155' },
-  meta: { color: '#64748b', marginVertical: 6 },
-  closeBtn: { color: '#2563eb', textAlign: 'center', paddingVertical: 10, fontWeight: '600' },
-});

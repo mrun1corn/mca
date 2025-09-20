@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "./Toast";
 import Button from "./Button";
 
-export default function WithdrawForm({ userId }: { userId: string }) {
+function WithdrawForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
   const { notify } = useToast();
   const [amount, setAmount] = useState(""); // BDT (taka)
@@ -95,3 +96,6 @@ export default function WithdrawForm({ userId }: { userId: string }) {
     </div>
   );
 }
+
+
+export default memo(WithdrawForm);

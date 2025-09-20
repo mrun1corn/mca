@@ -1,17 +1,19 @@
 import { Link, NavLink, Route, Routes, Navigate, useNavigate, useLocation } from "react-router-dom";
-import Home from "./pages/Home";
-import People from "./pages/People";
-import DepositPage from "./pages/Deposit";
-import WithdrawPage from "./pages/Withdraw";
-import Export from "./pages/Export";
-import Setup from "./pages/Setup";
-import Login from "./pages/Login";
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
+
+const Home = lazy(() => import("./pages/Home"));
+const People = lazy(() => import("./pages/People"));
+const DepositPage = lazy(() => import("./pages/Deposit"));
+const WithdrawPage = lazy(() => import("./pages/Withdraw"));
+const Export = lazy(() => import("./pages/Export"));
+const Setup = lazy(() => import("./pages/Setup"));
+const Login = lazy(() => import("./pages/Login"));
 import { api } from "./lib/api";
 import { HomeIcon, UsersIcon, MoneyIcon, ExportIcon, CogIcon, LogoutIcon, DepositIcon, WithdrawIcon } from "./components/Icon";
 import { APP_NAME, APP_LOGO } from "./lib/config";
 import ThemeToggle from "./components/ThemeToggle";
 import { ToastProvider } from "./components/Toast";
+import Spinner from "./components/ui/Spinner";
 import { useQuery } from "@tanstack/react-query";
 
 function Nav() {
@@ -85,14 +87,14 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   useEffect(() => {
     api.get("/home").then(() => setOk(true)).catch(() => setOk(false)).finally(() => setLoading(false));
   }, []);
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading) return <div className="p-4"><Spinner label="Loading page…" /></div>;
   if (!ok) return <Navigate to="/login" replace />;
   return children;
 }
 
 function RequireRole({ roles, children }: { roles: Array<"admin"|"accountant">; children: JSX.Element }) {
   const { data, isLoading } = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
-  if (isLoading) return <div className="p-4">Loading...</div>;
+  if (isLoading) return <div className="p-4"><Spinner label="Loading page…" /></div>;
   const role = data?.role as any;
   if (!roles.includes(role)) return <Navigate to="/" replace />;
   return children;
@@ -122,6 +124,7 @@ export default function App() {
           <div className="flex items-center justify-end mb-2">
             <ThemeToggle />
           </div>
+          <Suspense fallback={<div className="p-4"><Spinner label="Loading page…" /></div>}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
@@ -131,6 +134,7 @@ export default function App() {
             <Route path="/export" element={<RequireAuth><RequireRole roles={["admin","accountant"]}><Export /></RequireRole></RequireAuth>} />
             <Route path="/setup" element={<RequireAuth><Setup /></RequireAuth>} />
           </Routes>
+          </Suspense>
         </div>
       </div>
     </ToastProvider>

@@ -7,13 +7,14 @@ import WithdrawForm from "./WithdrawForm";
 import { useToast } from "./Toast";
 import Button from "./Button";
 import { PencilIcon, TrashIcon } from "./Icon";
+import Spinner from "./ui/Spinner";
 
 export default function MemberDrawer({ userId, onClose }: { userId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { notify } = useToast();
-  const txs = useQuery({ queryKey: ["txs", userId], queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data, enabled: !!userId });
+  const { data: txsData = [], isLoading: txsLoading } = useQuery<any[]>({ queryKey: ["txs", userId], queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data, enabled: !!userId });
   const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get(`/me`)).data });
-  const dues = useQuery({ queryKey: ["dues", userId], queryFn: async () => (await api.get(`/users/${userId}/dues`)).data, enabled: !!userId });
+  const { data: duesData = [], isLoading: duesLoading } = useQuery<any[]>({ queryKey: ["dues", userId], queryFn: async () => (await api.get(`/users/${userId}/dues`)).data, enabled: !!userId });
   const [show, setShow] = useState(false);
   useEffect(() => { setShow(true); }, []);
   // Prevent background scroll and avoid layout shift by compensating scrollbar width
@@ -31,13 +32,30 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
   const [editing, setEditing] = useState<null | { _id: string; type: string; amount: number; occurredAt: string; note?: string }>(null);
   const patchTx = useMutation({
     mutationFn: (body: any) => api.patch(`/transactions/${editing?._id}`, body),
-    onSuccess: () => { notify("Transaction updated", "success"); qc.invalidateQueries({ queryKey: ["txs", userId] }); setEditing(null); },
-    onError: () => notify("Update failed", "error"),
+    onMutate: async (body: any) => {
+      await qc.cancelQueries({ queryKey: ["txs", userId] });
+      const previous = qc.getQueryData<any[]>(["txs", userId]);
+      if (previous && editing) {
+        const next = previous.map((tx) => (tx._id === editing._id ? { ...tx, note: body.note, occurredAt: body.date, amount: body.amount ? Math.round(body.amount * 100) : tx.amount } : tx));
+        qc.setQueryData(["txs", userId], next);
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => { if (context?.previous) qc.setQueryData(["txs", userId], context.previous); notify("Update failed", "error"); },
+    onSuccess: () => { notify("Transaction updated", "success"); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["txs", userId] }); setEditing(null); },
   });
   const deleteTx = useMutation({
     mutationFn: (id: string) => api.delete(`/transactions/${id}`),
-    onSuccess: () => { notify("Transaction deleted", "success"); qc.invalidateQueries({ queryKey: ["txs", userId] }); },
-    onError: (e: any) => notify(e?.response?.data?.error || "Delete failed", "error"),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["txs", userId] });
+      const previous = qc.getQueryData<any[]>(["txs", userId]);
+      if (previous) qc.setQueryData(["txs", userId], previous.filter((tx) => tx._id !== id));
+      return { previous };
+    },
+    onError: (e: any, _vars, context) => { if (context?.previous) qc.setQueryData(["txs", userId], context.previous); notify(e?.response?.data?.error || "Delete failed", "error"); },
+    onSuccess: () => notify("Transaction deleted", "success"),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["txs", userId] }),
   });
   const closeWithAnim = () => {
     setShow(false);
@@ -80,29 +98,34 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
               <div className="col-span-3">Amount</div>
               <div className="col-span-3 text-right">{me.data?.role !== 'user' ? 'Actions' : ''}</div>
             </div>
-            <div className="space-y-1 max-h-64 overflow-auto">
-              {txs.data?.map((t: any) => (
-                <div key={t._id} className="grid grid-cols-12 items-center text-sm border-b py-1 gap-2 px-2">
-                  <span className="col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
-                  <span className={`col-span-3 ${t.type === 'deposit' ? 'text-green-700' : 'text-red-700'}`}>{t.note || t.type}</span>
-                  <span className="col-span-3">{formatBDT(t.amount)}</span>
-                  {me.data?.role !== 'user' ? (
-                    <span className="col-span-3 text-right">
-                      <div className="inline-flex gap-2">
-                        <Button variant="ghost" size="xs" onClick={() => setEditing({ ...t, occurredAt: String(t.occurredAt).slice(0,10) })}>
-                          <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Edit</span>
-                        </Button>
-                        <Button variant="danger" size="xs" onClick={() => { if (confirm('Delete this transaction?')) deleteTx.mutate(t._id); }}>
-                          <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Delete</span>
-                        </Button>
-                      </div>
-                    </span>
-                  ) : (
-                    <span className="col-span-3" />
-                  )}
-                </div>
-              ))}
-            </div>
+            {txsLoading ? (
+              <div className="p-4"><Spinner label="Loading transactions…" /></div>
+            ) : (
+              <div className="space-y-1 max-h-64 overflow-auto">
+                {txsData.map((t: any) => (
+                  <div key={t._id} className="grid grid-cols-12 items-center text-sm border-b py-1 gap-2 px-2">
+                    <span className="col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
+                    <span className={`col-span-3 ${t.type === 'deposit' ? 'text-green-700' : 'text-red-700'}`}>{t.note || t.type}</span>
+                    <span className="col-span-3">{formatBDT(t.amount)}</span>
+                    {me.data?.role !== 'user' ? (
+                      <span className="col-span-3 text-right">
+                        <div className="inline-flex gap-2">
+                          <Button variant="ghost" size="xs" onClick={() => setEditing({ ...t, occurredAt: String(t.occurredAt).slice(0,10) })}>
+                            <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Edit</span>
+                          </Button>
+                          <Button variant="danger" size="xs" onClick={() => { if (confirm('Delete this transaction?')) deleteTx.mutate(t._id); }}>
+                            <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Delete</span>
+                          </Button>
+                        </div>
+                      </span>
+                    ) : (
+                      <span className="col-span-3" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {txsData.length === 0 && !txsLoading && <div className="text-sm text-gray-500 px-2 py-3">No transactions yet.</div>}
             {editing && (
               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setEditing(null)}>
                 <div className="w-full max-w-md glass p-4 rounded" onClick={(e) => e.stopPropagation()}>
@@ -137,20 +160,25 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
               <div>Amount</div>
               <div className="text-right">Status</div>
             </div>
-            <div className="space-y-1 max-h-64 overflow-auto text-sm">
-              {dues.data?.map((d: any) => (
-                <div key={d._id} className="border rounded">
-                  <div className="px-2 py-1 text-xs text-gray-600">Principal: {formatBDT(d.principal)}</div>
-                  {d.schedule.slice(0, 3).map((it: any, i: number) => (
-                    <div key={i} className="grid grid-cols-3 items-center px-2 py-1 border-t">
-                      <span>{new Date(it.dueDate).toLocaleDateString("en-BD")}</span>
-                      <span>{formatBDT(it.totalDue)}</span>
-                      <span className="text-xs text-right">{it.status}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+            {duesLoading ? (
+              <div className="p-4"><Spinner label="Loading dues…" /></div>
+            ) : (
+              <div className="space-y-1 max-h-64 overflow-auto text-sm">
+                {duesData.map((d: any) => (
+                  <div key={d._id} className="border rounded">
+                    <div className="px-2 py-1 text-xs text-gray-600">Principal: {formatBDT(d.principal)}</div>
+                    {d.schedule.slice(0, 3).map((it: any, i: number) => (
+                      <div key={i} className="grid grid-cols-3 items-center px-2 py-1 border-t">
+                        <span>{new Date(it.dueDate).toLocaleDateString("en-BD")}</span>
+                        <span>{formatBDT(it.totalDue)}</span>
+                        <span className="text-xs text-right">{it.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            {duesData.length === 0 && !duesLoading && <div className="text-sm text-gray-500 px-2 py-3">No dues scheduled.</div>}
           </div>
         )}
       </div>

@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
 import { useEffect, useMemo, useState } from "react";
 
-export default function DepositForm({ userId }: { userId: string }) {
+function DepositForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
   const { notify } = useToast();
   const [mode, setMode] = useState<"simple" | "pay_due">("simple");
@@ -107,3 +108,6 @@ export default function DepositForm({ userId }: { userId: string }) {
     </div>
   );
 }
+
+
+export default memo(DepositForm);

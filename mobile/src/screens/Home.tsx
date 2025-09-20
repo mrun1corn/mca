@@ -69,6 +69,9 @@ export default function Home() {
 
   const data = home.data;
 
+  const canManageMembers = role === 'admin';
+  const canViewMemberDetails = role === 'admin' || role === 'accountant';
+
   if (role === 'user') {
     const currentBalance = data.remainingBalance || 0;
     const totalDeposits = data.totalDeposits || 0;
@@ -132,12 +135,14 @@ export default function Home() {
                   <ThemeText>{item.name}</ThemeText>
                   <ThemeText tone="dim">Balance: {formatBDT(item.balance)}</ThemeText>
                 </View>
-                <ThemeButton
-                  variant="ghost"
-                  size="sm"
-                  title="Details"
-                  onPress={() => setDrawerUserId(String(item.userId))}
-                />
+                {item.userId === myId ? (
+                  <ThemeButton
+                    variant="ghost"
+                    size="sm"
+                    title="Details"
+                    onPress={() => setDrawerUserId(String(item.userId))}
+                  />
+                ) : null}
               </View>
             )}
           />
@@ -148,12 +153,17 @@ export default function Home() {
     );
   }
 
-  const adminActions = [
-    { title: 'Record deposit', icon: 'cash-outline', screen: 'Deposit' },
-    { title: 'New withdrawal', icon: 'card-outline', screen: 'Withdraw' },
-    { title: 'Export CSV', icon: 'download-outline', screen: 'Export' },
-    { title: 'Manage people', icon: 'people-outline', screen: 'People' },
-  ];
+  const adminActions = useMemo(() => {
+    const common = [
+      { title: 'Record deposit', icon: 'cash-outline', screen: 'Deposit' },
+      { title: 'New withdrawal', icon: 'card-outline', screen: 'Withdraw' },
+      { title: 'Export CSV', icon: 'download-outline', screen: 'Export' },
+    ];
+    if (role === 'admin') {
+      return [...common, { title: 'Manage people', icon: 'people-outline', screen: 'People' }];
+    }
+    return common;
+  }, [role]);
 
   const metrics = [
     {
@@ -226,7 +236,7 @@ export default function Home() {
             subtitle={`Last month: ${formatBDT(card.lastMonth)}`}
             value={`Balance ${formatBDT(card.balance)}`}
             tone="surface"
-            onPress={() => setDrawerUserId(String(card.userId))}
+            onPress={canViewMemberDetails ? () => setDrawerUserId(String(card.userId)) : undefined}
             style={{ flexBasis: '48%' }}
           />
         ))}

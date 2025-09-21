@@ -1,56 +1,28 @@
-Mobile App TODO — Parity + Polish
+Mobile App TODO — Next Iteration
 
-High Priority
-1) Icons (tabs + inline)
-   - Integrate icons without Expo plugin regressions.
-   - Approach: use react-native-vector-icons (non-Expo), add fonts to Android, wire tabBarIcon.
-   - Files: mobile/src/navigation/tabs.tsx, android/app/build.gradle (fonts), android/app/src/main/assets/fonts/ (if needed).
+✅ Wrapped up
+- Icons via `react-native-vector-icons` wired into tabs/buttons.
+- Theming components (`ThemeText`, `ThemeInput`, `ThemedCard`) applied across screens.
+- Member drawer + exclude chips polished; penalty options gated; hook-order issue fixed.
+- Logout flow & one-time login implemented.
 
-2) Dark Theme Sweep
-   - Replace defaultProps hack with theme-aware primitives: ThemeText, ThemeInput, ThemedCard.
-   - Audit screens for consistent text, placeholder, border colors in light/dark.
-   - Files: mobile/src/theme.tsx, create mobile/src/components/ui/{ThemeText.tsx,ThemeInput.tsx,ThemedCard.tsx}.
-   - Screens to sweep: Login, People, ExportCsv, Setup, Deposit, Withdraw, Home, MemberDrawer.
+Focus Areas
+1) Offline Cache & Queue
+   - Persist home/me/dues/transactions queries (SQLite or MMKV).
+   - Queue mutate actions (deposit, withdraw) for background replay.
 
-3) Home — Users Card Styling
-   - Match web layout: spacing, font sizes, and information hierarchy on cards.
-   - Add subtle press feedback; consistent two-column grid.
-   - Files: mobile/src/screens/Home.tsx, mobile/src/components/Card.tsx
+2) Feedback & Observability
+   - Toast/sheet component for success/error messages (reuse across screens).
+   - Capture API failures with context logging (Sentry or custom endpoint).
 
-4) Member Drawer Polish
-   - Apply theme colors for all rows; add dividers and consistent paddings.
-   - Ensure amounts use success/danger colors, dates dimmed.
-   - Files: mobile/src/components/MemberDrawer.tsx
+3) Accessibility & UX
+   - Larger tap targets for chips/buttons, add VoiceOver labels.
+   - Support dynamic type via responsive typography tokens.
 
-5) Withdraw — Exclude UX
-   - Ensure taker is excluded (read-only); chips have clear active/inactive states.
-   - Submission uses final exclusion set; align labels to web wording.
-   - Files: mobile/src/screens/Withdraw.tsx
+4) Testing
+   - Add Jest + RNTL coverage for auth flow, role gating, dues calculations.
+   - Wire detox/E2E smoke to ensure tab layout + navigation works post-build.
 
-6) Deposit — Selector + Pay Due
-   - Refine dropdown sizing/chevron alignment; consistent placeholder styling.
-   - Show Pay Due only when member has open dues (current behavior) and keep penalty options gated to Pay Due.
-   - Files: mobile/src/components/UserSelect.tsx, mobile/src/screens/Deposit.tsx
-
-Medium Priority
-7) Input/Placeholder Consistency
-   - Unify input paddings, borders, and placeholder text across all screens.
-   - Files: all screens with inputs.
-
-8) Animations
-   - Add light ripple/scale on card taps and list rows; consistent button feedback.
-   - Files: shared small animation helpers; update screens where interaction exists.
-
-9) Error/Toast Feedback
-   - Show friendly toast on auth/network errors; indicate success on actions.
-   - Files: reusable Toast hook/component; wire in Login/Deposit/Withdraw.
-
-Environment/Build
-10) HTTPS for Production
-   - Point EXPO_PUBLIC_API_BASE to https in production.
-   - Optionally disable cleartextTraffic in release manifest or gate it by build variant.
-   - Files: mobile/.env (prod), android manifest security config.
-
-11) CI Build
-   - Add EAS or GitHub Actions workflow to build release APK/AAB and attach artifacts.
-
+5) Release Pipeline
+   - Configure EAS Build profiles (`preview`, `production`) with managed signing.
+   - Automate version bumping + changelog generation.

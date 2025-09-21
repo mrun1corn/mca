@@ -10,6 +10,7 @@ import { useTheme } from '../theme';
 import ThemedCard from '../components/ui/ThemedCard';
 import ThemeButton from '../components/ui/ThemeButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { APP_NAME } from '../lib/config';
 
 type Role = 'admin' | 'accountant' | 'user' | undefined;
 
@@ -58,6 +59,18 @@ export default function Home() {
     }
     return best?.due || 0;
   }, [role, dues.data]);
+
+  const adminActions = useMemo(() => {
+    const common = [
+      { title: 'Record deposit', icon: 'cash-outline', screen: 'Deposit' },
+      { title: 'New withdrawal', icon: 'card-outline', screen: 'Withdraw' },
+      { title: 'Export CSV', icon: 'download-outline', screen: 'Export' },
+    ];
+    if (role === 'admin') {
+      return [...common, { title: 'Manage people', icon: 'people-outline', screen: 'People' }];
+    }
+    return common;
+  }, [role]);
 
   if (!home.data || !me.data) {
     return (
@@ -153,18 +166,6 @@ export default function Home() {
     );
   }
 
-  const adminActions = useMemo(() => {
-    const common = [
-      { title: 'Record deposit', icon: 'cash-outline', screen: 'Deposit' },
-      { title: 'New withdrawal', icon: 'card-outline', screen: 'Withdraw' },
-      { title: 'Export CSV', icon: 'download-outline', screen: 'Export' },
-    ];
-    if (role === 'admin') {
-      return [...common, { title: 'Manage people', icon: 'people-outline', screen: 'People' }];
-    }
-    return common;
-  }, [role]);
-
   const metrics = [
     {
       title: 'Members',
@@ -189,7 +190,7 @@ export default function Home() {
   return (
     <Screen scroll>
       <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 12 }}>
-        Community overview
+        {APP_NAME} overview
       </ThemeText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
         {metrics.map((metric) => (

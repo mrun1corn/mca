@@ -4,6 +4,7 @@ import ThemeInput from '../components/ui/ThemeInput';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation';
 import { api, saveTokens } from '../lib/api';
+import { APP_NAME } from '../lib/config';
 import Screen from '../components/ui/Screen';
 import ThemeText from '../components/ui/ThemeText';
 import ThemeButton from '../components/ui/ThemeButton';
@@ -46,7 +47,7 @@ export default function Login({ navigation }: Props) {
           Welcome back
         </ThemeText>
         <ThemeText tone="dim" style={{ marginBottom: 16 }}>
-          Sign in with your email or username to access the community savings workspace.
+          Sign in with your email or username to access the {APP_NAME} workspace.
         </ThemeText>
         <ThemeText variant="label">Email or username</ThemeText>
         <ThemeInput

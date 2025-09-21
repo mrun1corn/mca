@@ -9,6 +9,7 @@ Prerequisites
 Monorepo
 - api/ — Express + TypeScript + Mongoose
 - web/ — React + Vite + TypeScript + Tailwind
+- mobile/ — Expo (React Native) client for Android/iOS
 
 Environment (single .env at repo root)
 
@@ -49,7 +50,7 @@ VITE_APP_LOGO=""  # optional URL or /path
 
 Install & Run (single command)
 - From repo root:
-  - `npm i && npm run install:all`
+  - `npm i && npm run install:all` (installs api, web, mobile packages)
   - `npm run dev`
     - API: http://localhost:4000
     - Web: http://localhost:5173
@@ -86,6 +87,7 @@ Core Features
 - Dues: schedules with penalty rules; penalty applied on overdue payments when enabled
 - Export: `summary.csv`, `ledger.csv` (amounts in BDT) with optional date/user filters
 - Dark mode, mobile‑friendly, subtle animations
+- Mobile app: auto-login when tokens exist, role-aware tabs, logout in settings, configurable branding via env, offline-ready roadmap
 
 API Endpoints (selected)
 - POST `/api/auth/login` { identifier, password }
@@ -99,6 +101,18 @@ API Endpoints (selected)
 
 Branding
 - Set `VITE_APP_NAME` and `VITE_APP_LOGO` in the root `.env` to update navbar brand and page title.
+
+Mobile App Quickstart (Expo)
+- Copy `mobile/.env.example` (if present) or create `mobile/.env` with:
+  ```env
+  EXPO_PUBLIC_API_BASE="https://your-api.host/api"
+  EXPO_PUBLIC_APP_NAME="Community Savings"
+  ```
+- `cd mobile && npm install`
+- `npm run start` (Expo CLI)
+  - press `a` for Android emulator or scan QR with Expo Go
+- Standalone build: `eas build --platform android` (requires Expo account)
+- The app reads `EXPO_PUBLIC_APP_NAME` for display names and uses the regenerated icons in `mobile/assets/`
 
 Troubleshooting
 - CORS/cookies: ensure `CORS_ORIGIN` matches `http://localhost:5173`

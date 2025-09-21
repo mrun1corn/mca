@@ -1,58 +1,28 @@
-Mobile App TODO — Community Savings (Ubuntu CLI Build)
+Roadmap — Community Savings
 
-Summary
-- Build an Android app for members to view balances, deposit (including Due Payment), request withdraw, and view dues.
-- Recommended: use the existing REST API. Direct use of a Mongo URI in a mobile app is insecure.
-- If you must use “only the Mongo URI”, use Atlas App Services (Realm) or the Atlas Data API as a secure layer — do not embed raw cluster credentials.
+✅ Done Recently
+- Mobile app mirrors web features (auth, deposits/withdrawals, role-aware tabs, settings with logout).
+- Expo build uses dynamic naming (`EXPO_PUBLIC_APP_NAME`) and branded icons.
+- Hook-order fix on Home screen for release builds.
+- Root install script now installs api/web/mobile workspaces.
 
-Option A (Recommended): React Native + REST API
-1) Stack
-   - React Native (TypeScript), React Navigation, React Query, Axios
-2) Screens
-   - Login; Home; Member (Ledger, Deposit, Dues); Withdraw; People (Admin); Export
-3) API tweaks for mobile
-   - Add/accept Authorization: Bearer tokens (keep cookie auth for web).
-4) Ubuntu CLI Build
-   - sudo apt update && sudo apt install -y openjdk-17-jdk unzip git
-   - Install Node 20 (nvm), Yarn optional
-   - Install Android SDK (commandline-tools) and set env:
-       export ANDROID_HOME=$HOME/Android/Sdk
-       export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-       yes | sdkmanager --licenses
-   - Bootstrap app:
-       npx react-native@latest init SavingsMobile --template react-native-template-typescript
-       cd SavingsMobile
-       yarn add @react-navigation/native @react-navigation/native-stack @tanstack/react-query axios react-native-safe-area-context react-native-screens
-   - Config: .env (via react-native-config) with API_BASE=https://your-api.example.com/api
-   - Debug: yarn android
-   - Release signing:
-       keytool -genkeypair -v -storetype PKCS12 -keystore savings.keystore -alias savings -keyalg RSA -keysize 2048 -validity 3650
-       mv savings.keystore android/app/
-       echo 'MYAPP_UPLOAD_STORE_FILE=savings.keystore' >> android/gradle.properties
-       echo 'MYAPP_UPLOAD_KEY_ALIAS=savings' >> android/gradle.properties
-       echo 'MYAPP_UPLOAD_STORE_PASSWORD=***' >> android/gradle.properties
-       echo 'MYAPP_UPLOAD_KEY_PASSWORD=***' >> android/gradle.properties
-       # configure android/app/build.gradle signingConfigs.release & buildTypes.release
-       cd android && ./gradlew assembleRelease
-       # APK: app/build/outputs/apk/release/app-release.apk
+Next Targets
+1) Backend Hardening
+   - [ ] Add rate limiting + audit logging endpoints frequently used by mobile.
+   - [ ] Review penalty/dues calculations for double-entry consistency.
 
-Option B (URI-Only via Atlas App Services)
-1) Realm or Data API instead of raw Mongo URI
-   - Realm: create App, link cluster, define rules/roles, use Realm RN SDK; implement dues/split logic as Functions.
-   - Data API: enable in Atlas; call HTTPS endpoints with API key; still enforce business rules server-side.
-2) Ubuntu build steps are identical; replace API client with Realm/Data API.
+2) Offline & Sync
+   - [ ] Persist key queries (home, dues, transactions) with React Query persistence + AsyncStorage/SQLite.
+   - [ ] Queue deposit/withdraw mutations and replay when connectivity returns.
 
-Deliverables
-- [ ] RN app scaffolded (TS)
-- [ ] Auth + secure token storage
-- [ ] Home KPIs + member cards
-- [ ] Member screen: ledger, deposit (simple/due payment), dues
-- [ ] Withdraw: amount, months/rate, exclusions + preview
-- [ ] People (admin): list + create/edit/delete
-- [ ] Settings: theme + change password
-- [ ] Signed Android APK via Ubuntu CLI
+3) Mobile Polish
+   - [ ] Toast/alert system for success + error states across screens.
+   - [ ] Expand Settings with profile info (name/email) and API health indicator.
 
-Security Notes
-- Never embed MongoDB user/URI in the app. Use HTTPS APIs or App Services.
-- Keep split/dues/penalty logic on trusted backend to prevent manipulation.
+4) Distribution
+   - [ ] Prepare Google Play listing (assets, descriptions) and migrate to AAB builds.
+   - [ ] Automate signing via EAS workflows + secrets.
 
+5) Documentation
+   - [ ] Write dedicated deployment guide (API + web + mobile) for self-hosted VPS.
+   - [ ] Record short Loom/YouTube walkthrough for onboarding community admins.

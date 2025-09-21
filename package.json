@@ -15,7 +15,7 @@
     "create-admin": "npm --prefix api run create-admin",
     "import-excel": "npm --prefix api run import-excel",
     "import-summary": "npm --prefix api run import-summary",
-    "install:all": "npm --prefix api i && npm --prefix web i"
+    "install:all": "npm --prefix api i && npm --prefix web i && npm --prefix mobile i"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

@@ -5,13 +5,18 @@ import Screen from '../components/ui/Screen';
 import ThemeText from '../components/ui/ThemeText';
 import ThemedCard from '../components/ui/ThemedCard';
 import { useTheme } from '../theme';
-import { api } from '../lib/api';
+import { api, clearTokens } from '../lib/api';
 import { Alert, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Setup() {
   const { mode, setMode } = useTheme();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const navigation = useNavigation<any>();
+  const queryClient = useQueryClient();
 
   const changePassword = async () => {
     try {
@@ -24,6 +29,17 @@ export default function Setup() {
       Alert.alert('Settings', 'Password update failed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLogoutLoading(true);
+    try {
+      await clearTokens();
+      queryClient.clear();
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    } finally {
+      setLogoutLoading(false);
     }
   };
 
@@ -71,6 +87,21 @@ export default function Setup() {
           onPress={changePassword}
           disabled={!password || loading}
           style={{ marginTop: 16 }}
+        />
+      </ThemedCard>
+
+      <ThemedCard tone="surface" style={{ marginTop: 20 }}>
+        <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+          Account
+        </ThemeText>
+        <ThemeText tone="dim" style={{ marginBottom: 12 }}>
+          Sign out of this device. You will need your credentials to log back in.
+        </ThemeText>
+        <ThemeButton
+          title={logoutLoading ? 'Signing out…' : 'Log out'}
+          onPress={logout}
+          variant="danger"
+          disabled={logoutLoading}
         />
       </ThemedCard>
     </Screen>

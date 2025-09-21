@@ -116,6 +116,12 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "0.1.0"
+
+        def envAppName = System.getenv("EXPO_PUBLIC_APP_NAME")
+        if (envAppName == null || envAppName.trim().isEmpty()) {
+            envAppName = findProperty("expo.app.name") ?: "SavingsMobile"
+        }
+        resValue "string", "app_name", envAppName
     }
     signingConfigs {
         debug {

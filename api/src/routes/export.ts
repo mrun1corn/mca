@@ -59,15 +59,29 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
     if (from || to) q.occurredAt = {};
     if (from) q.occurredAt.$gte = from;
     if (to) q.occurredAt.$lte = to;
-    const txs = await Transaction.find(q).sort({ occurredAt: 1 });
-    const rows = txs.map((t) => ({
-      date: t.occurredAt.toISOString().slice(0, 10),
-      userId: String(t.userId),
-      type: t.type,
-      amount: (t.amountPoisha / 100).toFixed(2),
-      note: t.note || "",
-    }));
-    const csv = toCsv(rows, ["date", "userId", "type", "amount", "note"]);
+    const txs = await Transaction.find(q).sort({ occurredAt: 1 }).lean();
+    const userIds = Array.from(new Set(txs.map((t) => String(t.userId)))).filter(Boolean);
+    const users = userIds.length ? await User.find({ _id: { $in: userIds } }).lean() : [];
+    const userMap = new Map(users.map((u) => [String(u._id), u]));
+
+    const rows = txs.map((t) => {
+      const user = userMap.get(String(t.userId));
+      const occurredAt = t.occurredAt instanceof Date ? t.occurredAt : new Date(t.occurredAt);
+      const date = Number.isFinite(occurredAt.getTime())
+        ? occurredAt.toISOString().replace("T", " ").slice(0, 16)
+        : "";
+      return {
+        date,
+        userId: String(t.userId),
+        name: user?.name || "",
+        email: user?.email || "",
+        type: t.type,
+        amount: (t.amountPoisha / 100).toFixed(2),
+        note: t.note || "",
+      };
+    });
+
+    const csv = toCsv(rows, ["date", "userId", "name", "email", "type", "amount", "note"]);
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=ledger.csv");
     res.send(csv);

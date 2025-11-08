@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import { useToast } from "./Toast";
@@ -110,114 +110,133 @@ function WithdrawForm({ userId }: { userId?: string }) {
   return (
     <div className="space-y-6">
       {allowModeToggle && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">What kind of outflow are we recording?</p>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="withdraw-mode" checked={mode === "member"} onChange={() => setMode("member")} />
-              Cash-out to a member
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="withdraw-mode" checked={mode === "investment"} onChange={() => setMode("investment")} />
-              Invest externally
-            </label>
-          </div>
-        </div>
-      )}
-
-      {effectiveMode === "member" && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Who receives the money?</label>
-          {userId ? (
-            <p className="text-base font-semibold text-slate-900 dark:text-white">
-              {users.data?.find((u: any) => u.id === userId)?.name || userId}
-            </p>
-          ) : (
-            <select className="input w-full h-12" value={takerId} onChange={(e) => setTakerId(e.target.value)}>
-              {users.data?.map((u: any) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <p className="text-xs text-slate-500">We’ll build the repayment plan as soon as you save this.</p>
-        </div>
-      )}
-
-      {effectiveMode === "investment" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Investment name</label>
-            <input
-              className="input w-full"
-              placeholder="e.g. Community fridge fund"
-              value={investmentName}
-              onChange={(e) => setInvestmentName(e.target.value)}
+        <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/70 dark:bg-slate-900/40 space-y-4">
+          <header className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Step 1</p>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Pick the type of outflow</h3>
+            </div>
+          </header>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ModeCard
+              title="Cash-out to a member"
+              body="Record a loan or withdrawal and create a repayment plan."
+              active={mode === "member"}
+              onClick={() => setMode("member")}
+            />
+            <ModeCard
+              title="Invest the funds"
+              body="Split contributions and track expected interest from elsewhere."
+              active={mode === "investment"}
+              onClick={() => setMode("investment")}
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Start date</label>
-            <input className="input w-full" type="date" value={investmentStart} onChange={(e) => setInvestmentStart(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Months invested</label>
-            <input className="input w-full" type="number" min={1} value={investmentMonths} onChange={(e) => setInvestmentMonths(Number(e.target.value))} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Monthly interest %</label>
-            <input className="input w-full" type="number" step="0.1" value={investmentRate} onChange={(e) => setInvestmentRate(Number(e.target.value))} />
-          </div>
-        </div>
+        </section>
       )}
 
+      <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/50 space-y-4">
+        <header>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Who & why</p>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+            {effectiveMode === "member" ? "Member details" : "Investment details"}
+          </h3>
+        </header>
+        {effectiveMode === "member" ? (
+          <Field label="Member">
+            {userId ? (
+              <div className="text-base font-semibold text-slate-900 dark:text-white">
+                {users.data?.find((u: any) => u.id === userId)?.name || userId}
+              </div>
+            ) : (
+              <select className="input w-full h-12" value={takerId} onChange={(e) => setTakerId(e.target.value)}>
+                {users.data?.map((u: any) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Investment name">
+              <input
+                className="input w-full"
+                placeholder="e.g. Community fridge fund"
+                value={investmentName}
+                onChange={(e) => setInvestmentName(e.target.value)}
+              />
+            </Field>
+            <Field label="Start date">
+              <input className="input w-full" type="date" value={investmentStart} onChange={(e) => setInvestmentStart(e.target.value)} />
+            </Field>
+            <Field label="Months invested">
+              <input className="input w-full" type="number" min={1} value={investmentMonths} onChange={(e) => setInvestmentMonths(Number(e.target.value))} />
+            </Field>
+            <Field label="Monthly interest %">
+              <input className="input w-full" type="number" step="0.1" value={investmentRate} onChange={(e) => setInvestmentRate(Number(e.target.value))} />
+            </Field>
+          </div>
+        )}
+      </section>
+
       {effectiveMode === "member" && (
-        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-3 bg-white/60 dark:bg-slate-900/40">
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Repayment plan</p>
+        <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/70 dark:bg-slate-900/40 space-y-3">
+          <header>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Repayment plan</p>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">How will this be paid back?</h3>
+          </header>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input className="input w-full" type="number" min={1} placeholder="Months" value={months} onChange={(e) => setMonths(Number(e.target.value))} />
-            <input className="input w-full" type="number" step="0.1" placeholder="Monthly rate %" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+            <Field label="Months">
+              <input className="input w-full" type="number" min={1} value={months} onChange={(e) => setMonths(Number(e.target.value))} />
+            </Field>
+            <Field label="Monthly rate %">
+              <input className="input w-full" type="number" step="0.1" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+            </Field>
           </div>
           <label className="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
             Apply penalty when overdue
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <input className="input" type="number" step="0.1" placeholder="Penalty %/mo" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
-            <input className="input" type="number" placeholder="Grace days" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
+            <Field label="Penalty % per month">
+              <input className="input" type="number" step="0.1" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
+            </Field>
+            <Field label="Grace days">
+              <input className="input" type="number" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
+            </Field>
           </div>
-        </div>
+        </section>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount (BDT)</label>
-          <input className="input w-full h-12" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+      <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/50 space-y-4">
+        <header>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Step 2</p>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
+        </header>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Amount (BDT)">
+            <input className="input w-full h-12" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </Field>
+          <Field label="Date">
+            <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Date</label>
-          <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between text-sm font-medium mb-2">
-          <span>Exclude members from this split</span>
-          <span className="text-xs text-slate-500">{preview ? `${preview.eligibleCount} sharing` : "Everyone is sharing"}</span>
-        </div>
-        <div className="max-h-32 overflow-auto border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-sm space-y-1.5 bg-white/70 dark:bg-slate-900/40">
-          {selectableMembers.map((m: any) => (
-            <label key={m.id} className="flex items-center gap-2 py-0.5">
-              <input type="checkbox" checked={excluded.includes(m.id)} onChange={() => toggleExcluded(m.id)} />
-              <span>{m.name}</span>
-            </label>
-          ))}
-          {selectableMembers.length === 0 && <div className="text-slate-500">No members available</div>}
-        </div>
-      </div>
+        <Field label="Exclude members from this split" hint={preview ? `${preview.eligibleCount} sharing` : "Everyone shares"}>
+          <div className="max-h-32 overflow-auto border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-sm space-y-1.5 bg-white/70 dark:bg-slate-900/40">
+            {selectableMembers.map((m: any) => (
+              <label key={m.id} className="flex items-center gap-2 py-0.5">
+                <input type="checkbox" checked={excluded.includes(m.id)} onChange={() => toggleExcluded(m.id)} />
+                <span>{m.name}</span>
+              </label>
+            ))}
+            {selectableMembers.length === 0 && <div className="text-slate-500">No members available</div>}
+          </div>
+        </Field>
+      </section>
 
       {preview && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800">
+        <section className="rounded-2xl border border-slate-200 dark:border-slate-800">
           <div className="text-xs uppercase tracking-[0.3em] text-slate-400 px-4 pt-4">Split preview</div>
           <div className="max-h-36 overflow-auto">
             {preview.rows.map((r) => (
@@ -227,7 +246,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       <div className="text-right">
@@ -235,10 +254,58 @@ function WithdrawForm({ userId }: { userId?: string }) {
           variant="danger"
           onClick={onSubmit}
           disabled={!amount || (effectiveMode === "member" && !takerId)}
+          className="px-6 h-12 text-base font-semibold shadow-lg shadow-rose-500/20"
         >
           {effectiveMode === "member" ? "Record withdrawal" : "Record investment"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ModeCard({
+  title,
+  body,
+  active,
+  onClick,
+}: {
+  title: string;
+  body: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-2xl border p-4 transition ${
+        active
+          ? "border-rose-500 bg-rose-50 text-rose-700 dark:border-rose-400/60 dark:bg-rose-500/10 dark:text-rose-100 shadow"
+          : "border-slate-200 text-slate-600 hover:border-rose-200 hover:bg-rose-50/60 dark:border-slate-700 dark:text-slate-300"
+      }`}
+    >
+      <div className="text-sm font-semibold">{title}</div>
+      <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">{body}</div>
+    </button>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
+        {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}
+      </div>
+      {children}
     </div>
   );
 }

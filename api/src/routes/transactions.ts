@@ -45,7 +45,7 @@ const DepositSchema = z.object({
   mode: z.enum(["simple", "pay_due"]),
   dueId: z.string().optional().nullable(),
   // Accept either amountPoisha (integer) or amount (BDT)
-  amountPoisha: z.number().int().optional(),
+  amountPoisha: z.number().int().positive().optional(),
   amount: z.number().positive().optional(),
   date: z.string(),
   note: z.string().optional(),
@@ -60,7 +60,7 @@ router.post("/deposit", requireAuth as any, requireRole(["admin", "accountant"])
     const amountPoisha = typeof body.amountPoisha === 'number'
       ? body.amountPoisha
       : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha)) throw new Error('Invalid amount');
+    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
     const { amount, ...rest } = body as any;
     const result = await handleDeposit({ ...rest, amountPoisha, actorUserId: req.user.sub });
     res.status(201).json(result);
@@ -94,7 +94,7 @@ router.post("/withdraw", requireAuth as any, requireRole(["admin", "accountant"]
     const amountPoisha = typeof body.amountPoisha === 'number'
       ? body.amountPoisha
       : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha)) throw new Error('Invalid amount');
+    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
     const { amount, ...rest } = body as any;
     const result = await handleWithdraw({ ...rest, amountPoisha, actorUserId: req.user.sub });
     res.status(201).json(result);

@@ -81,6 +81,7 @@ export default function Home() {
   }
 
   const data = home.data;
+  const investmentInfo = data?.investments || { activeCount: 0, principal: 0, expectedInterest: 0 };
 
   const canManageMembers = role === 'admin';
   const canViewMemberDetails = role === 'admin' || role === 'accountant';
@@ -186,6 +187,18 @@ export default function Home() {
       tone: 'danger' as const,
     },
   ];
+  metrics.push({
+    title: 'Invested principal',
+    value: formatBDT(investmentInfo.principal),
+    icon: <Ionicons name="briefcase" size={20} color="#2563eb" />,
+    tone: 'surface' as const,
+  });
+  metrics.push({
+    title: 'Projected interest',
+    value: formatBDT(investmentInfo.expectedInterest),
+    icon: <Ionicons name="trending-up" size={20} color="#16a34a" />,
+    tone: 'success' as const,
+  });
 
   return (
     <Screen scroll>

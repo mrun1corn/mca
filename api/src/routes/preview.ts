@@ -12,10 +12,14 @@ router.get("/preview/withdraw-split", requireAuth as any, requireRole(["admin", 
     const excludeIds = String(req.query.excludeIds || "").split(",").filter(Boolean);
     const allActive = await User.find({ status: "active" });
     const eligible = allActive.filter((u) => !excludeIds.includes(String(u._id)));
-    const base = Math.floor(amountPoisha / eligible.length || 1);
-    const remainder = amountPoisha - base * (eligible.length || 1);
-    const rows = eligible.map((u, i) => ({ userId: u._id, name: u.name, share: base + (i === eligible.length - 1 ? remainder : 0) }));
-    res.json({ eligibleCount: eligible.length, rows });
+    const eligibleCount = eligible.length;
+    if (!eligibleCount) {
+      return res.json({ eligibleCount: 0, rows: [] });
+    }
+    const base = Math.floor(amountPoisha / eligibleCount);
+    const remainder = amountPoisha - base * eligibleCount;
+    const rows = eligible.map((u, i) => ({ userId: u._id, name: u.name, share: base + (i === eligibleCount - 1 ? remainder : 0) }));
+    res.json({ eligibleCount, rows });
   } catch (e) {
     next(e);
   }

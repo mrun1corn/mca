@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export default function Setup() {
   const { mode, setMode } = useTheme();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -21,9 +22,9 @@ export default function Setup() {
   const changePassword = async () => {
     try {
       setLoading(true);
-      const me = await api.get('/me');
-      await api.patch(`/users/${me.data.id}`, { password });
+      await api.post('/auth/me/change-password', { currentPassword, newPassword: password });
       setPassword('');
+      setCurrentPassword('');
       Alert.alert('Settings', 'Password updated successfully.');
     } catch {
       Alert.alert('Settings', 'Password update failed.');
@@ -78,14 +79,16 @@ export default function Setup() {
         </ThemeText>
         <ThemeInput
           secureTextEntry
-          placeholder="New password"
-          value={password}
-          onChangeText={setPassword}
+          placeholder="Current password"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          style={{ marginBottom: 12 }}
         />
+        <ThemeInput secureTextEntry placeholder="New password" value={password} onChangeText={setPassword} />
         <ThemeButton
           title={loading ? 'Updating…' : 'Update password'}
           onPress={changePassword}
-          disabled={!password || loading}
+          disabled={!currentPassword || !password || loading}
           style={{ marginTop: 16 }}
         />
       </ThemedCard>

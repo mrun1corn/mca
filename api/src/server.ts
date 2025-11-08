@@ -15,6 +15,7 @@ import txRoutes from "./routes/transactions";
 import duesRoutes from "./routes/dues";
 import exportRoutes from "./routes/export";
 import previewRoutes from "./routes/preview";
+import investmentRoutes from "./routes/investments";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use("/api", txRoutes);
 app.use("/api", duesRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api", previewRoutes);
+app.use("/api/investments", investmentRoutes);
 
 // In production, serve the built web app (single-port deploy)
 const isProd = process.env.NODE_ENV === "production";

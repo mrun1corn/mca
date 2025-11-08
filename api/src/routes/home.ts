@@ -3,6 +3,7 @@ import { requireAuth } from "../lib/auth";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
 import Due from "../models/Due";
+import Investment from "../models/Investment";
 
 const router = Router();
 
@@ -14,6 +15,19 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
     const now = new Date();
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const investmentAgg = await Investment.aggregate([
+      { $match: { status: "active" } },
+      {
+        $group: {
+          _id: null,
+          principal: { $sum: "$amountPoisha" },
+          expectedInterest: { $sum: "$expectedInterestPoisha" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const investmentSummary = investmentAgg[0] || { principal: 0, expectedInterest: 0, count: 0 };
 
     // If regular user, scope metrics to self only
     if (req.user?.role === "user") {
@@ -50,6 +64,11 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
         totalWithdraws: totals.withdraws,
         remainingBalance: totals.balance,
         arrearsCount,
+        investments: {
+          activeCount: investmentSummary.count,
+          principal: investmentSummary.principal,
+          expectedInterest: investmentSummary.expectedInterest,
+        },
         cards: [
           {
             userId: me._id,
@@ -107,6 +126,11 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       totalWithdraws: totals.withdraws,
       remainingBalance: totals.balance,
       arrearsCount,
+      investments: {
+        activeCount: investmentSummary.count,
+        principal: investmentSummary.principal,
+        expectedInterest: investmentSummary.expectedInterest,
+      },
       cards,
     });
   } catch (e) {

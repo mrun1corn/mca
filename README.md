@@ -83,7 +83,8 @@ Core Features
 - Home: KPIs (Members, Total Balance, Remaining Balance, Open Dues) + member cards
 - People: search; admin can create/edit/delete; responsive form
 - Deposit: Simple; Due Payment (only shown if member has open dues), auto‑fills suggested amount (editable)
-- Withdraw: taker cash‑out; split across others (exclusions + live preview); creates dues schedule
+- Withdraw: taker cash-out; split across others (exclusions + live preview); creates dues schedule
+- Investments: split funds across members (with exclusions), track principal, and project monthly interest returns
 - Dues: schedules with penalty rules; penalty applied on overdue payments when enabled
 - Export: `summary.csv`, `ledger.csv` (amounts in BDT) with optional date/user filters
 - Dark mode, mobile‑friendly, subtle animations

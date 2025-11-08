@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
 import Due from "../models/Due";
+import { AppError } from "../lib/errors";
 
 export type WithdrawInput = {
   takerId: string;
@@ -59,6 +60,9 @@ export async function handleWithdraw(input: WithdrawInput) {
   const excludedSet = new Set([takerId, ...excludeMemberIds.map(String)]);
   const eligible = allActive.filter((u) => !excludedSet.has(String(u._id)));
   const eligibleCount = eligible.length;
+  if (!eligibleCount) {
+    throw new AppError("No eligible members available for split", 400);
+  }
 
   if (eligibleCount > 0) {
     const base = Math.floor(amountPoisha / eligibleCount);

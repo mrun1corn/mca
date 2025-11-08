@@ -82,29 +82,80 @@ function DepositForm({ userId }: { userId: string }) {
     mutation.mutate(payload);
   };
   return (
-    <div className="space-y-3">
-      {hasOpenDues && (
-        <div className="flex gap-4 text-sm">
-          <label className="inline-flex items-center gap-1"><input type="radio" name="mode" checked={mode==='simple'} onChange={() => setMode('simple')} /> Deposit</label>
-          <label className="inline-flex items-center gap-1"><input type="radio" name="mode" checked={mode==='pay_due'} onChange={() => setMode('pay_due')} /> Due Payment</label>
+    <div className="space-y-6">
+      {hasOpenDues ? (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">How should we treat this money?</p>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="deposit-mode" checked={mode === "simple"} onChange={() => setMode("simple")} />
+              Keep it free (simple deposit)
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="deposit-mode" checked={mode === "pay_due"} onChange={() => setMode("pay_due")} />
+              Pay down an open due
+            </label>
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          This member has no open dues right now, so we’ll treat it as a regular deposit.
         </div>
       )}
-      {mode === 'pay_due' && hasOpenDues && (
-        <div className="space-y-2">
-          <select className="input w-full" value={dueId || (dues.data?.[0]?._id ?? '')} onChange={(e) => setDueId(e.target.value)}>
+
+      {mode === "pay_due" && hasOpenDues && (
+        <div className="space-y-3 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/70 dark:bg-slate-900/60">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Which due are we clearing?</p>
+          <select className="input w-full h-12" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
             <option value="">Select due…</option>
             {dues.data?.map((d: any) => (
-              <option key={d._id} value={d._id}>Principal {formatBDT(d.principal)} | {d.months} mo @ {d.monthlyRatePct}%</option>
+              <option key={d._id} value={d._id}>
+                Principal {formatBDT(d.principal)} — {d.months} months @ {d.monthlyRatePct}%
+              </option>
             ))}
           </select>
-          <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} /> Include penalty if overdue</label>
-          <div className="text-xs text-gray-600">Auto-filled: {formatBDT(suggested)} (editable)</div>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} />
+            Add penalty when the grace period is over
+          </label>
+          <div className="text-xs text-slate-500">
+            Suggested amount for this instalment: <span className="font-semibold">{formatBDT(suggested)}</span>
+          </div>
         </div>
       )}
-      <input className="input w-full" type="number" step="0.01" placeholder="Amount (BDT)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      <input className="input w-full" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      <input className="input w-full" placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-      <Button onClick={onSubmit}>Deposit</Button>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount (BDT)</label>
+          <input
+            className="input w-full h-12"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Date</label>
+          <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Note for future you</label>
+        <input
+          className="input w-full"
+          placeholder="e.g. Weekly market sales"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        <p className="text-xs text-slate-500">These notes show up everywhere we display the transaction.</p>
+      </div>
+
+      <Button onClick={onSubmit} className="w-full md:w-auto">
+        Save deposit
+      </Button>
     </div>
   );
 }

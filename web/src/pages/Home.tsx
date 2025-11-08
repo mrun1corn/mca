@@ -1,15 +1,15 @@
+import { ReactNode, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import MemberCard from "../components/MemberCard";
 import MemberDrawer from "../components/MemberDrawer";
-import { ReactNode, useMemo, useState } from "react";
 import { SkeletonCard } from "../components/Skeleton";
-import { HomeIcon, MoneyIcon, UsersIcon } from "../components/Icon";
 import Panel from "../components/ui/Panel";
 import StatCard from "../components/ui/StatCard";
 import Button from "../components/Button";
-import Spinner from "../components/ui/Spinner";
 import { useNavigate } from "react-router-dom";
+import PageHeader from "../components/layout/PageHeader";
+import { MoneyIcon, UsersIcon, HomeIcon } from "../components/Icon";
 
 type HomeResponse = {
   membersCount: number;
@@ -18,8 +18,12 @@ type HomeResponse = {
   remainingBalance: number;
   totalDeposits: number;
   cards: any[];
+  investments?: {
+    activeCount: number;
+    principal: number;
+    expectedInterest: number;
+  };
 };
-
 
 export default function Home() {
   const STALE_TIME = 30_000;
@@ -35,7 +39,6 @@ export default function Home() {
   const role = me.data?.role as undefined | "admin" | "accountant" | "user";
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
 
-  // For user role, fetch dues and compute next EMI (next pending/partial schedule item, earliest by date)
   const myId = me.data?.id as string | undefined;
   const dues = useQuery<any[]>({
     queryKey: ["dues", myId],
@@ -44,7 +47,6 @@ export default function Home() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
-  // User's recent transactions (self-scoped by API)
   const txs = useQuery<any[]>({
     queryKey: ["txs", myId, 10],
     queryFn: async () => (await api.get(`/transactions`, { params: { limit: 10 } })).data,
@@ -52,6 +54,7 @@ export default function Home() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+
   const nextEmi = useMemo(() => {
     if (role !== "user" || !dues.data) return 0;
     let best: { date: number; due: number } | null = null;
@@ -62,7 +65,7 @@ export default function Home() {
         const remaining = (it.totalDue as number) - (it.paid || 0);
         const due = Math.max(0, remaining);
         if (!best || date < best.date) best = { date, due };
-        break; // only next item per schedule
+        break;
       }
     }
     return best?.due || 0;
@@ -71,20 +74,22 @@ export default function Home() {
   const data = home.data;
 
   const summaryStats = useMemo(() => {
-    if (!data)
-      return [] as Array<{
-        label: string;
-        value: number | string;
-        icon: ReactNode;
-        variant: "default" | "success" | "danger" | "info";
-      }>;
-    return [
-      { label: "Members", value: data.membersCount, icon: <UsersIcon className="w-5 h-5" />, variant: "info" as const },
-      { label: "Total balance", value: formatBDT(data.groupBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
-      { label: "Open dues", value: data.arrearsCount, icon: <HomeIcon className="w-5 h-5" />, variant: "danger" as const },
-      { label: "Available balance", value: formatBDT(data.remainingBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "default" as const },
+    if (!data) return [] as Array<{ label: string; value: ReactNode; icon: JSX.Element; variant: "default" | "success" | "danger" | "info" }>;
+    const stats: Array<{ label: string; value: ReactNode; icon: JSX.Element; variant: "default" | "success" | "danger" | "info" }> = [
+      { label: "People in the circle", value: data.membersCount, icon: <UsersIcon className="w-5 h-5" />, variant: "info" as const },
+      { label: "Money on hand", value: formatBDT(data.groupBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
+      { label: "Promises still open", value: data.arrearsCount, icon: <HomeIcon className="w-5 h-5" />, variant: "danger" as const },
+      { label: "Ready-to-use cash", value: formatBDT(data.remainingBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "default" as const },
     ];
-  }, [data]);
+    if (role !== "user") {
+      const info = data.investments || { principal: 0, expectedInterest: 0 };
+      stats.push(
+        { label: "Money out earning returns", value: formatBDT(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
+        { label: "Projected interest", value: formatBDT(info.expectedInterest), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const }
+      );
+    }
+    return stats;
+  }, [data, role]);
 
   const loading = !home.data && home.isLoading;
   if (loading) {
@@ -103,37 +108,45 @@ export default function Home() {
 
   const isRefreshing = home.isFetching && !loading;
 
-  // Simplified Home for regular users
   if (role === "user") {
     const currentBalance = home.data?.remainingBalance || 0;
     const totalDeposits = home.data?.totalDeposits || 0;
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="Your savings story"
+          title={`Hi ${me.data?.name || "there"}, here’s where you stand`}
+          description="Use this to stay ahead of upcoming instalments and celebrate the progress you’ve already made."
+        />
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Savings balance" value={formatBDT(currentBalance)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
-          <StatCard label="Total deposited" value={formatBDT(totalDeposits)} icon={<HomeIcon className="w-5 h-5" />} variant="info" />
+          <StatCard label="Total contributed" value={formatBDT(totalDeposits)} icon={<HomeIcon className="w-5 h-5" />} variant="info" />
           {nextEmi > 0 && (
-            <StatCard label="Next payment" value={formatBDT(nextEmi)} icon={<MoneyIcon className="w-5 h-5" />} variant="danger" />
+            <StatCard label="Next payment due" value={formatBDT(nextEmi)} icon={<MoneyIcon className="w-5 h-5" />} variant="danger" />
           )}
         </div>
 
-        {isRefreshing ? <div className="animate-fade-in"><Spinner label="Refreshing your dashboard…" /></div> : null}
+        {isRefreshing ? <div className="text-xs text-slate-500">Refreshing your dashboard…</div> : null}
 
-        <Panel title="Recent activity" description="Most recent transactions on your account.">
-          <div className="grid grid-cols-12 text-xs text-gray-500 px-2">
+        <Panel
+          title="Recent activity"
+          description="This log only shows the movements tied to your name."
+        >
+          <div className="grid grid-cols-12 text-xs text-slate-500 px-2">
             <div className="col-span-3">Date</div>
             <div className="col-span-5">Details</div>
             <div className="col-span-4 text-right">Amount</div>
           </div>
           <div className="max-h-64 overflow-auto divide-y">
             {txs.data?.map((t: any) => (
-              <div key={t._id} className="grid grid-cols-12 items-center text-sm py-1 px-2">
+              <div key={t._id} className="grid grid-cols-12 items-center text-sm py-2 px-2">
                 <span className="col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
-                <span className={`col-span-5 ${t.type === 'deposit' ? 'text-emerald-600' : 'text-rose-600'}`}>{t.note || t.type}</span>
+                <span className={`col-span-5 ${t.type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>{t.note || t.type}</span>
                 <span className="col-span-4 text-right">{formatBDT(t.amount)}</span>
               </div>
             ))}
-            {!txs.data?.length && <div className="text-sm text-gray-500 px-2 py-3">No recent transactions</div>}
+            {!txs.data?.length && <div className="text-sm text-slate-500 px-2 py-3">No recent transactions.</div>}
           </div>
         </Panel>
       </div>
@@ -141,27 +154,66 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Group snapshot"
+        title="Money the community can trust"
+        description="See cash on hand, promises that still need settling, and how much is currently invested outside the pot."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => navigate("/deposit")}>Record a deposit</Button>
+            <Button variant="secondary" onClick={() => navigate("/withdraw")}>
+              Start a withdrawal or investment
+            </Button>
+          </div>
+        }
+      />
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryStats.map((stat) => (
-          <StatCard key={stat.label as string} label={stat.label} value={stat.value} icon={stat.icon} variant={stat.variant} />
+          <StatCard key={String(stat.label)} label={stat.label} value={stat.value} icon={stat.icon} variant={stat.variant} />
         ))}
       </div>
 
-      {isRefreshing ? <div className="animate-fade-in"><Spinner label="Refreshing group totals…" /></div> : null}
+      {isRefreshing ? <div className="text-xs text-slate-500">Refreshing data…</div> : null}
 
-      <Panel title="Quick actions" description="Shortcuts for frequent tasks.">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Button className="w-full" onClick={() => navigate("/deposit")}>Record a deposit</Button>
-          <Button className="w-full" variant="secondary" onClick={() => navigate("/withdraw")}>Start withdrawal</Button>
-          <Button className="w-full" variant="secondary" onClick={() => navigate("/export")}>Download CSVs</Button>
-          {role === "admin" ? (
-            <Button className="w-full" variant="secondary" onClick={() => navigate("/people")}>Manage members</Button>
-          ) : null}
+      <Panel
+        title="What do you want to do next?"
+        description="Pick a workflow and we’ll guide you with plain-language steps."
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <ActionCard
+            title="Log a contribution"
+            body="Someone handed over cash or a mobile payment? Record it while the context is fresh."
+            cta="Add deposit"
+            onClick={() => navigate("/deposit")}
+          />
+          <ActionCard
+            title="Fund a need or investment"
+            body="Run a withdrawal with clear splits or park money in an investment fund."
+            cta="Withdraw / invest"
+            onClick={() => navigate("/withdraw")}
+          />
+          <ActionCard
+            title="Invite or update people"
+            body="New member joining? Need to adjust someone’s role? Keep people records tidy."
+            cta="Manage people"
+            disabled={role !== "admin"}
+            onClick={() => navigate("/people")}
+          />
+          <ActionCard
+            title="Export for sharing"
+            body="Download ready-to-share CSV summaries before meetings."
+            cta="Download CSVs"
+            onClick={() => navigate("/export")}
+          />
         </div>
       </Panel>
 
-      <Panel title="Members" description="Select a member to open their details.">
+      <Panel
+        title="Members at a glance"
+        description="Click a card to see their balance, recent activity, and dues timeline."
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {(data.cards as any[]).map((card: any) => (
             <MemberCard key={card.userId} card={card} onClick={() => setDrawerUserId(card.userId)} />
@@ -170,6 +222,18 @@ export default function Home() {
       </Panel>
 
       {drawerUserId && <MemberDrawer userId={drawerUserId} onClose={() => setDrawerUserId(null)} />}
+    </div>
+  );
+}
+
+function ActionCard({ title, body, cta, onClick, disabled }: { title: string; body: string; cta: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 dark:border-slate-800 p-5 bg-white/80 dark:bg-slate-900/60 space-y-2">
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{body}</p>
+      <Button variant="secondary" onClick={onClick} disabled={disabled}>
+        {disabled ? "Admin only" : cta}
+      </Button>
     </div>
   );
 }

@@ -1,27 +1,52 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, TouchableOpacity, View } from 'react-native';
 import ThemeInput from '../components/ui/ThemeInput';
 import ThemeText from '../components/ui/ThemeText';
 import ThemeButton from '../components/ui/ThemeButton';
 import Screen from '../components/ui/Screen';
 import ThemedCard from '../components/ui/ThemedCard';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTheme } from '../theme';
 import UserSelect from '../components/UserSelect';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function Withdraw() {
   const { colors } = useTheme();
+  const qc = useQueryClient();
   const users = useQuery({ queryKey: ['users'], queryFn: async () => (await api.get('/users')).data });
+  const [mode, setMode] = useState<'member' | 'investment'>('member');
   const [takerId, setTakerId] = useState('');
-  const [takerName, setTakerName] = useState('');
   const [amount, setAmount] = useState('');
   const [months, setMonths] = useState('3');
   const [rate, setRate] = useState('2');
+  const [investmentName, setInvestmentName] = useState('');
+  const [investmentStart, setInvestmentStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [investmentMonths, setInvestmentMonths] = useState('6');
+  const [investmentRate, setInvestmentRate] = useState('3');
   const [exclude, setExclude] = useState<string[]>([]);
 
-  const mutate = useMutation({
+  useEffect(() => {
+    if (!takerId && users.data?.[0]) {
+      setTakerId(users.data[0].id);
+    }
+  }, [users.data, takerId]);
+
+  useEffect(() => {
+    if (mode === 'member') {
+      setExclude((prev) => prev.filter((id) => id !== takerId));
+    }
+  }, [mode, takerId]);
+
+  const contributable = useMemo(() => {
+    if (!users.data) return [];
+    if (mode === 'member') return users.data.filter((u: any) => u.id !== takerId);
+    return users.data;
+  }, [users.data, takerId, mode]);
+
+  const toggleExclude = (id: string) =>
+    setExclude((arr) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]));
+
+  const withdrawMutation = useMutation({
     mutationFn: () =>
       api.post('/withdraw', {
         takerId,
@@ -38,60 +63,100 @@ export default function Withdraw() {
         penalty: { enabled: true, monthlyPenaltyPct: 1.0, graceDays: 3 },
         excludeMemberIds: exclude,
       }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['home'] });
+      setAmount('');
+    },
   });
 
-  const toggleExclude = (id: string) =>
-    setExclude((arr) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]));
+  const investmentMutation = useMutation({
+    mutationFn: () =>
+      api.post('/investments', {
+        name: investmentName || 'New investment',
+        amount: Number(amount),
+        startDate: investmentStart,
+        months: Number(investmentMonths),
+        monthlyRatePct: Number(investmentRate),
+        excludeMemberIds: exclude,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['home'] });
+      setAmount('');
+      setInvestmentName('');
+    },
+  });
 
-  useEffect(() => {
-    if (!takerId && users.data?.[0]) {
-      setTakerId(users.data[0].id);
-      setTakerName(users.data[0].name);
-    }
-  }, [users.data, takerId]);
-
-  useEffect(() => {
-    if (takerId) {
-      setExclude((prev) => prev.filter((id) => id !== takerId));
-    }
-  }, [takerId]);
-
-  const eligible = (users.data || []).filter((u: any) => u.id !== takerId);
+  const submit = () => {
+    if (!amount) return;
+    if (mode === 'member') withdrawMutation.mutate();
+    else investmentMutation.mutate();
+  };
 
   return (
     <Screen scroll>
       <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 16 }}>
-        Record a withdrawal
+        {mode === 'member' ? 'Record a withdrawal' : 'Record an investment'}
       </ThemeText>
 
       <ThemedCard tone="surface">
-        <ThemeText variant="label">Recipient</ThemeText>
-        <UserSelect value={takerId} onChange={(id, u) => { setTakerId(id); setTakerName(u?.name || ''); }} />
-        {takerName ? <ThemeText tone="dim" style={{ marginTop: 6 }}>Selected: {takerName}</ThemeText> : null}
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+          <ThemeButton title="Member" variant={mode === 'member' ? 'primary' : 'secondary'} size="sm" onPress={() => setMode('member')} />
+          <ThemeButton title="Investment" variant={mode === 'investment' ? 'primary' : 'secondary'} size="sm" onPress={() => setMode('investment')} />
+        </View>
 
-        <ThemeText variant="label" style={{ marginTop: 20 }}>Amount (BDT)</ThemeText>
+        {mode === 'member' ? (
+          <>
+            <ThemeText variant="label">Recipient</ThemeText>
+            <UserSelect value={takerId} onChange={(id) => setTakerId(id)} />
+          </>
+        ) : (
+          <>
+            <ThemeText variant="label">Investment name</ThemeText>
+            <ThemeInput placeholder="e.g. Govt bond" value={investmentName} onChangeText={setInvestmentName} />
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+              <View style={{ flex: 1 }}>
+                <ThemeText variant="label">Start date</ThemeText>
+                <ThemeInput value={investmentStart} onChangeText={setInvestmentStart} placeholder="YYYY-MM-DD" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemeText variant="label">Months</ThemeText>
+                <ThemeInput value={investmentMonths} onChangeText={setInvestmentMonths} keyboardType="numeric" />
+              </View>
+            </View>
+            <ThemeText variant="label" style={{ marginTop: 12 }}>
+              Monthly interest %
+            </ThemeText>
+            <ThemeInput value={investmentRate} onChangeText={setInvestmentRate} keyboardType="numeric" />
+          </>
+        )}
+
+        <ThemeText variant="label" style={{ marginTop: 20 }}>
+          Amount (BDT)
+        </ThemeText>
         <ThemeInput value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0.00" />
 
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-          <View style={{ flex: 1 }}>
-            <ThemeText variant="label">Months</ThemeText>
-            <ThemeInput value={months} onChangeText={setMonths} keyboardType="numeric" />
+        {mode === 'member' && (
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+            <View style={{ flex: 1 }}>
+              <ThemeText variant="label">Months</ThemeText>
+              <ThemeInput value={months} onChangeText={setMonths} keyboardType="numeric" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemeText variant="label">Monthly rate %</ThemeText>
+              <ThemeInput value={rate} onChangeText={setRate} keyboardType="numeric" />
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <ThemeText variant="label">Monthly rate %</ThemeText>
-            <ThemeInput value={rate} onChangeText={setRate} keyboardType="numeric" />
-          </View>
-        </View>
+        )}
 
         <ThemeText variant="subtitle" style={{ fontWeight: '600', marginTop: 20 }}>
           Exclude members from split
         </ThemeText>
         <ThemeText tone="dim" style={{ marginBottom: 12 }}>
-          Every active member shares the deduction evenly. Tap to exclude someone from this cash-out.
+          Each active member funds the amount evenly. Tap to exclude someone.
         </ThemeText>
         <FlatList
           horizontal
-          data={eligible}
+          data={contributable}
           keyExtractor={(u: any) => String(u.id)}
           contentContainerStyle={{ gap: 12 }}
           renderItem={({ item: u }: any) => {
@@ -117,11 +182,18 @@ export default function Withdraw() {
         />
 
         <ThemeButton
-          title={mutate.isPending ? 'Saving…' : 'Save withdrawal'}
-          onPress={() => mutate.mutate()}
-          disabled={!takerId || !amount || mutate.isPending}
+          title={
+            mode === 'member'
+              ? withdrawMutation.isPending
+                ? 'Saving…'
+                : 'Save withdrawal'
+              : investmentMutation.isPending
+              ? 'Saving…'
+              : 'Record investment'
+          }
+          onPress={submit}
+          disabled={!amount || (mode === 'member' && !takerId) || withdrawMutation.isPending || investmentMutation.isPending}
           style={{ marginTop: 24 }}
-          leftIcon={<Ionicons name="save-outline" size={18} color={colors.onPrimary} />}
         />
       </ThemedCard>
     </Screen>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { authenticateByEmailPassword, authenticateByIdentifierPassword, clearAuthCookies, setAuthCookies, signAccessToken, signRefreshToken, tryDecode, verifyPassword, hashPassword, getRefreshTokenFromReq } from "../lib/auth";
+import { authenticateByEmailPassword, authenticateByIdentifierPassword, clearAuthCookies, setAuthCookies, signAccessToken, signRefreshToken, tryDecode, verifyPassword, hashPassword, getRefreshTokenFromReq, requireAuth } from "../lib/auth";
 import { parseBody } from "../lib/validation";
 import User from "../models/User";
 
@@ -56,6 +56,26 @@ router.post("/change-password", async (req, res, next) => {
     if (!user) return res.status(400).json({ error: "Invalid email or password" });
     const ok = await verifyPassword(body.currentPassword, user.passwordHash);
     if (!ok) return res.status(400).json({ error: "Invalid email or password" });
+    user.passwordHash = await hashPassword(body.newPassword);
+    await user.save();
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+const AuthedChangePasswordSchema = z.object({
+  currentPassword: z.string().min(6),
+  newPassword: z.string().min(8),
+});
+
+router.post("/me/change-password", requireAuth as any, async (req: any, res, next) => {
+  try {
+    const body = parseBody(AuthedChangePasswordSchema, req.body);
+    const user = await User.findById(req.user.sub);
+    if (!user) return res.status(404).json({ error: "Not found" });
+    const ok = await verifyPassword(body.currentPassword, user.passwordHash);
+    if (!ok) return res.status(400).json({ error: "Invalid current password" });
     user.passwordHash = await hashPassword(body.newPassword);
     await user.save();
     res.json({ ok: true });

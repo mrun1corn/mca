@@ -8,7 +8,7 @@ import { useToast } from "../components/Toast";
 import Button from "../components/Button";
 import Panel from "../components/ui/Panel";
 import VirtualList from "../components/ui/VirtualList";
-import Spinner from "../components/ui/Spinner";
+import PageHeader from "../components/layout/PageHeader";
 
 export default function People() {
   const qc = useQueryClient();
@@ -28,12 +28,19 @@ export default function People() {
   });
   const create = useMutation({
     mutationFn: (body: any) => api.post("/users", body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); notify("Member created", "success"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      notify("Member created", "success");
+      setForm({ name: "", email: "", role: "user" });
+    },
     onError: () => notify("Create failed", "error"),
   });
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/users/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); notify("Member deleted", "success"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      notify("Member deleted", "success");
+    },
     onError: () => notify("Delete failed", "error"),
   });
   const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
@@ -41,80 +48,110 @@ export default function People() {
 
   const [form, setForm] = useState({ name: "", email: "", role: "user" });
   const [editingUser, setEditingUser] = useState<any | null>(null);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="People"
+        title="Everyone who touches the money, in one tidy list"
+        description="Keep names, roles, and contact info current so you always know who can approve deposits, run withdrawals, or just needs a balance update."
+      />
+
       <div className="flex flex-col gap-3">
         <div className="relative w-full sm:w-96">
           <input
-            className="input w-full pl-9 h-11"
-            placeholder="Search members by name or email"
+            className="input w-full pl-9 h-12"
+            placeholder="Search by name or email"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
             <SearchIcon className="w-4 h-4" />
           </div>
         </div>
-        {isFetching && !isLoading ? (
-          <div className="animate-fade-in"><Spinner label="Refreshing list…" /></div>
-        ) : null}
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Searches apply instantly. Use at least three letters for the best match.
+        </p>
+        {isFetching && !isLoading ? <div className="text-xs text-slate-500">Refreshing list…</div> : null}
       </div>
+
       {editingUser && (
         <EditMember
           user={editingUser}
           onClose={() => setEditingUser(null)}
-          onSaved={() => { setEditingUser(null); qc.invalidateQueries({ queryKey: ["users"] }); }}
+          onSaved={() => {
+            setEditingUser(null);
+            qc.invalidateQueries({ queryKey: ["users"] });
+          }}
         />
       )}
+
       <Panel
-        title="Add a new member"
-        description="Admins can add people to the collective with optional contact details."
+        title="Add someone new"
+        description="Admins can invite new members or staff. We’ll auto-generate a starter password unless you provide one."
         actions={
           <Button
             disabled={!isAdmin || !form.name.trim()}
             title={isAdmin ? undefined : "Admin only"}
             onClick={() => create.mutate({ ...form, password: "ChangeMe123!" })}
           >
-            Save member
+            Add member
           </Button>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <input
-            className="input w-full"
-            placeholder="Full name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            className="input w-full"
-            placeholder="Email (optional)"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <select className="input w-full" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-            <option value="user">User</option>
-            <option value="accountant">Accountant</option>
-            <option value="admin">Admin</option>
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Full name</label>
+            <input
+              className="input w-full"
+              placeholder="e.g. Tania Rahman"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Email (optional)</label>
+            <input
+              className="input w-full"
+              placeholder="name@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Role</label>
+            <select className="input w-full" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+              <option value="user">Member (saver/borrower)</option>
+              <option value="accountant">Accountant</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
         </div>
       </Panel>
+
       <Panel
-        title="Members"
-        description={isLoading ? "Loading members…" : `${users.length} member${users.length === 1 ? "" : "s"}`}
+        title="Everyone in the circle"
+        description={
+          isLoading
+            ? "Loading members…"
+            : `${users.length} member${users.length === 1 ? "" : "s"} match your search`
+        }
       >
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className="rounded-xl border border-blue-100/70 dark:border-slate-700 bg-gradient-to-br from-white via-white to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 animate-pulse h-28" />
+              <div
+                key={idx}
+                className="rounded-xl border border-blue-100/70 dark:border-slate-700 bg-gradient-to-br from-white via-white to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 animate-pulse h-28"
+              />
             ))}
           </div>
         ) : users.length ? (
-          <div className="max-h-[440px]">
+          <div className="max-h-[460px]">
             <VirtualList
               items={users}
               itemHeight={120}
-              height={Math.min(440, Math.max(180, users.length * 120))}
+              height={Math.min(460, Math.max(180, users.length * 120))}
               render={(user: any) => (
                 <UserCard user={user} onEdit={() => setEditingUser(user)} onDelete={() => remove.mutate(user.id)} />
               )}
@@ -122,7 +159,7 @@ export default function People() {
             />
           </div>
         ) : (
-          <div className="text-sm text-gray-500 dark:text-gray-400">No members found. Try adjusting your search.</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400">No members found. Try adjusting your search.</div>
         )}
       </Panel>
     </div>

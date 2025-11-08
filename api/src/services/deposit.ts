@@ -39,6 +39,14 @@ export async function handleDeposit(input: DepositInput) {
 
   // pay_due mode: allocate FIFO across open dues
   const openDues = await DueModel.find({ userId, "schedule.status": { $in: ["pending", "partial"] } }).sort({ createdAt: 1 });
+  let duesQueue = openDues;
+  if (input.dueId) {
+    const idx = openDues.findIndex((d) => String(d._id) === input.dueId);
+    if (idx >= 0) {
+      const [target] = openDues.splice(idx, 1);
+      duesQueue = [target, ...openDues];
+    }
+  }
   if (openDues.length === 0) {
     // no dues; treat as simple deposit
     const tx = await Transaction.create({
@@ -65,7 +73,7 @@ export async function handleDeposit(input: DepositInput) {
     createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,
   });
 
-  for (const due of openDues) {
+  for (const due of duesQueue) {
     let changed = false;
     for (const item of due.schedule) {
       if (remaining <= 0) break;

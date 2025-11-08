@@ -10,7 +10,8 @@
     "seed": "ts-node-dev --transpile-only src/seed/seed.ts",
     "create-admin": "ts-node-dev --transpile-only src/seed/createAdmin.ts",
     "import-excel": "ts-node-dev --transpile-only src/seed/importExcel.ts",
-    "import-summary": "ts-node-dev --transpile-only src/seed/importSummary.ts"
+    "import-summary": "ts-node-dev --transpile-only src/seed/importSummary.ts",
+    "seed:manual": "ts-node-dev --transpile-only src/seed/manualDeposits.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

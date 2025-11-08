@@ -114,9 +114,9 @@ export default function Home() {
     return (
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Your savings story"
-          title={`Hi ${me.data?.name || "there"}, here’s where you stand`}
-          description="Use this to stay ahead of upcoming instalments and celebrate the progress you’ve already made."
+          eyebrow="My savings"
+          title={`Hi ${me.data?.name || "there"}, here’s the current picture`}
+          description="Just the basics you need: balance, what you’ve put in, and the next payment if one exists."
         />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -156,14 +156,14 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Group snapshot"
-        title="Money the community can trust"
-        description="See cash on hand, promises that still need settling, and how much is currently invested outside the pot."
+        eyebrow="Snapshot"
+        title="What the group has right now"
+        description="Quick totals for cash on hand, outstanding dues, and money out earning interest."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => navigate("/deposit")}>Record a deposit</Button>
             <Button variant="secondary" onClick={() => navigate("/withdraw")}>
-              Start a withdrawal or investment
+              Start a withdrawal / investment
             </Button>
           </div>
         }
@@ -177,33 +177,30 @@ export default function Home() {
 
       {isRefreshing ? <div className="text-xs text-slate-500">Refreshing data…</div> : null}
 
-      <Panel
-        title="What do you want to do next?"
-        description="Pick a workflow and we’ll guide you with plain-language steps."
-      >
+      <Panel title="Quick actions">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <ActionCard
             title="Log a contribution"
-            body="Someone handed over cash or a mobile payment? Record it while the context is fresh."
+            body="Someone paid in? Drop it in right away."
             cta="Add deposit"
             onClick={() => navigate("/deposit")}
           />
           <ActionCard
-            title="Fund a need or investment"
-            body="Run a withdrawal with clear splits or park money in an investment fund."
-            cta="Withdraw / invest"
+            title="Fund a need"
+            body="Cash-out to a member or move money into an investment."
+            cta="Withdraw or invest"
             onClick={() => navigate("/withdraw")}
           />
           <ActionCard
-            title="Invite or update people"
-            body="New member joining? Need to adjust someone’s role? Keep people records tidy."
+            title="Update the roster"
+            body="Add, edit, or remove people when roles change."
             cta="Manage people"
             disabled={role !== "admin"}
             onClick={() => navigate("/people")}
           />
           <ActionCard
-            title="Export for sharing"
-            body="Download ready-to-share CSV summaries before meetings."
+            title="Export numbers"
+            body="Grab a summary or full ledger for sharing."
             cta="Download CSVs"
             onClick={() => navigate("/export")}
           />

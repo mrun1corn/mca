@@ -155,19 +155,6 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Snapshot"
-        title="What the group has right now"
-        description="Quick totals for cash on hand, outstanding dues, and money out earning interest."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate("/deposit")}>Record a deposit</Button>
-            <Button variant="secondary" onClick={() => navigate("/withdraw")}>
-              Start a withdrawal / investment
-            </Button>
-          </div>
-        }
-      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryStats.map((stat) => (
@@ -176,36 +163,6 @@ export default function Home() {
       </div>
 
       {isRefreshing ? <div className="text-xs text-slate-500">Refreshing data…</div> : null}
-
-      <Panel title="Quick actions">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <ActionCard
-            title="Log a contribution"
-            body="Someone paid in? Drop it in right away."
-            cta="Add deposit"
-            onClick={() => navigate("/deposit")}
-          />
-          <ActionCard
-            title="Fund a need"
-            body="Cash-out to a member or move money into an investment."
-            cta="Withdraw or invest"
-            onClick={() => navigate("/withdraw")}
-          />
-          <ActionCard
-            title="Update the roster"
-            body="Add, edit, or remove people when roles change."
-            cta="Manage people"
-            disabled={role !== "admin"}
-            onClick={() => navigate("/people")}
-          />
-          <ActionCard
-            title="Export numbers"
-            body="Grab a summary or full ledger for sharing."
-            cta="Download CSVs"
-            onClick={() => navigate("/export")}
-          />
-        </div>
-      </Panel>
 
       <Panel
         title="Members at a glance"
@@ -219,18 +176,6 @@ export default function Home() {
       </Panel>
 
       {drawerUserId && <MemberDrawer userId={drawerUserId} onClose={() => setDrawerUserId(null)} />}
-    </div>
-  );
-}
-
-function ActionCard({ title, body, cta, onClick, disabled }: { title: string; body: string; cta: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-slate-100 dark:border-slate-800 p-5 bg-white/80 dark:bg-slate-900/60 space-y-2">
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{body}</p>
-      <Button variant="secondary" onClick={onClick} disabled={disabled}>
-        {disabled ? "Admin only" : cta}
-      </Button>
     </div>
   );
 }

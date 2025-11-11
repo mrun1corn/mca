@@ -24,6 +24,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const [investmentStart, setInvestmentStart] = useState(() => new Date().toISOString().slice(0, 10));
   const [investmentMonths, setInvestmentMonths] = useState(6);
   const [investmentRate, setInvestmentRate] = useState(3);
+  const [investmentOpenEnded, setInvestmentOpenEnded] = useState(false);
 
   const users = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get(`/users`)).data });
   useEffect(() => {
@@ -100,8 +101,9 @@ function WithdrawForm({ userId }: { userId?: string }) {
         name: investmentName || `Investment ${new Date(investmentStart).toLocaleDateString()}`,
         amount: amtTaka,
         startDate: investmentStart,
-        months: investmentMonths,
-        monthlyRatePct: investmentRate,
+        months: investmentOpenEnded ? undefined : investmentMonths,
+        monthlyRatePct: investmentOpenEnded ? undefined : investmentRate,
+        openEnded: investmentOpenEnded,
         excludeMemberIds: excluded,
       });
     }
@@ -171,10 +173,34 @@ function WithdrawForm({ userId }: { userId?: string }) {
               <input className="input w-full" type="date" value={investmentStart} onChange={(e) => setInvestmentStart(e.target.value)} />
             </Field>
             <Field label="Months invested">
-              <input className="input w-full" type="number" min={1} value={investmentMonths} onChange={(e) => setInvestmentMonths(Number(e.target.value))} />
+              <div className="space-y-2">
+                <input
+                  className="input w-full"
+                  type="number"
+                  min={1}
+                  value={investmentMonths}
+                  onChange={(e) => setInvestmentMonths(Number(e.target.value))}
+                  disabled={investmentOpenEnded}
+                />
+                <label className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={investmentOpenEnded}
+                    onChange={(e) => setInvestmentOpenEnded(e.target.checked)}
+                  />
+                  No end date yet
+                </label>
+              </div>
             </Field>
             <Field label="Monthly interest %">
-              <input className="input w-full" type="number" step="0.1" value={investmentRate} onChange={(e) => setInvestmentRate(Number(e.target.value))} />
+              <input
+                className="input w-full"
+                type="number"
+                step="0.1"
+                value={investmentRate}
+                onChange={(e) => setInvestmentRate(Number(e.target.value))}
+                disabled={investmentOpenEnded}
+              />
             </Field>
           </div>
         )}

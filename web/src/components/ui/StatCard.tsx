@@ -6,6 +6,7 @@ type Props = {
   icon?: ReactNode;
   variant?: "default" | "success" | "danger" | "info";
   helper?: ReactNode;
+  onClick?: () => void;
 };
 
 const palette: Record<NonNullable<Props["variant"]>, { wrapper: string; iconWrap: string; icon: string; accent: string }> = {
@@ -35,10 +36,10 @@ const palette: Record<NonNullable<Props["variant"]>, { wrapper: string; iconWrap
   },
 };
 
-function StatCard({ label, value, icon, helper, variant = "default" }: Props) {
+function StatCard({ label, value, icon, helper, variant = "default", onClick }: Props) {
   const styles = palette[variant];
-  return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl ${styles.wrapper}`}>
+  const content = (
+    <>
       <div className="flex items-start gap-4">
         {icon ? (
           <div className={`rounded-full p-2 shadow-inner ${styles.iconWrap}`}>
@@ -52,7 +53,22 @@ function StatCard({ label, value, icon, helper, variant = "default" }: Props) {
         </div>
       </div>
       <div className={`absolute -bottom-8 -right-8 h-24 w-24 rounded-full blur-2xl opacity-70 ${styles.iconWrap}`} aria-hidden="true" />
-    </div>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${styles.wrapper}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl ${styles.wrapper}`}>{content}</div>
   );
 }
 

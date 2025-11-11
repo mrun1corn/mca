@@ -23,6 +23,7 @@ const Export = lazy(() => import("./pages/Export"));
 const Setup = lazy(() => import("./pages/Setup"));
 const Login = lazy(() => import("./pages/Login"));
 const YearlyCollection = lazy(() => import("./pages/YearlyCollection"));
+const Balances = lazy(() => import("./pages/Balances"));
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { isLoading, isError } = useQuery({
@@ -129,6 +130,14 @@ export default function App() {
             element={
               <RequireRole roles={["admin", "accountant"]}>
                 <YearlyCollection />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/balances"
+            element={
+              <RequireRole roles={["admin", "accountant"]}>
+                <Balances />
               </RequireRole>
             }
           />

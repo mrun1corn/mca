@@ -114,16 +114,16 @@ export default function Home() {
   const summaryStats = useMemo(() => {
     if (!data) return [] as Array<{ label: string; value: ReactNode; icon: JSX.Element; variant: "default" | "success" | "danger" | "info" }>;
     const stats: Array<{ label: string; value: ReactNode; icon: JSX.Element; variant: "default" | "success" | "danger" | "info" }> = [
-      { label: "People in the circle", value: data.membersCount, icon: <UsersIcon className="w-5 h-5" />, variant: "info" as const },
-      { label: "Money on hand", value: formatBDT(data.groupBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
-      { label: "Promises still open", value: data.arrearsCount, icon: <HomeIcon className="w-5 h-5" />, variant: "danger" as const },
-      { label: "Ready-to-use cash", value: formatBDT(data.remainingBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "default" as const },
+      { label: "Active members", value: data.membersCount, icon: <UsersIcon className="w-5 h-5" />, variant: "info" as const },
+      { label: "Total balance", value: formatBDT(data.groupBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
+      { label: "Open dues", value: data.arrearsCount, icon: <HomeIcon className="w-5 h-5" />, variant: "danger" as const },
+      { label: "Available cash", value: formatBDT(data.remainingBalance), icon: <MoneyIcon className="w-5 h-5" />, variant: "default" as const },
     ];
     if (role !== "user") {
       const info = data.investments || { principal: 0, expectedInterest: 0 };
       stats.push(
-        { label: "Money out earning returns", value: formatBDT(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
-        { label: "Projected interest", value: formatBDT(info.expectedInterest), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const }
+        { label: "Invested funds", value: formatBDT(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
+        { label: "Expected interest", value: formatBDT(info.expectedInterest), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const }
       );
     }
     return stats;

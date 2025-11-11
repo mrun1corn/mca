@@ -22,6 +22,7 @@ const WithdrawPage = lazy(() => import("./pages/Withdraw"));
 const Export = lazy(() => import("./pages/Export"));
 const Setup = lazy(() => import("./pages/Setup"));
 const Login = lazy(() => import("./pages/Login"));
+const YearlyCollection = lazy(() => import("./pages/YearlyCollection"));
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { isLoading, isError } = useQuery({
@@ -120,6 +121,14 @@ export default function App() {
             element={
               <RequireRole roles={["admin", "accountant"]}>
                 <Export />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/yearly"
+            element={
+              <RequireRole roles={["admin", "accountant"]}>
+                <YearlyCollection />
               </RequireRole>
             }
           />

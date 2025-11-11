@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { useEffect, useState } from "react";
 import DepositForm from "../components/DepositForm";
 import PageHeader from "../components/layout/PageHeader";
+import InvestmentReturnForm from "../components/InvestmentReturnForm";
 
 const helperNotes = [
   "“Simple deposit” keeps the money free for future withdrawals.",
@@ -27,33 +28,46 @@ export default function DepositPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_1fr]">
-        <section className="glass rounded-3xl p-6 shadow-lg">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Who is saving today?</label>
-              <select className="input w-full h-12" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">Select member…</option>
-                {users.data?.map((u: any) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Need to add someone first? Head to the People page, then swing back here.
-              </p>
+        <div className="space-y-6">
+          <section className="glass rounded-3xl p-6 shadow-lg">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Who is saving today?</label>
+                <select className="input w-full h-12" value={userId} onChange={(e) => setUserId(e.target.value)}>
+                  <option value="">Select member…</option>
+                  {users.data?.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Need to add someone first? Head to the People page, then swing back here.
+                </p>
+              </div>
+              {userId ? (
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+                  <DepositForm userId={userId} />
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-500">
+                  Select a member to unlock the form.
+                </div>
+              )}
             </div>
-            {userId ? (
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
-                <DepositForm userId={userId} />
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-500">
-                Select a member to unlock the form.
-              </div>
-            )}
-          </div>
-        </section>
+          </section>
+
+          <section className="glass rounded-3xl p-6 shadow-lg">
+            <header className="mb-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Investment return</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Put matured funds back into the circle</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Split the principal + interest back across the original contributors in one click.
+              </p>
+            </header>
+            <InvestmentReturnForm />
+          </section>
+        </div>
 
         <aside className="space-y-4">
           <div className="glass rounded-3xl p-5 shadow-lg">

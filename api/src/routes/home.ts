@@ -36,6 +36,12 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       if (!me) return res.status(404).json({ error: "Not found" });
       const txs = await Transaction.find({ userId: me._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 });
       const balance = txs.reduce((acc, t) => acc + t.amountPoisha, 0);
+      let userDeposits = 0;
+      let userWithdraws = 0;
+      for (const tx of txs) {
+        if (tx.type === "deposit") userDeposits += tx.amountPoisha;
+        if (tx.type === "withdraw") userWithdraws += Math.abs(tx.amountPoisha);
+      }
       let lastMonth = 0;
       if (lastMonthMode === "deposit") {
         lastMonth = txs
@@ -61,7 +67,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
         membersCount: 1,
         groupBalance: balance,
         totalDeposits: totals.deposits,
-        totalWithdraws: totals.withdraws,
+        totalWithdraws: Math.abs(totals.withdraws || 0),
         remainingBalance: totals.balance,
         arrearsCount,
         investments: {
@@ -75,6 +81,8 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
             name: me.name,
             lastMonth,
             balance,
+            totalDeposits: userDeposits,
+            totalWithdraws: userWithdraws,
             recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
           },
         ],
@@ -99,6 +107,13 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
     for (const u of users) {
       const txs = await Transaction.find({ userId: u._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 });
       const balance = txs.reduce((acc, t) => acc + t.amountPoisha, 0);
+      let totalDeposits = 0;
+      let totalWithdraws = 0;
+      for (const tx of txs) {
+        if (tx.type === "deposit") totalDeposits += tx.amountPoisha;
+        if (tx.type === "withdraw") totalWithdraws += Math.abs(tx.amountPoisha);
+      }
+
       groupBalance += balance;
       let lastMonth = 0;
       if (lastMonthMode === "deposit") {
@@ -115,6 +130,8 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
         name: u.name,
         lastMonth,
         balance,
+        totalDeposits,
+        totalWithdraws,
         recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
       });
     }
@@ -123,7 +140,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       membersCount: users.length,
       groupBalance,
       totalDeposits: totals.deposits,
-      totalWithdraws: totals.withdraws,
+      totalWithdraws: Math.abs(totals.withdraws || 0),
       remainingBalance: totals.balance,
       arrearsCount,
       investments: {

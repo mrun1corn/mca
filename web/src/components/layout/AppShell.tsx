@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
@@ -43,9 +43,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const role = (me?.role ?? "user") as Role;
   const filteredNav = navItems.filter((item) => !item.roles || item.roles.includes(role));
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   const logout = async () => {
     try {
@@ -105,27 +110,47 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col">
-        <div className="lg:hidden border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur px-4 py-2 flex flex-col gap-3 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="lg:hidden border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur px-4 py-2 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Today</p>
               <p className="text-lg font-semibold text-slate-900 dark:text-white">{APP_NAME}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex flex-col items-center justify-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 p-2 text-slate-600 dark:text-slate-200"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-expanded={mobileNavOpen}
+              aria-label="Toggle navigation menu"
+            >
+              <span className={`h-0.5 w-5 rounded-full bg-current transition ${mobileNavOpen ? "translate-y-1 rotate-45" : ""}`} />
+              <span className={`h-0.5 w-5 rounded-full bg-current transition ${mobileNavOpen ? "opacity-0" : ""}`} />
+              <span className={`h-0.5 w-5 rounded-full bg-current transition ${mobileNavOpen ? "-translate-y-1 -rotate-45" : ""}`} />
+            </button>
+          </div>
+          <div
+            className={`${
+              mobileNavOpen ? "flex" : "hidden"
+            } flex-col gap-3 w-full sm:px-1 sm:-mx-1 lg:mx-0`}
+          >
+            <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-3 bg-white/80 dark:bg-slate-900/70">
               <ThemeToggle />
-              <button onClick={logout} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-rose-500">
-                <LogoutIcon className="w-4 h-4" /> Logout
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-2 text-sm font-medium text-rose-600 hover:text-rose-500 dark:text-rose-400"
+              >
+                <LogoutIcon className="w-4 h-4" />
+                Logout
               </button>
             </div>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 px-1">
+            <div className="flex flex-wrap gap-2 w-full sm:flex-nowrap sm:overflow-x-auto sm:pb-1">
             {filteredNav.map((item) => {
               const isActive = location.pathname === item.to;
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border w-full justify-center sm:w-auto sm:justify-start ${
                     isActive
                       ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-100"
                       : "border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300"
@@ -136,6 +161,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 </NavLink>
               );
             })}
+            </div>
           </div>
         </div>
 

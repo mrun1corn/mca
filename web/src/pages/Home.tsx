@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import MemberCard from "../components/MemberCard";
@@ -6,7 +6,6 @@ import MemberDrawer from "../components/MemberDrawer";
 import { SkeletonCard } from "../components/Skeleton";
 import Panel from "../components/ui/Panel";
 import StatCard from "../components/ui/StatCard";
-import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader";
 import { MoneyIcon, UsersIcon, HomeIcon } from "../components/Icon";
@@ -38,6 +37,9 @@ export default function Home() {
   const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
   const role = me.data?.role as undefined | "admin" | "accountant" | "user";
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
+  const [yearSummaries, setYearSummaries] = useState<Record<number, number>>({});
+  const [yearSummaryLoading, setYearSummaryLoading] = useState(false);
+  const [yearSummaryError, setYearSummaryError] = useState<string | null>(null);
 
   const myId = me.data?.id as string | undefined;
   const dues = useQuery<any[]>({
@@ -72,6 +74,42 @@ export default function Home() {
   }, [role, dues.data]);
 
   const data = home.data;
+  const currentYear = new Date().getFullYear();
+  const lastYear = currentYear - 1;
+
+  useEffect(() => {
+    if (role !== "admin" && role !== "accountant") return;
+    let cancelled = false;
+    async function loadYearlyTotals() {
+      setYearSummaryLoading(true);
+      setYearSummaryError(null);
+      try {
+        const years = [currentYear, lastYear];
+        const responses = await Promise.all(
+          years.map(async (year) => {
+            const res = await api.get("/reports/yearly-collection", { params: { year } });
+            return { year, total: res.data?.total ?? 0 };
+          })
+        );
+        if (!cancelled) {
+          setYearSummaries(
+            responses.reduce((acc, item) => {
+              acc[item.year] = item.total;
+              return acc;
+            }, {} as Record<number, number>)
+          );
+        }
+      } catch (err: any) {
+        if (!cancelled) setYearSummaryError(err?.response?.data?.error || "Failed to load yearly totals");
+      } finally {
+        if (!cancelled) setYearSummaryLoading(false);
+      }
+    }
+    loadYearlyTotals();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, currentYear, lastYear]);
 
   const summaryStats = useMemo(() => {
     if (!data) return [] as Array<{ label: string; value: ReactNode; icon: JSX.Element; variant: "default" | "success" | "danger" | "info" }>;
@@ -161,6 +199,33 @@ export default function Home() {
           <StatCard key={String(stat.label)} label={stat.label} value={stat.value} icon={stat.icon} variant={stat.variant} />
         ))}
       </div>
+
+      {role === "admin" || role === "accountant" ? (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[
+              { label: "Running year collection", year: currentYear },
+              { label: "Last year collection", year: lastYear },
+            ].map((item) => {
+              const total = yearSummaries[item.year];
+              const display = typeof total === "number" ? formatBDT(total) : yearSummaryLoading ? "Loading…" : "Tap to view";
+              return (
+                <button
+                  key={item.year}
+                  type="button"
+                  onClick={() => navigate(`/yearly?year=${item.year}`)}
+                  className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                >
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{display}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{item.year}</p>
+                </button>
+              );
+            })}
+          </div>
+          {yearSummaryError ? <div className="text-sm text-rose-500">{yearSummaryError}</div> : null}
+        </div>
+      ) : null}
 
       {isRefreshing ? <div className="text-xs text-slate-500">Refreshing data…</div> : null}
 

@@ -12,6 +12,7 @@ import {
   ExportIcon,
   CogIcon,
   LogoutIcon,
+  MoneyIcon,
 } from "../Icon";
 
 type Role = "admin" | "accountant" | "user";
@@ -36,6 +37,13 @@ const navItems: NavItem[] = [
     roles: ["admin", "accountant"],
   },
   { label: "Exports", description: "Download CSV summaries", to: "/export", icon: ExportIcon, roles: ["admin", "accountant"] },
+  {
+    label: "Yearly collection",
+    description: "See deposit totals by year",
+    to: "/yearly",
+    icon: MoneyIcon,
+    roles: ["admin", "accountant"],
+  },
   { label: "Setup", description: "Preferences and account", to: "/setup", icon: CogIcon },
 ];
 

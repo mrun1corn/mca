@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
+import { SkeletonCard } from "./Skeleton";
 
 type InvestmentRow = {
   id: string;
@@ -71,7 +72,12 @@ export default function InvestmentReturnForm() {
   };
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">Loading investments…</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={1} />
+      </div>
+    );
   }
 
   if (!activeInvestments.length) {

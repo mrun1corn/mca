@@ -4,6 +4,8 @@ import { api, formatBDT } from "../lib/api";
 import PageHeader from "../components/layout/PageHeader";
 import Panel from "../components/ui/Panel";
 import { useSearchParams } from "react-router-dom";
+import { SkeletonLine, SkeletonTable } from "../components/Skeleton";
+import { CloseIcon } from "../components/Icon";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -90,7 +92,13 @@ export default function YearlyCollectionPage() {
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Collection year</p>
               <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{year}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {typeof total === "number" ? formatBDT(total) : isSelected ? "Loading…" : "Tap to load"}
+                {typeof total === "number" ? (
+                  formatBDT(total)
+                ) : isSelected && yearlyCollection.isLoading ? (
+                  <SkeletonLine className="h-4 w-24" />
+                ) : (
+                  "Tap to load"
+                )}
               </p>
             </button>
           );
@@ -116,7 +124,9 @@ export default function YearlyCollectionPage() {
           ) : null}
         </div>
         {yearlyCollection.isLoading ? (
-          <div className="text-sm text-slate-500">Loading yearly collection…</div>
+          <div className="py-6">
+            <SkeletonTable rows={6} columns={4} />
+          </div>
         ) : yearlyCollection.isError ? (
           <div className="text-sm text-rose-500">Could not load yearly collection data.</div>
         ) : yearlyCollection.data && yearlyCollection.data.users.length ? (
@@ -217,44 +227,42 @@ function YearlyCollectionDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center" onClick={close}>
-      <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${show ? "opacity-100" : "opacity-0"}`} />
-      <div
-        className={`relative w-[calc(100%-1rem)] sm:max-w-xl max-h-[90vh] glass rounded-3xl p-5 shadow-xl overflow-y-auto transition-all duration-200 ${
-          show ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
+    <div
+      className={`fixed inset-0 z-40 bg-white dark:bg-slate-950 overflow-y-auto transition-transform duration-200 ${
+        show ? "translate-y-0" : "translate-y-full"
+      }`}
+    >
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Yearly collection</p>
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
               {user.name} · {year}
             </h2>
           </div>
-          <button className="text-sm text-slate-500 hover:text-rose-500" onClick={close}>
-            Close
+          <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" onClick={close}>
+            <CloseIcon className="w-4 h-4" /> Close
           </button>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Year total</p>
-            <p className="text-xl font-semibold text-slate-900 dark:text-white">{formatBDT(user.total)}</p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{formatBDT(user.total)}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Current month</p>
-            <p className="text-xl font-semibold text-slate-900 dark:text-white">
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">
               {user.monthly[new Date().getMonth()] ? formatBDT(user.monthly[new Date().getMonth()]) : "—"}
             </p>
           </div>
         </div>
-        <div className="mt-6">
+        <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Monthly history</p>
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             {MONTH_LABELS.map((label, idx) => (
-              <div key={`${user.userId}-drawer-${label}`} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3 bg-white/80 dark:bg-slate-900/60">
+              <div key={`${user.userId}-drawer-${label}`} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
                 <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="text-base font-semibold text-slate-900 dark:text-white">
+                <p className="text-lg font-semibold text-slate-900 dark:text-white">
                   {user.monthly[idx] ? formatBDT(user.monthly[idx]) : "—"}
                 </p>
               </div>

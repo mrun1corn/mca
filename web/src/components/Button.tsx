@@ -1,7 +1,7 @@
 import React from "react";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "xs" | "sm" | "md";
+type Size = "xs" | "sm" | "md" | "full";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
@@ -19,6 +19,7 @@ const sizeClass: Record<Size, string> = {
   xs: "text-xs px-2 py-0.5",
   sm: "text-sm px-2 py-1",
   md: "text-sm px-3 py-1.5",
+  full: "text-sm w-full px-3 py-2 justify-center",
 };
 
 export default function Button({ variant = "primary", size = "md", className = "", ...props }: ButtonProps) {

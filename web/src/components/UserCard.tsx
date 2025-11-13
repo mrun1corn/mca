@@ -24,9 +24,13 @@ function UserCard({ user, onEdit, onDelete }: Props) {
             <div className="text-xs text-gray-500 dark:text-gray-400">Last month {formatBDT(user.lastMonth || 0)}</div>
           </div>
         </div>
-        <div className="flex gap-1.5 justify-end">
-          <Button variant="ghost" size="sm" onClick={onEdit}>Edit</Button>
-          <Button variant="danger" size="sm" onClick={onDelete}>Delete</Button>
+        <div className="flex flex-col sm:flex-row gap-2 justify-end">
+          <Button variant="ghost" size="full" className="sm:w-auto" onClick={onEdit}>
+            Edit
+          </Button>
+          <Button variant="danger" size="full" className="sm:w-auto" onClick={onDelete}>
+            Delete
+          </Button>
         </div>
       </div>
     </div>

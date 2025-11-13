@@ -4,6 +4,7 @@ import PageHeader from "../components/layout/PageHeader";
 import Panel from "../components/ui/Panel";
 import { HomeIcon, MoneyIcon } from "../components/Icon";
 import { ReactNode } from "react";
+import { SkeletonCard, SkeletonTable } from "../components/Skeleton";
 
 type MemberSummary = {
   userId: string;
@@ -38,14 +39,26 @@ export default function BalancesPage() {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Summary tile="Total collected" value={formatBDT(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} />
-        <Summary tile="Total deducted" value={formatBDT(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} />
-        <Summary tile="Available cash" value={formatBDT(totalBalance)} icon={<MoneyIcon className="w-5 h-5" />} />
+        {isLoading ? (
+          <>
+            <SkeletonCard lines={1} />
+            <SkeletonCard lines={1} />
+            <SkeletonCard lines={1} />
+          </>
+        ) : (
+          <>
+            <Summary tile="Total collected" value={formatBDT(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} />
+            <Summary tile="Total deducted" value={formatBDT(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} />
+            <Summary tile="Available cash" value={formatBDT(totalBalance)} icon={<MoneyIcon className="w-5 h-5" />} />
+          </>
+        )}
       </div>
 
       <Panel title="Per-member breakdown" description="All amounts shown in BDT.">
         {isLoading ? (
-          <div className="text-sm text-slate-500">Loading balances…</div>
+          <div className="py-6">
+            <SkeletonTable rows={6} columns={4} />
+          </div>
         ) : rows.length === 0 ? (
           <div className="text-sm text-slate-500">No members found.</div>
         ) : (

@@ -11,7 +11,8 @@
     "import-excel": "ts-node-dev --transpile-only src/seed/importExcel.ts",
     "import-summary": "ts-node-dev --transpile-only src/seed/importSummary.ts",
     "seed:manual": "ts-node-dev --transpile-only src/seed/manualDeposits.ts",
-    "replace:transactions": "tsx src/scripts/replaceTransactions.ts"
+    "replace:transactions": "tsx src/scripts/replaceTransactions.ts",
+    "change-password": "tsx src/seed/changePassword.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

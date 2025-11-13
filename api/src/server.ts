@@ -19,20 +19,18 @@ import investmentRoutes from "./routes/investments";
 import reportRoutes from "./routes/reports";
 
 const app = express();
+const PORT = Number(process.env.PORT || 4000);
 
 app.use(express.json());
 app.use(cookieParser());
 // CORS: allow one or more origins via CORS_ORIGIN (comma-separated)
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+const allowedOrigins = buildAllowedOrigins(process.env.CORS_ORIGIN, PORT);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // non-browser or same-origin
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (isOriginAllowed(origin, allowedOrigins)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -68,8 +66,6 @@ if (isProd && fs.existsSync(webDist)) {
 
 app.use(errorHandler);
 
-const PORT = Number(process.env.PORT || 4000);
-
 async function start() {
   await connectDb();
   app.listen(PORT, '0.0.0.0', () => {
@@ -83,3 +79,36 @@ start().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+function buildAllowedOrigins(envValue: string | undefined, port: number) {
+  const defaults = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+  const list = (envValue || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return Array.from(new Set([...list, ...defaults]));
+}
+
+function isOriginAllowed(origin: string, allowed: string[]) {
+  if (allowed.includes("*")) return true;
+  try {
+    const url = new URL(origin);
+    return allowed.some((entry) => {
+      try {
+        const allowedUrl = new URL(entry);
+        if (allowedUrl.hostname !== url.hostname) return false;
+        if (allowedUrl.protocol && allowedUrl.protocol !== url.protocol) return false;
+        if (!allowedUrl.port) return true;
+        return allowedUrl.port === url.port;
+      } catch {
+        // allow host-only or host:port entries
+        if (entry === url.hostname) return true;
+        if (entry === `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`) return true;
+        if (entry === `${url.protocol}//${url.hostname}`) return true;
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}

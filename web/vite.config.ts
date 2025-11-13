@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const apiBase = env.VITE_API_BASE || "http://localhost:4000/api";
+
   const server: any = {
     host: true,
     port: Number(env.VITE_DEV_PORT || 5173),
@@ -27,9 +29,23 @@ export default defineConfig(({ mode }) => {
     };
   }
 
+  // When running the web app separately from the API (e.g., Vite on 5173, API on 4000)
+  // we still use a relative VITE_API_BASE (/api) across environments but proxy it locally.
+  if (apiBase.startsWith("/")) {
+    const devApiTarget = env.VITE_DEV_API_TARGET || "http://localhost:4000";
+    server.proxy = {
+      ...(server.proxy || {}),
+      [apiBase]: {
+        target: devApiTarget,
+        changeOrigin: true,
+        secure: false,
+      },
+    };
+  }
+
   return {
     define: {
-      "import.meta.env.VITE_API_BASE": JSON.stringify(env.VITE_API_BASE || "http://localhost:4000/api"),
+      "import.meta.env.VITE_API_BASE": JSON.stringify(apiBase),
       "import.meta.env.VITE_APP_NAME": JSON.stringify(env.VITE_APP_NAME || "Community Savings"),
       "import.meta.env.VITE_APP_LOGO": JSON.stringify(env.VITE_APP_LOGO || ""),
     },

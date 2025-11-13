@@ -13,6 +13,7 @@
     "deploy:web": "npm --prefix web run build && npm --prefix web run preview -- --host 0.0.0.0 --port 5173",
     "seed": "npm --prefix api run seed",
     "create-admin": "npm --prefix api run create-admin",
+    "change-password": "npm --prefix api run change-password",
     "import-excel": "npm --prefix api run import-excel",
     "import-summary": "npm --prefix api run import-summary",
     "install:all": "npm --prefix api i && npm --prefix web i && npm --prefix mobile i"

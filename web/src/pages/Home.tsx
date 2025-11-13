@@ -215,6 +215,8 @@ export default function Home() {
 
   if (!data) return null;
 
+  const memberCards = Array.isArray(data.cards) ? data.cards : [];
+
   const isRefreshing = home.isFetching && !loading;
 
   if (role === "user") {
@@ -313,7 +315,7 @@ export default function Home() {
         description="Click a card to see their balance, recent activity, and dues timeline."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {data.cards.map((card) => (
+          {memberCards.map((card) => (
             <MemberCard key={card.userId} card={card} onClick={() => setDrawerUserId(card.userId)} />
           ))}
         </div>
@@ -325,7 +327,7 @@ export default function Home() {
           totalDeposits={data.totalDeposits}
           totalWithdraws={data.totalWithdraws}
           available={data.groupBalance}
-          rows={data.cards}
+          rows={memberCards}
           withdraws={withdraws.data}
           investments={investmentsQuery.data}
           loadingWithdraws={withdraws.isLoading}

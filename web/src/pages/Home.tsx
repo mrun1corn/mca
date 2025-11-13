@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api, formatBDT } from "../lib/api";
 import MemberCard from "../components/MemberCard";
 import MemberDrawer from "../components/MemberDrawer";
-import { SkeletonCard } from "../components/Skeleton";
+import { SkeletonCard, SkeletonList, SkeletonLine } from "../components/Skeleton";
 import Panel from "../components/ui/Panel";
 import StatCard from "../components/ui/StatCard";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader";
-import { MoneyIcon, UsersIcon, HomeIcon } from "../components/Icon";
+import { MoneyIcon, UsersIcon, HomeIcon, CloseIcon } from "../components/Icon";
 
 type MemberSummary = {
   userId: string;
@@ -289,7 +289,14 @@ export default function Home() {
               { label: "Last year collection", year: lastYear },
             ].map((item) => {
               const total = yearSummaries[item.year];
-              const display = typeof total === "number" ? formatBDT(total) : yearSummaryLoading ? "Loading…" : "Tap to view";
+              const display =
+                typeof total === "number" ? (
+                  formatBDT(total)
+                ) : yearSummaryLoading ? (
+                  <SkeletonLine className="h-5 w-24" />
+                ) : (
+                  "Tap to view"
+                );
               return (
                 <button
                   key={item.year}
@@ -378,21 +385,19 @@ function TotalBalanceDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center" onClick={close}>
-      <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${show ? "opacity-100" : "opacity-0"}`} />
-      <div
-        className={`w-[calc(100%-1rem)] sm:max-w-5xl max-h-[90vh] glass rounded-3xl p-6 overflow-y-auto shadow-2xl transition-all duration-200 ${
-          show ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
+    <div
+      className={`fixed inset-0 z-40 bg-white dark:bg-slate-950 overflow-y-auto transition-transform duration-200 ${
+        show ? "translate-y-0" : "translate-y-full"
+      }`}
+    >
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Total balance</p>
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Collections vs. deductions</h2>
           </div>
-          <button className="text-sm text-slate-500 hover:text-rose-500" onClick={close}>
-            Close
+          <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" onClick={close}>
+            <CloseIcon className="w-4 h-4" /> Close
           </button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-4">
@@ -437,7 +442,9 @@ function TotalBalanceDrawer({
 
           <Panel title="Recent withdrawals / investments" description="Latest 20 records">
             {loadingWithdraws ? (
-              <div className="text-sm text-slate-500">Loading…</div>
+              <div className="space-y-3">
+                <SkeletonList rows={4} columns={2} />
+              </div>
             ) : withdraws && withdraws.length ? (
               <div className="space-y-2 max-h-72 overflow-auto pr-1">
                 {withdraws.map((tx) => (
@@ -458,7 +465,10 @@ function TotalBalanceDrawer({
 
         <Panel title="Investments overview" description="Track funds currently out of circulation">
           {loadingInvestments ? (
-            <div className="text-sm text-slate-500">Loading…</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={2} />
+            </div>
           ) : investments && investments.length ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {investments.map((inv) => {

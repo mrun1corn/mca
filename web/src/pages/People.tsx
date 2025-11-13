@@ -7,8 +7,8 @@ import UserCard from "../components/UserCard";
 import { useToast } from "../components/Toast";
 import Button from "../components/Button";
 import Panel from "../components/ui/Panel";
-import VirtualList from "../components/ui/VirtualList";
 import PageHeader from "../components/layout/PageHeader";
+import { SkeletonCard } from "../components/Skeleton";
 
 export default function People() {
   const qc = useQueryClient();
@@ -140,23 +140,14 @@ export default function People() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="rounded-xl border border-blue-100/70 dark:border-slate-700 bg-gradient-to-br from-white via-white to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 animate-pulse h-28"
-              />
+              <SkeletonCard key={idx} lines={2} />
             ))}
           </div>
         ) : users.length ? (
-          <div className="max-h-[460px]">
-            <VirtualList
-              items={users}
-              itemHeight={120}
-              height={Math.min(460, Math.max(180, users.length * 120))}
-              render={(user: any) => (
-                <UserCard user={user} onEdit={() => setEditingUser(user)} onDelete={() => remove.mutate(user.id)} />
-              )}
-              keyExtractor={(user: any) => user.id}
-            />
+          <div className="max-h-[460px] overflow-auto space-y-3 pr-1">
+            {users.map((user: any) => (
+              <UserCard key={user.id} user={user} onEdit={() => setEditingUser(user)} onDelete={() => remove.mutate(user.id)} />
+            ))}
           </div>
         ) : (
           <div className="text-sm text-slate-500 dark:text-slate-400">No members found. Try adjusting your search.</div>

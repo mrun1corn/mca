@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
@@ -52,6 +52,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileNavRef = useRef<HTMLDivElement | null>(null);
+  const [mobileNavHeight, setMobileNavHeight] = useState<"auto" | number>(0);
+  const [navAnimating, setNavAnimating] = useState(false);
+  const navVisible = mobileNavOpen || navAnimating;
 
   const role = (me?.role ?? "user") as Role;
   const filteredNav = navItems.filter((item) => !item.roles || item.roles.includes(role));
@@ -59,6 +63,30 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const el = mobileNavRef.current;
+    if (!el) return;
+    if (mobileNavOpen) {
+      const contentHeight = el.scrollHeight;
+      setNavAnimating(true);
+      setMobileNavHeight(contentHeight);
+      const timeout = setTimeout(() => {
+        setMobileNavHeight("auto");
+        setNavAnimating(false);
+      }, 260);
+      return () => clearTimeout(timeout);
+    } else {
+      setNavAnimating(true);
+      const currentHeight = el.scrollHeight;
+      setMobileNavHeight(currentHeight);
+      requestAnimationFrame(() => {
+        setMobileNavHeight(0);
+      });
+      const timeout = setTimeout(() => setNavAnimating(false), 260);
+      return () => clearTimeout(timeout);
+    }
+  }, [mobileNavOpen]);
 
   const logout = async () => {
     try {
@@ -70,7 +98,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex">
-      <aside className="hidden lg:flex w-72 flex-col border-r border-slate-100/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 backdrop-blur">
+      <aside className="hidden lg:flex w-72 flex-col border-r border-slate-100/70 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="px-6 pt-8 pb-4">
           <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Community savings</div>
           <div className="text-xl font-semibold mt-1 text-slate-900 dark:text-white">{APP_NAME}</div>
@@ -118,7 +146,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col">
-        <div className="lg:hidden border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur px-4 py-2 flex flex-col gap-3">
+        <div className="lg:hidden border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Today</p>
@@ -137,11 +165,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
           <div
-            className={`${
-              mobileNavOpen ? "flex" : "hidden"
-            } flex-col gap-3 w-full sm:px-1 sm:-mx-1 lg:mx-0`}
+            ref={mobileNavRef}
+            className={`w-full sm:px-1 sm:-mx-1 lg:mx-0 flex flex-col gap-3 overflow-hidden transition-[height,opacity] duration-250 ${
+              navVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            style={{ height: mobileNavHeight === "auto" ? "auto" : `${mobileNavHeight}px` }}
+            aria-hidden={!navVisible}
           >
-            <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-3 bg-white/80 dark:bg-slate-900/70">
+            <div
+              className={`rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/80 px-3 py-4 shadow-sm transition duration-300 ${
+                mobileNavOpen ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
+              }`}
+            >
               <ThemeToggle />
               <button
                 onClick={logout}
@@ -151,30 +186,36 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 Logout
               </button>
             </div>
-            <div className="flex flex-wrap gap-2 w-full sm:flex-nowrap sm:overflow-x-auto sm:pb-1">
-            {filteredNav.map((item) => {
-              const isActive = location.pathname === item.to;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border w-full justify-center sm:w-auto sm:justify-start ${
-                    isActive
-                      ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-100"
-                      : "border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </NavLink>
-              );
-            })}
+            <div
+              className={`flex flex-wrap gap-2 w-full sm:flex-nowrap sm:overflow-x-auto sm:pb-1 transition duration-300 ${
+                mobileNavOpen ? "opacity-100 translate-y-0 delay-75" : "opacity-0 -translate-y-2"
+              }`}
+            >
+                {filteredNav.map((item) => {
+                  const isActive = location.pathname === item.to;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border w-full justify-center sm:w-auto sm:justify-start shadow-sm ${
+                        isActive
+                          ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-100"
+                          : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.label}
+                    </NavLink>
+                  );
+                })}
             </div>
           </div>
         </div>
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div key={location.pathname} className="mx-auto max-w-6xl animate-page-fade">
+            {children}
+          </div>
           <footer className="max-w-6xl mx-auto text-xs text-slate-400 dark:text-slate-500 mt-8 text-center">
             Built for community groups that prefer clarity over corporate-speak.
           </footer>

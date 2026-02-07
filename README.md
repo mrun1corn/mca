@@ -1,5 +1,7 @@
 Community Savings App
 
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mrun1corn/mca)
+
 Full‑stack app for community savings: deposits, cash‑outs (withdraw), split deductions, dues, and CSV exports.
 
 Prerequisites
@@ -150,6 +152,20 @@ Production Run (single port)
     - With `NODE_ENV=production`, the API serves static files from `web/dist` and SPA fallback.
     - Use `VITE_API_BASE="/api"` so the client calls the same origin.
     - Reverse proxies (Cloudflare Tunnel/NGINX) can map your domain to `127.0.0.1:4000`.
+
+Vercel (serverless + static)
+- Uses `api/index.ts` as the serverless handler and `web/` for static hosting.
+- Set these env vars in Vercel:
+  - `MONGODB_URI`, `JWT_SECRET`, `CORS_ORIGIN` (your Vercel URL), `NODE_ENV=production`
+  - `VITE_API_BASE="/api"` (for the web build)
+  - Optional: `COOKIE_DOMAIN` (only if you need cross-subdomain cookies)
+- Deploy:
+  - Click the deploy button at the top of this README, or import the repo into Vercel (monorepo supported).
+  - `vercel.json` is already set up for the build and `/api/*` routing.
+- Custom domain:
+  - Add your domain in Vercel, then update `CORS_ORIGIN` to include it (comma‑separated if you want both the Vercel URL and custom domain).
+  - If you use `deposit.mrunicorn.xyz`, set `CORS_ORIGIN="https://deposit.mrunicorn.xyz"` (or include both domains).
+- Mobile: point `EXPO_PUBLIC_API_BASE` to `https://<your-vercel-domain>/api`.
 
 Cloudflare Zero Trust (single hostname)
 - Domain: set your app hostname (e.g., `grs.mrunicorn.xyz`).

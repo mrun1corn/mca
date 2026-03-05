@@ -27,13 +27,13 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
       const txs = await Transaction.find({ userId: u._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 }).limit(20);
       const balanceAgg = await Transaction.aggregate([
         { $match: { userId: u._id, deletedAt: { $exists: false } } },
-        { $group: { _id: null, s: { $sum: "$amountPoisha" } } },
+        { $group: { _id: null, s: { $sum: "$amount" } } },
       ]);
       const balance = balanceAgg.at(0)?.s || 0;
 
       const lastMonth = await Transaction.aggregate([
         { $match: { userId: u._id, type: "deposit", deletedAt: { $exists: false }, occurredAt: { $gte: lastMonthStart, $lt: lastMonthEnd } } },
-        { $group: { _id: null, s: { $sum: "$amountPoisha" } } },
+        { $group: { _id: null, s: { $sum: "$amount" } } },
       ]);
 
       result.push({

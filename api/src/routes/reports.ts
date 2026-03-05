@@ -42,7 +42,7 @@ router.get("/yearly-collection", requireAuth as any, async (req: any, res, next)
       {
         $group: {
           _id: { userId: "$userId", month: { $month: "$occurredAt" } },
-          amount: { $sum: "$amountPoisha" },
+          amount: { $sum: "$amount" },
         },
       },
     ]);

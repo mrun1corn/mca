@@ -29,7 +29,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   const { isLoading, isError } = useQuery({
     queryKey: ["auth-check"],
     queryFn: async () => {
-      await api.get("/home");
+      await api.get("/auth/auth-check");
       return true;
     },
     staleTime: 60_000,

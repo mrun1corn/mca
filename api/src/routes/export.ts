@@ -31,12 +31,10 @@ router.get("/summary.csv", requireAuth as any, requireRole(["admin", "accountant
     const rows: any[] = [];
     for (const u of users) {
       const txs = await Transaction.find({ ...q, userId: u._id });
-      const depositsPoisha = txs.filter((t) => t.type === "deposit").reduce((a, t) => a + t.amountPoisha, 0);
-      const withdrawsPoisha = txs.filter((t) => t.type === "withdraw").reduce((a, t) => a + t.amountPoisha, 0);
-      const balancePoisha = txs.reduce((a, t) => a + t.amountPoisha, 0);
-      const deposits = (depositsPoisha / 100).toFixed(2);
-      const withdraws = (withdrawsPoisha / 100).toFixed(2);
-      const balance = (balancePoisha / 100).toFixed(2);
+      const deposits = txs.filter((t) => t.type === "deposit").reduce((a, t) => a + t.amount, 0);
+      const withdraws = txs.filter((t) => t.type === "withdraw").reduce((a, t) => a + t.amount, 0);
+      const balance = txs.reduce((a, t) => a + t.amount, 0);
+      const depositsDisplay = deposits.toString();
       rows.push({ name: u.name, email: u.email || "", deposits, withdraws, balance });
     }
     const csv = toCsv(rows, ["name", "email", "deposits", "withdraws", "balance"]);
@@ -76,7 +74,7 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
         name: user?.name || "",
         email: user?.email || "",
         type: t.type,
-        amount: (t.amountPoisha / 100).toFixed(2),
+        amount: t.amount.toString(),
         note: t.note || "",
       };
     });

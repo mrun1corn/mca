@@ -8,7 +8,7 @@ export type WithdrawInput = {
   takerId: string;
   reason?: string;
   date: string; // ISO date
-  amountPoisha: number;
+  amount: number;
   due: {
     useDefaultDate: boolean;
     defaultDate: string | null;
@@ -31,7 +31,7 @@ function addMonths(date: Date, months: number) {
 export async function handleWithdraw(input: WithdrawInput) {
   const {
     takerId,
-    amountPoisha,
+    amount,
     reason,
     date,
     due: { months, monthlyRatePct, useDefaultDate, defaultDate, startDate, endDate },
@@ -42,14 +42,20 @@ export async function handleWithdraw(input: WithdrawInput) {
 
   const occurredAt = new Date(date);
 
+  // Fetch taker and eligible users to get names for transaction records
+  const taker = await User.findById(takerId);
+  if (!taker) throw new Error("Taker not found");
+  const takerName = taker.name;
+
   const takerObjectId = new Types.ObjectId(takerId);
   const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
 
   // Taker withdraw transaction (negative amount)
   const takerTx = await Transaction.create({
     userId: takerObjectId,
+    userName: takerName,
     type: "withdraw",
-    amountPoisha: -Math.abs(amountPoisha),
+    amount: -Math.abs(amount),
     occurredAt,
     note: reason ? `Cash out: ${reason}` : "Cash out",
     createdBy: actorId,
@@ -65,18 +71,19 @@ export async function handleWithdraw(input: WithdrawInput) {
   }
 
   if (eligibleCount > 0) {
-    const base = Math.floor(amountPoisha / eligibleCount);
-    const remainder = amountPoisha - base * eligibleCount;
+    const base = Math.floor(amount / eligibleCount);
+    const remainder = amount - base * eligibleCount;
     // Create per-eligible-member withdraw tx with -split
     const txs = [] as any[];
     for (let i = 0; i < eligible.length; i++) {
       const share = base + (i === eligible.length - 1 ? remainder : 0); // last gets remainder
       txs.push({
         userId: eligible[i]._id,
+        userName: eligible[i].name,
         type: "withdraw",
-        amountPoisha: -share,
+        amount: -share,
         occurredAt,
-        note: `Share for cash out of ${takerId}`,
+        note: `Share for cash out of ${takerName}`,
         createdBy: actorId,
       });
     }
@@ -84,10 +91,10 @@ export async function handleWithdraw(input: WithdrawInput) {
   }
 
   // Create Due schedule for taker
-  const principalPoisha = amountPoisha;
-  const perMonthPrincipal = Math.floor(principalPoisha / months);
-  let remainderPrincipal = principalPoisha - perMonthPrincipal * months;
-  let remainingPrincipal = principalPoisha;
+  const principal = amount;
+  const perMonthPrincipal = Math.floor(principal / months);
+  let remainderPrincipal = principal - perMonthPrincipal * months;
+  let remainingPrincipal = principal;
   const schedule: any[] = [];
 
   // Determine schedule dates
@@ -124,7 +131,7 @@ export async function handleWithdraw(input: WithdrawInput) {
   const dueDoc = await Due.create({
     userId: takerObjectId,
     cashOutTxId: takerTx._id,
-    principalPoisha,
+    principal,
     months,
     monthlyRatePct,
     schedule,

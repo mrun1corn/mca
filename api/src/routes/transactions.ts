@@ -30,7 +30,7 @@ router.get("/transactions", requireAuth as any, async (req: any, res, next) => {
       _id: t._id,
       userId: t.userId,
       type: t.type,
-      amount: t.amountPoisha,
+      amount: t.amount,
       occurredAt: t.occurredAt,
       note: t.note,
     }));
@@ -121,9 +121,9 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
     if (note !== undefined) update.note = note;
     if (date !== undefined) update.occurredAt = new Date(String(date));
     if (amount !== undefined && tx.type === "deposit") {
-      const poisha = Math.round(Number(amount) * 100);
-      if (!Number.isFinite(poisha)) throw new AppError("Invalid amount", 400);
-      update.amountPoisha = poisha;
+      const amountInt = Math.round(Number(amount));
+      if (!Number.isFinite(amountInt)) throw new AppError("Invalid amount", 400);
+      update.amount = amountInt;
     }
     await (await import("../models/Transaction")).default.findByIdAndUpdate(tx._id, update);
     res.json({ ok: true });

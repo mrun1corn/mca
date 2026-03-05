@@ -4,6 +4,8 @@ import { requireAuth, requireRole, hashPassword } from "../lib/auth";
 import { parseBody } from "../lib/validation";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
+import Due from "../models/Due";
+import Investment from "../models/Investment";
 
 const router = Router();
 
@@ -42,7 +44,7 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
         role: u.role,
         balance: balance,
         lastMonth: lastMonth.at(0)?.s || 0,
-        recent: txs.slice(0, 3).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
+        recent: txs.slice(0, 3).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amount, note: t.note })),
       });
     }
     res.json(result);
@@ -114,7 +116,17 @@ router.patch("/users/:id", requireAuth as any, requireRole(["admin"]) as any, as
 
 router.delete("/users/:id", requireAuth as any, requireRole(["admin"]) as any, async (req, res, next) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
+    
+    // Cascade delete: Remove all related records for this user
+    // This ensures no orphaned transactions, dues, or investment records
+    await Promise.all([
+      Transaction.deleteMany({ userId }),
+      Due.deleteMany({ userId }),
+      Investment.deleteMany({ contributors: { $elemMatch: { userId } } }),
+    ]);
+    
+    await User.findByIdAndDelete(userId);
     res.json({ ok: true });
   } catch (e) {
     next(e);

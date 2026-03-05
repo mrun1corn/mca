@@ -1,12 +1,13 @@
 import Transaction from "../models/Transaction";
 import DueModel from "../models/Due";
+import User from "../models/User";
 import { Types } from "mongoose";
 
 export type DepositInput = {
   userId: string;
   mode: "simple" | "pay_due";
   dueId?: string | null;
-  amountPoisha: number;
+  amount: number;
   date: string; // ISO date
   note?: string;
   includePenalty?: boolean;
@@ -22,14 +23,20 @@ function isOverdue(dueDate: Date, depositDate: Date, graceDays: number) {
 }
 
 export async function handleDeposit(input: DepositInput) {
-  const { userId, mode, amountPoisha, date, note, actorUserId } = input;
+  const { userId, mode, amount, date, note, actorUserId } = input;
   const occurredAt = new Date(date);
+
+  // Fetch user to get name for transaction record
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+  const userName = user.name;
 
   if (mode === "simple") {
     const tx = await Transaction.create({
       userId: new Types.ObjectId(userId),
+      userName,
       type: "deposit",
-      amountPoisha,
+      amount,
       occurredAt,
       note: note || "Deposit",
       createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,
@@ -51,8 +58,9 @@ export async function handleDeposit(input: DepositInput) {
     // no dues; treat as simple deposit
     const tx = await Transaction.create({
       userId: new Types.ObjectId(userId),
+      userName,
       type: "deposit",
-      amountPoisha,
+      amount,
       occurredAt,
       note: note || "Deposit",
       createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,
@@ -60,14 +68,15 @@ export async function handleDeposit(input: DepositInput) {
     return { tx, duesAffected: [] as string[] };
   }
 
-  let remaining = amountPoisha;
+  let remaining = amount;
   const duesAffected: string[] = [];
 
   // Create a single deposit transaction record
   const depositTx = await Transaction.create({
     userId: new Types.ObjectId(userId),
+    userName,
     type: "deposit",
-    amountPoisha,
+    amount,
     occurredAt,
     note: note || "Deposit (pay due)",
     createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,

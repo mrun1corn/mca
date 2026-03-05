@@ -21,7 +21,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       {
         $group: {
           _id: null,
-          principal: { $sum: "$amountPoisha" },
+          principal: { $sum: "$amount" },
           expectedInterest: { $sum: "$expectedInterestPoisha" },
           count: { $sum: 1 },
         },
@@ -35,30 +35,30 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       const me = await User.findById(meId);
       if (!me) return res.status(404).json({ error: "Not found" });
       const txs = await Transaction.find({ userId: me._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 });
-      const balance = txs.reduce((acc, t) => acc + t.amountPoisha, 0);
+      const balance = txs.reduce((acc, t) => acc + t.amount, 0);
       let userDeposits = 0;
       let userWithdraws = 0;
       for (const tx of txs) {
-        if (tx.type === "deposit") userDeposits += tx.amountPoisha;
-        if (tx.type === "withdraw") userWithdraws += Math.abs(tx.amountPoisha);
+        if (tx.type === "deposit") userDeposits += tx.amount;
+        if (tx.type === "withdraw") userWithdraws += Math.abs(tx.amount);
       }
       let lastMonth = 0;
       if (lastMonthMode === "deposit") {
         lastMonth = txs
           .filter((t) => t.type === "deposit" && t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amountPoisha, 0);
+          .reduce((acc, t) => acc + t.amount, 0);
       } else {
         lastMonth = txs
           .filter((t) => t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amountPoisha, 0);
+          .reduce((acc, t) => acc + t.amount, 0);
       }
       const totalsAgg = await Transaction.aggregate([
         { $match: { userId: me._id, deletedAt: { $exists: false } } },
         { $group: {
           _id: null,
-          deposits: { $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amountPoisha", 0] } },
-          withdraws: { $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amountPoisha", 0] } },
-          balance: { $sum: "$amountPoisha" },
+          deposits: { $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amount", 0] } },
+          withdraws: { $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amount", 0] } },
+          balance: { $sum: "$amount" },
         } },
       ]);
       const totals = totalsAgg[0] || { deposits: 0, withdraws: 0, balance: 0 };
@@ -83,7 +83,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
             balance,
             totalDeposits: userDeposits,
             totalWithdraws: userWithdraws,
-            recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
+            recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amount, note: t.note })),
           },
         ],
       });
@@ -91,14 +91,20 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
 
     // Admin/Accountant: full overview
     const users = await User.find({ status: "active" }).sort({ name: 1 });
+    const activeUserIds = new Set(users.map((u) => String(u._id)));
     let groupBalance = 0;
+    
+    // Only include transactions from active users (exclude orphaned)
     const totalsAgg = await Transaction.aggregate([
-      { $match: { deletedAt: { $exists: false } } },
+      { $match: { 
+        deletedAt: { $exists: false },
+        userId: { $in: users.map((u) => u._id) }  // Only active users
+      } },
       { $group: {
         _id: null,
-        deposits: { $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amountPoisha", 0] } },
-        withdraws: { $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amountPoisha", 0] } },
-        balance: { $sum: "$amountPoisha" },
+        deposits: { $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amount", 0] } },
+        withdraws: { $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amount", 0] } },
+        balance: { $sum: "$amount" },
       } },
     ]);
     const totals = totalsAgg[0] || { deposits: 0, withdraws: 0, balance: 0 };
@@ -106,12 +112,12 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
     const arrearsCount = await Due.countDocuments({ "schedule.status": { $in: ["pending", "partial"] } });
     for (const u of users) {
       const txs = await Transaction.find({ userId: u._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 });
-      const balance = txs.reduce((acc, t) => acc + t.amountPoisha, 0);
+      const balance = txs.reduce((acc, t) => acc + t.amount, 0);
       let totalDeposits = 0;
       let totalWithdraws = 0;
       for (const tx of txs) {
-        if (tx.type === "deposit") totalDeposits += tx.amountPoisha;
-        if (tx.type === "withdraw") totalWithdraws += Math.abs(tx.amountPoisha);
+        if (tx.type === "deposit") totalDeposits += tx.amount;
+        if (tx.type === "withdraw") totalWithdraws += Math.abs(tx.amount);
       }
 
       groupBalance += balance;
@@ -119,11 +125,11 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
       if (lastMonthMode === "deposit") {
         lastMonth = txs
           .filter((t) => t.type === "deposit" && t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amountPoisha, 0);
+          .reduce((acc, t) => acc + t.amount, 0);
       } else {
         lastMonth = txs
           .filter((t) => t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amountPoisha, 0);
+          .reduce((acc, t) => acc + t.amount, 0);
       }
       cards.push({
         userId: u._id,
@@ -132,7 +138,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
         balance,
         totalDeposits,
         totalWithdraws,
-        recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amountPoisha, note: t.note })),
+        recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amount, note: t.note })),
       });
     }
 

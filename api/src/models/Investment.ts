@@ -22,7 +22,7 @@ const InterestScheduleSchema = new Schema(
 const InvestmentSchema = new Schema(
   {
     name: { type: String, required: true },
-    amountPoisha: { type: Number, required: true },
+    amount: { type: Number, required: true },
     startDate: { type: Date, required: true },
     months: { type: Number, default: null },
     monthlyRatePct: { type: Number, default: 0 },

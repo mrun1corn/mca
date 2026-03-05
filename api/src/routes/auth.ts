@@ -84,4 +84,21 @@ router.post("/me/change-password", requireAuth as any, async (req: any, res, nex
   }
 });
 
+// Lightweight auth check - only verifies token without heavy DB queries
+router.get("/auth-check", requireAuth as any, async (req: any, res, next) => {
+  try {
+    // Return basic user info from token - no DB call needed for auth verification
+    res.json({ 
+      ok: true, 
+      user: { 
+        id: req.user.sub, 
+        name: req.user.name, 
+        role: req.user.role 
+      } 
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

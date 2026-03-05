@@ -51,7 +51,7 @@ router.get("/", requireAuth as any, requireRole(["admin", "accountant"]) as any,
       investments.map((inv) => ({
         id: inv._id,
         name: inv.name,
-        amountPoisha: inv.amountPoisha,
+        amount: inv.amount,
         expectedInterestPoisha: inv.expectedInterestPoisha,
         months: inv.months,
         monthlyRatePct: inv.monthlyRatePct,
@@ -83,7 +83,7 @@ router.post("/:id/return", requireAuth as any, requireRole(["admin", "accountant
     }
     const result = await handleInvestmentReturn({
       investmentId: req.params.id,
-      amountPoisha,
+      amount,
       date: body.date,
       note: body.note,
       markCompleted: body.markCompleted,

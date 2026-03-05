@@ -16,7 +16,7 @@ type InvestmentInput = {
 
 type InvestmentReturnInput = {
   investmentId: string;
-  amountPoisha: number;
+  amount: number;
   date: string;
   note?: string;
   markCompleted?: boolean;
@@ -92,7 +92,7 @@ export async function handleInvestment(input: InvestmentInput) {
 }
 
 export async function handleInvestmentReturn(input: InvestmentReturnInput) {
-  const { investmentId, amountPoisha, date, note, markCompleted, actorUserId } = input;
+  const { investmentId, amount, date, note, markCompleted, actorUserId } = input;
   const occurredAt = new Date(date);
   if (!Number.isFinite(occurredAt.getTime())) throw new AppError("Invalid date", 400);
 
@@ -105,13 +105,13 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
 
   const allocations = investment.contributors.map((contrib) => ({
     userId: contrib.userId,
-    amountPoisha: Math.floor((amountPoisha * (contrib.sharePoisha || 0)) / totalShare),
+    amount: Math.floor((amount * (contrib.sharePoisha || 0)) / totalShare),
   }));
-  let allocated = allocations.reduce((sum, a) => sum + a.amountPoisha, 0);
-  let remainder = amountPoisha - allocated;
+  let allocated = allocations.reduce((sum, a) => sum + a.amount, 0);
+  let remainder = amount - allocated;
   let idx = 0;
   while (remainder > 0 && allocations.length > 0) {
-    allocations[idx % allocations.length].amountPoisha += 1;
+    allocations[idx % allocations.length].amount += 1;
     remainder -= 1;
     idx += 1;
   }
@@ -121,18 +121,18 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
     allocations.map((alloc) => ({
       userId: alloc.userId,
       type: "deposit",
-      amountPoisha: alloc.amountPoisha,
+      amount: alloc.amount,
       occurredAt,
       note: note || `Investment return: ${investment.name}`,
       createdBy: actorId,
     }))
   );
 
-  investment.returnedPoisha = (investment.returnedPoisha || 0) + amountPoisha;
+  investment.returnedPoisha = (investment.returnedPoisha || 0) + amount;
   if (markCompleted) {
     investment.status = "completed";
   } else {
-    const expectedTotal = investment.amountPoisha + (investment.expectedInterestPoisha || 0);
+    const expectedTotal = investment.amount + (investment.expectedInterestPoisha || 0);
     if ((investment.returnedPoisha || 0) >= expectedTotal) {
       investment.status = "completed";
     }
@@ -142,6 +142,6 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
   return {
     investmentId: investment._id,
     status: investment.status,
-    deposits: txs.map((tx) => ({ userId: tx.userId, amountPoisha: tx.amountPoisha, transactionId: tx._id })),
+    deposits: txs.map((tx) => ({ userId: tx.userId, amount: tx.amount, transactionId: tx._id })),
   };
 }

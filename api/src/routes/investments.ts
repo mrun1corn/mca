@@ -83,7 +83,7 @@ router.post("/:id/return", requireAuth as any, requireRole(["admin", "accountant
     }
     const result = await handleInvestmentReturn({
       investmentId: req.params.id,
-      amount,
+      amount: amountPoisha,
       date: body.date,
       note: body.note,
       markCompleted: body.markCompleted,

@@ -13,8 +13,11 @@ router.post("/login", async (req, res, next) => {
     const body = parseBody(LoginSchema, req.body);
     const { user, access, refresh } = await authenticateByIdentifierPassword(body.identifier, body.password);
     setAuthCookies(res, access, refresh);
-    // Return tokens in JSON for mobile apps (cookies remain for web)
-    res.json({ user: { id: user._id, name: user.name, role: user.role }, tokens: { access, refresh } });
+    // Return user info directly so client can set auth state immediately
+    res.json({ 
+      user: { id: user._id, name: user.name, role: user.role }, 
+      tokens: { access, refresh } 
+    });
   } catch (e) {
     next(e);
   }

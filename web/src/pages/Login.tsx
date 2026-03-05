@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../App";
 import Button from "../components/Button";
 
 export default function Login() {
@@ -9,13 +10,18 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await api.post("/auth/login", { identifier, password });
+      const res = await api.post("/auth/login", { identifier, password });
+      // Set user directly from login response
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
       navigate("/");
     } catch (e: any) {
       setError(e?.response?.data?.error || "Login failed. Double-check your details and try again.");

@@ -93,7 +93,7 @@ async function main() {
     await Transaction.create({
       userId: user._id,
       type,
-      amountPoisha: amt,
+      amount: amt,
       occurredAt: date,
       note,
       createdBy: admin._id,

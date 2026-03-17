@@ -54,7 +54,7 @@ export async function handleInvestment(input: InvestmentInput) {
   const txs = contributors.map((contrib) => ({
     userId: contrib.userId,
     type: "withdraw",
-    amountPoisha: -contrib.sharePoisha,
+    amount: -contrib.sharePoisha,
     occurredAt: commencedAt,
     note: `Investment: ${name}`,
     createdBy: actorId,

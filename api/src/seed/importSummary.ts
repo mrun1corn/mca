@@ -93,7 +93,7 @@ async function main() {
       await Transaction.create({
         userId: user._id,
         type: "deposit",
-        amountPoisha,
+        amount: amountPoisha,
         occurredAt,
         note: `Imported ${col}`,
         createdBy: admin._id,

@@ -62,7 +62,7 @@ router.post("/deposit", requireAuth as any, requireRole(["admin", "accountant"])
       : Math.round(((body.amount as number) || 0) * 100);
     if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
     const { amount, ...rest } = body as any;
-    const result = await handleDeposit({ ...rest, amountPoisha, actorUserId: req.user.sub });
+    const result = await handleDeposit({ ...rest, amount: amountPoisha, actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -96,7 +96,7 @@ router.post("/withdraw", requireAuth as any, requireRole(["admin", "accountant"]
       : Math.round(((body.amount as number) || 0) * 100);
     if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
     const { amount, ...rest } = body as any;
-    const result = await handleWithdraw({ ...rest, amountPoisha, actorUserId: req.user.sub });
+    const result = await handleWithdraw({ ...rest, amount: amountPoisha, actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);

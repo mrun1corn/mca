@@ -118,10 +118,10 @@ export async function handleWithdraw(input: WithdrawInput) {
     const total = principalPart + interest;
     schedule.push({
       dueDate: dates[m],
-      principalPartPoisha: principalPart,
-      interestPoisha: interest,
-      totalDuePoisha: total,
-      paidPoisha: 0,
+      principalPart: principalPart,
+      interest: interest,
+      totalDue: total,
+      paid: 0,
       status: "pending",
     });
     remainingPrincipal -= principalPart;
@@ -131,7 +131,7 @@ export async function handleWithdraw(input: WithdrawInput) {
   const dueDoc = await Due.create({
     userId: takerObjectId,
     cashOutTxId: takerTx._id,
-    principal,
+    principal: principal,
     months,
     monthlyRatePct,
     schedule,

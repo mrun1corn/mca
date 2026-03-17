@@ -25,7 +25,7 @@ router.get("/transactions", requireAuth as any, async (req: any, res, next) => {
       q.userId = req.user.sub;
     }
     const items = await Transaction.find(q).sort({ occurredAt: -1 }).limit(Number(limit));
-    // Map to a stable API shape without 'Poisha'
+    // Map to a stable API shape
     const rows = items.map((t) => ({
       _id: t._id,
       userId: t.userId,
@@ -44,9 +44,7 @@ const DepositSchema = z.object({
   userId: z.string(),
   mode: z.enum(["simple", "pay_due"]),
   dueId: z.string().optional().nullable(),
-  // Accept either amountPoisha (integer) or amount (BDT)
-  amountPoisha: z.number().int().positive().optional(),
-  amount: z.number().positive().optional(),
+  amount: z.number().positive(),
   date: z.string(),
   note: z.string().optional(),
   includePenalty: z.boolean().optional(),
@@ -57,12 +55,9 @@ const DepositSchema = z.object({
 router.post("/deposit", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req: any, res, next) => {
   try {
     const body = parseBody(DepositSchema, req.body);
-    const amountPoisha = typeof body.amountPoisha === 'number'
-      ? body.amountPoisha
-      : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
-    const { amount, ...rest } = body as any;
-    const result = await handleDeposit({ ...rest, amount: amountPoisha, actorUserId: req.user.sub });
+    const amount = typeof body.amount === 'number' ? body.amount : 0;
+    if (!amount || !Number.isFinite(amount) || amount <= 0) throw new AppError("Invalid amount", 400);
+    const result = await handleDeposit({ ...body, amount, actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -73,9 +68,7 @@ const WithdrawSchema = z.object({
   takerId: z.string(),
   reason: z.string().optional(),
   date: z.string(),
-  // Accept either amountPoisha (integer) or amount (BDT)
-  amountPoisha: z.number().int().positive().optional(),
-  amount: z.number().positive().optional(),
+  amount: z.number().positive(),
   due: z.object({
     useDefaultDate: z.boolean(),
     defaultDate: z.string().nullable(),
@@ -91,12 +84,9 @@ const WithdrawSchema = z.object({
 router.post("/withdraw", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req: any, res, next) => {
   try {
     const body = parseBody(WithdrawSchema, req.body);
-    const amountPoisha = typeof body.amountPoisha === 'number'
-      ? body.amountPoisha
-      : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
-    const { amount, ...rest } = body as any;
-    const result = await handleWithdraw({ ...rest, amount: amountPoisha, actorUserId: req.user.sub });
+    const amount = typeof body.amount === 'number' ? body.amount : 0;
+    if (!amount || !Number.isFinite(amount) || amount <= 0) throw new AppError("Invalid amount", 400);
+    const result = await handleWithdraw({ ...body, amount, actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);

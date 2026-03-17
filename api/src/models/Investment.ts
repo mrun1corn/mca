@@ -3,7 +3,7 @@ import { Schema, model, Types } from "mongoose";
 const ContributorSchema = new Schema(
   {
     userId: { type: Types.ObjectId, ref: "User", required: true },
-    sharePoisha: { type: Number, required: true },
+    share: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -12,7 +12,7 @@ const InterestScheduleSchema = new Schema(
   {
     monthIndex: { type: Number, required: true },
     dueDate: { type: Date, required: true },
-    interestPoisha: { type: Number, required: true },
+    interest: { type: Number, required: true },
     status: { type: String, enum: ["pending", "realized"], default: "pending" },
     realizedAt: { type: Date },
   },
@@ -26,11 +26,11 @@ const InvestmentSchema = new Schema(
     startDate: { type: Date, required: true },
     months: { type: Number, default: null },
     monthlyRatePct: { type: Number, default: 0 },
-    expectedInterestPoisha: { type: Number, required: true },
+    expectedInterest: { type: Number, required: true },
     contributors: { type: [ContributorSchema], default: [] },
     schedule: { type: [InterestScheduleSchema], default: [] },
     status: { type: String, enum: ["active", "completed"], default: "active" },
-    returnedPoisha: { type: Number, default: 0 },
+    returnedAmount: { type: Number, default: 0 },
     createdBy: { type: Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

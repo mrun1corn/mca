@@ -22,7 +22,7 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
         $group: {
           _id: null,
           principal: { $sum: "$amount" },
-          expectedInterest: { $sum: "$expectedInterestPoisha" },
+          expectedInterest: { $sum: "$expectedInterest" },
           count: { $sum: 1 },
         },
       },

@@ -6,7 +6,7 @@ import Investment from "../models/Investment";
 
 type InvestmentInput = {
   name: string;
-  amountPoisha: number;
+  amount: number;
   startDate: string;
   months?: number | null;
   monthlyRatePct?: number;
@@ -30,7 +30,7 @@ function addMonths(date: Date, months: number) {
 }
 
 export async function handleInvestment(input: InvestmentInput) {
-  const { name, amountPoisha, startDate, months, monthlyRatePct = 0, excludeMemberIds = [], actorUserId } = input;
+  const { name, amount, startDate, months, monthlyRatePct = 0, excludeMemberIds = [], actorUserId } = input;
   const commencedAt = new Date(startDate);
   if (!Number.isFinite(commencedAt.getTime())) {
     throw new AppError("Invalid start date", 400);
@@ -43,18 +43,18 @@ export async function handleInvestment(input: InvestmentInput) {
   if (!eligible.length) throw new AppError("No eligible contributors for this investment", 400);
 
   const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
-  const base = Math.floor(amountPoisha / eligible.length);
-  const remainder = amountPoisha - base * eligible.length;
+  const base = Math.floor(amount / eligible.length);
+  const remainder = amount - base * eligible.length;
 
   const contributors = eligible.map((u, idx) => ({
     userId: u._id,
-    sharePoisha: base + (idx === eligible.length - 1 ? remainder : 0),
+    share: base + (idx === eligible.length - 1 ? remainder : 0),
   }));
 
   const txs = contributors.map((contrib) => ({
     userId: contrib.userId,
     type: "withdraw",
-    amount: -contrib.sharePoisha,
+    amount: -contrib.share,
     occurredAt: commencedAt,
     note: `Investment: ${name}`,
     createdBy: actorId,
@@ -62,15 +62,15 @@ export async function handleInvestment(input: InvestmentInput) {
   await Transaction.insertMany(txs);
 
   const schedule: any[] = [];
-  let expectedInterestPoisha = 0;
+  let expectedInterest = 0;
   if (boundedMonths) {
     for (let i = 0; i < boundedMonths; i++) {
-      const interest = Math.floor((amountPoisha * monthlyRatePct) / 100);
-      expectedInterestPoisha += interest;
+      const interest = Math.floor((amount * monthlyRatePct) / 100);
+      expectedInterest += interest;
       schedule.push({
         monthIndex: i,
         dueDate: addMonths(commencedAt, i + 1),
-        interestPoisha: interest,
+        interest: interest,
         status: "pending" as const,
       });
     }
@@ -78,11 +78,11 @@ export async function handleInvestment(input: InvestmentInput) {
 
   const investment = await Investment.create({
     name,
-    amountPoisha,
+    amount: amount,
     startDate: commencedAt,
     months: boundedMonths,
     monthlyRatePct: boundedMonths ? monthlyRatePct : 0,
-    expectedInterestPoisha,
+    expectedInterest,
     contributors,
     schedule,
     createdBy: actorId,
@@ -100,12 +100,12 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
   if (!investment) throw new AppError("Investment not found", 404);
   if (!investment.contributors?.length) throw new AppError("Investment has no contributors", 400);
 
-  const totalShare = investment.contributors.reduce((sum, c) => sum + (c.sharePoisha || 0), 0);
+  const totalShare = investment.contributors.reduce((sum, c) => sum + (c.share || 0), 0);
   if (!totalShare) throw new AppError("Invalid contributor shares", 400);
 
   const allocations = investment.contributors.map((contrib) => ({
     userId: contrib.userId,
-    amount: Math.floor((amount * (contrib.sharePoisha || 0)) / totalShare),
+    amount: Math.floor((amount * (contrib.share || 0)) / totalShare),
   }));
   let allocated = allocations.reduce((sum, a) => sum + a.amount, 0);
   let remainder = amount - allocated;
@@ -128,12 +128,12 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
     }))
   );
 
-  investment.returnedPoisha = (investment.returnedPoisha || 0) + amount;
+  investment.returnedAmount = (investment.returnedAmount || 0) + amount;
   if (markCompleted) {
     investment.status = "completed";
   } else {
-    const expectedTotal = investment.amount + (investment.expectedInterestPoisha || 0);
-    if ((investment.returnedPoisha || 0) >= expectedTotal) {
+    const expectedTotal = investment.amount + (investment.expectedInterest || 0);
+    if ((investment.returnedAmount || 0) >= expectedTotal) {
       investment.status = "completed";
     }
   }

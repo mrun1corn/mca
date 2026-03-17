@@ -32,9 +32,9 @@ type TransactionSnapshot = {
 type InvestmentSummary = {
   id: string;
   name: string;
-  amountPoisha: number;
-  expectedInterestPoisha: number;
-  returnedPoisha?: number;
+  amount: number;
+  expectedInterest: number;
+  returnedAmount?: number;
   status: "active" | "completed";
   startDate: string;
 };
@@ -472,8 +472,8 @@ function TotalBalanceDrawer({
           ) : investments && investments.length ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {investments.map((inv) => {
-                const returned = inv.returnedPoisha || 0;
-                const total = inv.amountPoisha + (inv.expectedInterestPoisha || 0);
+                const returned = inv.returnedAmount || 0;
+                const total = inv.amount + (inv.expectedInterest || 0);
                 const pct = total ? Math.min(100, Math.round((returned / total) * 100)) : 0;
                 return (
                   <div key={inv.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-2">
@@ -483,7 +483,7 @@ function TotalBalanceDrawer({
                         {inv.status === "completed" ? "Completed" : "Active"}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Principal: {formatBDT(inv.amountPoisha)}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Principal: {formatBDT(inv.amount)}</p>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       Returned {formatBDT(returned)} of {formatBDT(total)} ({pct}%)
                     </div>

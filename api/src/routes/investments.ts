@@ -9,8 +9,7 @@ const router = Router();
 
 const CreateInvestmentSchema = z.object({
   name: z.string().min(2),
-  amount: z.number().positive().optional(),
-  amountPoisha: z.number().int().positive().optional(),
+  amount: z.number().positive(),
   startDate: z.string(),
   months: z.number().int().min(1).optional(),
   monthlyRatePct: z.number().min(0).optional(),
@@ -21,8 +20,8 @@ const CreateInvestmentSchema = z.object({
 router.post("/", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req: any, res, next) => {
   try {
     const body = parseBody(CreateInvestmentSchema, req.body);
-    const amountPoisha = typeof body.amountPoisha === "number" ? body.amountPoisha : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) {
+    const amount = typeof body.amount === 'number' ? body.amount : 0;
+    if (!amount || !Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
     const openEnded = body.openEnded ?? false;
@@ -31,7 +30,7 @@ router.post("/", requireAuth as any, requireRole(["admin", "accountant"]) as any
     }
     const result = await handleInvestment({
       name: body.name,
-      amountPoisha,
+      amount,
       startDate: body.startDate,
       months: openEnded ? undefined : body.months,
       monthlyRatePct: openEnded ? 0 : body.monthlyRatePct,
@@ -52,12 +51,12 @@ router.get("/", requireAuth as any, requireRole(["admin", "accountant"]) as any,
         id: inv._id,
         name: inv.name,
         amount: inv.amount,
-        expectedInterestPoisha: inv.expectedInterestPoisha,
+        expectedInterest: inv.expectedInterest,
         months: inv.months,
         monthlyRatePct: inv.monthlyRatePct,
         startDate: inv.startDate,
         status: inv.status,
-        returnedPoisha: inv.returnedPoisha || 0,
+        returnedAmount: inv.returnedAmount || 0,
         createdAt: inv.createdAt,
       }))
     );
@@ -67,8 +66,7 @@ router.get("/", requireAuth as any, requireRole(["admin", "accountant"]) as any,
 });
 
 const ReturnInvestmentSchema = z.object({
-  amount: z.number().positive().optional(),
-  amountPoisha: z.number().int().positive().optional(),
+  amount: z.number().positive(),
   date: z.string(),
   note: z.string().optional(),
   markCompleted: z.boolean().optional(),
@@ -77,13 +75,13 @@ const ReturnInvestmentSchema = z.object({
 router.post("/:id/return", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req: any, res, next) => {
   try {
     const body = parseBody(ReturnInvestmentSchema, req.body);
-    const amountPoisha = typeof body.amountPoisha === "number" ? body.amountPoisha : Math.round(((body.amount as number) || 0) * 100);
-    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) {
+    const amount = typeof body.amount === 'number' ? body.amount : 0;
+    if (!amount || !Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
     const result = await handleInvestmentReturn({
       investmentId: req.params.id,
-      amount: amountPoisha,
+      amount,
       date: body.date,
       note: body.note,
       markCompleted: body.markCompleted,

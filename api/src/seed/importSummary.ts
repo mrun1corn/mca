@@ -8,14 +8,14 @@ import User from "../models/User";
 import Transaction from "../models/Transaction";
 import { hashPassword } from "../lib/auth";
 
-function toPoishaFromTakaString(s: string): number {
-  const cleaned = s.replace(/[^0-9.\-]/g, "");
+function toAmountFromString(s: string): number {
+  const cleaned = s.replace(/[^0-9.-]/g, "");
   const n = parseFloat(cleaned);
   if (isNaN(n)) return 0;
-  return Math.round(n * 100);
+  return n;
 }
 
-function extractAmountAndDate(cell: any): { amountPoisha: number; dateISO: string | null } | null {
+function extractAmountAndDate(cell: any): { amount: number; dateISO: string | null } | null {
   if (cell == null || cell === "") return null;
   const str = String(cell);
   // formats like: "5000.00 (2025-05-01T00:00:00.000Z)" or "2000.00 (2025-08-15)"
@@ -23,12 +23,12 @@ function extractAmountAndDate(cell: any): { amountPoisha: number; dateISO: strin
   if (!m) return null;
   const amountPart = m[1].trim();
   const datePartRaw = m[2].trim();
-  const amountPoisha = toPoishaFromTakaString(amountPart);
+  const amount = toAmountFromString(amountPart);
   // remove time component like T00:00:00.000Z, keep just YYYY-MM-DD
   const dateOnly = datePartRaw.split("T")[0];
   // normalize to YYYY-MM-DD
   const iso = /\d{4}-\d{2}-\d{2}/.test(dateOnly) ? dateOnly : null;
-  return { amountPoisha, dateISO: iso };
+  return { amount, dateISO: iso };
 }
 
 async function ensureAdmin() {
@@ -87,13 +87,13 @@ async function main() {
       const cell = r[col];
       const parsed = extractAmountAndDate(cell);
       if (!parsed) continue;
-      const { amountPoisha, dateISO } = parsed;
-      if (!amountPoisha || !dateISO) continue;
+      const { amount, dateISO } = parsed;
+      if (!amount || !dateISO) continue;
       const occurredAt = new Date(dateISO); // date-only, no time zone shift
       await Transaction.create({
         userId: user._id,
         type: "deposit",
-        amount: amountPoisha,
+        amount,
         occurredAt,
         note: `Imported ${col}`,
         createdBy: admin._id,

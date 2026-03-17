@@ -91,7 +91,7 @@ export async function handleDeposit(input: DepositInput) {
       const rule: any = (due as any).penaltyRule || { enabled: true, monthlyPenaltyPct: 1.0, graceDays: 3 };
       const grace = input.graceDays ?? rule.graceDays;
       const penaltyPct = input.penaltyPctPerMonth ?? rule.monthlyPenaltyPct;
-      let totalDue = item.totalDuePoisha;
+      let totalDue = item.totalDue;
       // Penalty applies only if overdue and includePenalty true
       if (input.includePenalty) {
         if (isOverdue(new Date(item.dueDate), occurredAt, grace) && rule.enabled) {
@@ -101,12 +101,12 @@ export async function handleDeposit(input: DepositInput) {
         }
       }
 
-      const remainingForItem = totalDue - (item.paidPoisha || 0);
+      const remainingForItem = totalDue - (item.paid || 0);
       if (remainingForItem <= 0) continue;
 
       const pay = Math.min(remaining, remainingForItem);
-      item.paidPoisha = (item.paidPoisha || 0) + pay;
-      if (item.paidPoisha >= totalDue) item.status = "paid";
+      item.paid = (item.paid || 0) + pay;
+      if (item.paid >= totalDue) item.status = "paid";
       else item.status = "partial";
       remaining -= pay;
       changed = true;

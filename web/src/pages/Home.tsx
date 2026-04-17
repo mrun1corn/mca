@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import MemberCard from "../components/MemberCard";
 import MemberDrawer from "../components/MemberDrawer";
 import { SkeletonCard, SkeletonList, SkeletonLine } from "../components/Skeleton";
@@ -172,7 +172,7 @@ export default function Home() {
     }> = [
       {
         label: "Total balance",
-        value: formatBDT(data.groupBalance),
+        value: formatAmount(data.groupBalance),
         icon: <MoneyIcon className="w-5 h-5" />,
         variant: "success" as const,
         helper: "Tap to see deposits vs. withdrawals",
@@ -180,7 +180,7 @@ export default function Home() {
       },
       {
         label: "Available cash",
-        value: formatBDT(data.groupBalance),
+        value: formatAmount(data.groupBalance),
         icon: <MoneyIcon className="w-5 h-5" />,
         variant: "default" as const,
         helper: "Tap to see per-member balances",
@@ -192,9 +192,9 @@ export default function Home() {
     if (role !== "user") {
       const info = data.investments || { principal: 0, expectedInterest: 0 };
       stats.push(
-        { label: "Invested funds", value: formatBDT(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
-        { label: "Expected interest", value: formatBDT(info.expectedInterest), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
-        { label: "Total collected", value: formatBDT(data.totalDeposits), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const }
+        { label: "Invested funds", value: formatAmount(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
+        { label: "Expected interest", value: formatAmount(info.expectedInterest), icon: <MoneyIcon className="w-5 h-5" />, variant: "success" as const },
+        { label: "Total collected", value: formatAmount(data.totalDeposits), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const }
       );
     }
     return stats;
@@ -231,10 +231,10 @@ export default function Home() {
         />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard label="Savings balance" value={formatBDT(currentBalance)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
-          <StatCard label="Total contributed" value={formatBDT(totalDeposits)} icon={<HomeIcon className="w-5 h-5" />} variant="info" />
+          <StatCard label="Savings balance" value={formatAmount(currentBalance)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
+          <StatCard label="Total contributed" value={formatAmount(totalDeposits)} icon={<HomeIcon className="w-5 h-5" />} variant="info" />
           {nextEmi > 0 && (
-            <StatCard label="Next payment due" value={formatBDT(nextEmi)} icon={<MoneyIcon className="w-5 h-5" />} variant="danger" />
+            <StatCard label="Next payment due" value={formatAmount(nextEmi)} icon={<MoneyIcon className="w-5 h-5" />} variant="danger" />
           )}
         </div>
 
@@ -254,7 +254,7 @@ export default function Home() {
               <div key={t._id} className="grid grid-cols-12 items-center text-sm py-2 px-2">
                 <span className="col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
                 <span className={`col-span-5 ${t.type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>{t.note || t.type}</span>
-                <span className="col-span-4 text-right">{formatBDT(t.amount)}</span>
+                <span className="col-span-4 text-right">{formatAmount(t.amount)}</span>
               </div>
             ))}
             {!txs.data?.length && <div className="text-sm text-slate-500 px-2 py-3">No recent transactions.</div>}
@@ -291,7 +291,7 @@ export default function Home() {
               const total = yearSummaries[item.year];
               const display =
                 typeof total === "number" ? (
-                  formatBDT(total)
+                  formatAmount(total)
                 ) : yearSummaryLoading ? (
                   <SkeletonLine className="h-5 w-24" />
                 ) : (
@@ -401,10 +401,10 @@ function TotalBalanceDrawer({
           </button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-4">
-          <StatCard label="Collected overall" value={formatBDT(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
-          <StatCard label="Deducted / invested" value={formatBDT(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} variant="danger" />
-          <StatCard label="Net balance" value={formatBDT(net)} icon={<MoneyIcon className="w-5 h-5" />} variant="info" />
-          <StatCard label="Available cash" value={formatBDT(available)} icon={<MoneyIcon className="w-5 h-5" />} variant="default" />
+          <StatCard label="Collected overall" value={formatAmount(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
+          <StatCard label="Deducted / invested" value={formatAmount(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} variant="danger" />
+          <StatCard label="Net balance" value={formatAmount(net)} icon={<MoneyIcon className="w-5 h-5" />} variant="info" />
+          <StatCard label="Available cash" value={formatAmount(available)} icon={<MoneyIcon className="w-5 h-5" />} variant="default" />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -423,9 +423,9 @@ function TotalBalanceDrawer({
                   {rows.map((row) => (
                     <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
                       <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">{row.name}</td>
-                      <td className="py-2 px-3 text-right">{formatBDT(row.totalDeposits || 0)}</td>
-                      <td className="py-2 px-3 text-right">{formatBDT(row.totalWithdraws || 0)}</td>
-                      <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatBDT(row.balance || 0)}</td>
+                      <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
+                      <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
+                      <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
                     </tr>
                   ))}
                   {!rows.length && (
@@ -453,7 +453,7 @@ function TotalBalanceDrawer({
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">{tx.note || "Withdrawal"}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(tx.occurredAt).toLocaleDateString("en-BD")}</p>
                     </div>
-                    <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{formatBDT(Math.abs(tx.amount || 0))}</p>
+                    <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{formatAmount(Math.abs(tx.amount || 0))}</p>
                   </div>
                 ))}
               </div>
@@ -483,9 +483,9 @@ function TotalBalanceDrawer({
                         {inv.status === "completed" ? "Completed" : "Active"}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Principal: {formatBDT(inv.amount)}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Principal: {formatAmount(inv.amount)}</p>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Returned {formatBDT(returned)} of {formatBDT(total)} ({pct}%)
+                      Returned {formatAmount(returned)} of {formatAmount(total)} ({pct}%)
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                       <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />

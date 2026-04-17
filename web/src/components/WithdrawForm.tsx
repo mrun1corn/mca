@@ -1,6 +1,6 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import { useToast } from "./Toast";
 import Button from "./Button";
 
@@ -268,7 +268,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
             {preview.rows.map((r) => (
               <div key={r.userId} className="flex justify-between px-4 py-2 border-b last:border-b-0 border-slate-100 dark:border-slate-800 text-sm">
                 <span className="truncate pr-4">{r.name}</span>
-                <span className="font-medium">{formatBDT(r.share)}</span>
+                <span className="font-medium">{formatAmount(r.share)}</span>
               </div>
             ))}
           </div>

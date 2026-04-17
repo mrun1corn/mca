@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { formatBDT } from "../lib/api";
+import { formatAmount } from "../lib/api";
 import { avatarColor, initials } from "../lib/ui";
 
 function MemberCard({ card, onClick }: { card: any; onClick?: () => void }) {
@@ -22,9 +22,9 @@ function MemberCard({ card, onClick }: { card: any; onClick?: () => void }) {
               </span>
             ) : null}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Last month: {formatBDT(card.lastMonth)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Last month: {formatAmount(card.lastMonth)}</div>
           <div className="text-sm text-gray-700 dark:text-gray-200">
-            Balance <span className="font-semibold text-emerald-600 dark:text-emerald-300">{formatBDT(card.balance)}</span>
+            Balance <span className="font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(card.balance)}</span>
           </div>
         </div>
       </div>

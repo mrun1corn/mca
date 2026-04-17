@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
 import { SkeletonCard } from "./Skeleton";
@@ -91,7 +91,7 @@ export default function InvestmentReturnForm() {
         <select className="input w-full h-12" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
           {activeInvestments.map((inv) => (
             <option key={inv.id} value={inv.id}>
-              {inv.name} · {formatBDT(inv.amountPoisha)} out
+              {inv.name} · {formatAmount(inv.amountPoisha)} out
             </option>
           ))}
         </select>
@@ -111,7 +111,7 @@ export default function InvestmentReturnForm() {
           {selectedInvestment ? (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Expected total:{" "}
-              {formatBDT(selectedInvestment.amountPoisha + selectedInvestment.expectedInterestPoisha - (selectedInvestment.returnedPoisha || 0))}
+              {formatAmount(selectedInvestment.amountPoisha + selectedInvestment.expectedInterestPoisha - (selectedInvestment.returnedPoisha || 0))}
             </p>
           ) : null}
         </div>

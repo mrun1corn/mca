@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { FlatList, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { api, formatBDT } from '../lib/api';
+import { api, formatAmount } from '../lib/api';
 import MemberDrawer from '../components/MemberDrawer';
 import Screen from '../components/ui/Screen';
 import ThemeText from '../components/ui/ThemeText';
@@ -98,14 +98,14 @@ export default function Home() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           <ThemedCard
             title="Current balance"
-            value={formatBDT(currentBalance)}
+            value={formatAmount(currentBalance)}
             icon={<Ionicons name="wallet" size={22} color="#fff" />}
             tone="primary"
             style={{ flexBasis: '48%' }}
           />
           <ThemedCard
             title="Total deposits"
-            value={formatBDT(totalDeposits)}
+            value={formatAmount(totalDeposits)}
             icon={<Ionicons name="trending-up" size={20} color="#15803d" />}
             tone="success"
             style={{ flexBasis: '48%' }}
@@ -113,7 +113,7 @@ export default function Home() {
           {nextEmi > 0 ? (
             <ThemedCard
               title="Next payment"
-              value={formatBDT(nextEmi)}
+              value={formatAmount(nextEmi)}
               icon={<Ionicons name="calendar" size={20} color="#b45309" />}
               tone="surface"
               style={{ flexBasis: '48%' }}
@@ -128,7 +128,7 @@ export default function Home() {
                 <View key={t._id} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <ThemeText tone="dim">{new Date(t.occurredAt).toISOString().slice(0, 10)}</ThemeText>
                   <ThemeText tone={t.type === 'deposit' ? 'success' : 'danger'}>
-                    {formatBDT(t.amount)}
+                    {formatAmount(t.amount)}
                   </ThemeText>
                 </View>
               ))}
@@ -147,7 +147,7 @@ export default function Home() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <View>
                   <ThemeText>{item.name}</ThemeText>
-                  <ThemeText tone="dim">Balance: {formatBDT(item.balance)}</ThemeText>
+                  <ThemeText tone="dim">Balance: {formatAmount(item.balance)}</ThemeText>
                 </View>
                 {item.userId === myId ? (
                   <ThemeButton
@@ -176,7 +176,7 @@ export default function Home() {
     },
     {
       title: 'Total balance',
-      value: formatBDT(data.groupBalance),
+      value: formatAmount(data.groupBalance),
       icon: <Ionicons name="wallet" size={22} color="#2563eb" />,
       tone: 'surface' as const,
     },
@@ -189,13 +189,13 @@ export default function Home() {
   ];
   metrics.push({
     title: 'Invested principal',
-    value: formatBDT(investmentInfo.principal),
+    value: formatAmount(investmentInfo.principal),
     icon: <Ionicons name="briefcase" size={20} color="#2563eb" />,
     tone: 'surface' as const,
   });
   metrics.push({
     title: 'Projected interest',
-    value: formatBDT(investmentInfo.expectedInterest),
+    value: formatAmount(investmentInfo.expectedInterest),
     icon: <Ionicons name="trending-up" size={20} color="#16a34a" />,
     tone: 'success' as const,
   });
@@ -218,7 +218,7 @@ export default function Home() {
         ))}
         <ThemedCard
           title="Available balance"
-          value={formatBDT(data.remainingBalance)}
+          value={formatAmount(data.remainingBalance)}
           icon={<Ionicons name="cash" size={22} color="#15803d" />}
           tone="success"
           style={{ flexBasis: '48%' }}
@@ -247,8 +247,8 @@ export default function Home() {
           <ThemedCard
             key={card.userId}
             title={card.name}
-            subtitle={`Last month: ${formatBDT(card.lastMonth)}`}
-            value={`Balance ${formatBDT(card.balance)}`}
+            subtitle={`Last month: ${formatAmount(card.lastMonth)}`}
+            value={`Balance ${formatAmount(card.balance)}`}
             tone="surface"
             onPress={canViewMemberDetails ? () => setDrawerUserId(String(card.userId)) : undefined}
             style={{ flexBasis: '48%' }}

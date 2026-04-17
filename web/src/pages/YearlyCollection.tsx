@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import PageHeader from "../components/layout/PageHeader";
 import Panel from "../components/ui/Panel";
 import { useSearchParams } from "react-router-dom";
@@ -93,7 +93,7 @@ export default function YearlyCollectionPage() {
               <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{year}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {typeof total === "number" ? (
-                  formatBDT(total)
+                  formatAmount(total)
                 ) : isSelected && yearlyCollection.isLoading ? (
                   <SkeletonLine className="h-4 w-24" />
                 ) : (
@@ -111,7 +111,7 @@ export default function YearlyCollectionPage() {
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Total collected: {typeof totalForSelected === "number" ? formatBDT(totalForSelected) : "—"}
+            Total collected: {typeof totalForSelected === "number" ? formatAmount(totalForSelected) : "—"}
           </p>
           {drawerUser ? (
             <button
@@ -170,12 +170,12 @@ function YearlyCollectionCards({
                 <div className="mt-3 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
                   <div>
                     <p className="text-xs uppercase">This year</p>
-                    <p className="text-base font-semibold text-slate-900 dark:text-white">{formatBDT(user.total)}</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">{formatAmount(user.total)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs uppercase">This month</p>
                     <p className="text-base font-semibold text-slate-900 dark:text-white">
-                      {lastMonthAmount ? formatBDT(lastMonthAmount) : "—"}
+                      {lastMonthAmount ? formatAmount(lastMonthAmount) : "—"}
                     </p>
                   </div>
                 </div>
@@ -191,12 +191,12 @@ function YearlyCollectionCards({
             <div key={`monthly-total-${label}`}>
               <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
               <p className="font-semibold text-slate-900 dark:text-white">
-                {data.monthlyTotals[idx] ? formatBDT(data.monthlyTotals[idx]) : "—"}
+                {data.monthlyTotals[idx] ? formatAmount(data.monthlyTotals[idx]) : "—"}
               </p>
             </div>
           ))}
         </div>
-        <div className="mt-4 text-right text-base font-bold text-slate-900 dark:text-white">Year total: {formatBDT(data.total)}</div>
+        <div className="mt-4 text-right text-base font-bold text-slate-900 dark:text-white">Year total: {formatAmount(data.total)}</div>
       </div>
     </div>
   );
@@ -247,12 +247,12 @@ function YearlyCollectionDrawer({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Year total</p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{formatBDT(user.total)}</p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{formatAmount(user.total)}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
             <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Current month</p>
             <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">
-              {user.monthly[new Date().getMonth()] ? formatBDT(user.monthly[new Date().getMonth()]) : "—"}
+              {user.monthly[new Date().getMonth()] ? formatAmount(user.monthly[new Date().getMonth()]) : "—"}
             </p>
           </div>
         </div>
@@ -263,7 +263,7 @@ function YearlyCollectionDrawer({
               <div key={`${user.userId}-drawer-${label}`} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
                 <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {user.monthly[idx] ? formatBDT(user.monthly[idx]) : "—"}
+                  {user.monthly[idx] ? formatAmount(user.monthly[idx]) : "—"}
                 </p>
               </div>
             ))}

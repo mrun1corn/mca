@@ -26,7 +26,7 @@ async function main() {
   for (let m = 1; m <= 3; m++) {
     for (const u of users) {
       const d = new Date(today.getFullYear(), today.getMonth() - m, 5 + m);
-      await Transaction.create({ userId: u._id, userName: u.name, type: "deposit", amount: 50000 + m * 1000, occurredAt: d, note: "Seed deposit" });
+      await Transaction.create({ userId: u._id, userName: u.name, type: "deposit", amount: 500000 + m * 10000, occurredAt: d, note: "Seed deposit" });
     }
   }
 
@@ -35,15 +35,15 @@ async function main() {
     takerId: String(u1._id),
     reason: "Medical",
     date: new Date().toISOString().slice(0, 10),
-    amount: 200000,
+    amount: 2000000,
     due: { useDefaultDate: true, defaultDate: new Date(today.getFullYear(), today.getMonth() + 1, 10).toISOString(), startDate: null, endDate: null, months: 3, monthlyRatePct: 2.0 },
     penalty: { enabled: true, monthlyPenaltyPct: 1.0, graceDays: 3 },
     excludeMemberIds: [],
   });
 
   // some recent deposits after withdraw
-  await Transaction.create({ userId: u1._id, type: "deposit", amount: 60000, occurredAt: new Date(), note: "Weekly saving" });
-  await Transaction.create({ userId: u2._id, type: "deposit", amount: 45000, occurredAt: new Date(), note: "Weekly saving" });
+  await Transaction.create({ userId: u1._id, type: "deposit", amount: 600000, occurredAt: new Date(), note: "Weekly saving" });
+  await Transaction.create({ userId: u2._id, type: "deposit", amount: 450000, occurredAt: new Date(), note: "Weekly saving" });
 
   // eslint-disable-next-line no-console
   console.log("Seed complete", { users: [u1.email, u2.email, u3.email, u4.email], defaultPassword: "ChangeMe123!" });

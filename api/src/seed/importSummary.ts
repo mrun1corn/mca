@@ -12,7 +12,7 @@ function toAmountFromString(s: string): number {
   const cleaned = s.replace(/[^0-9.-]/g, "");
   const n = parseFloat(cleaned);
   if (isNaN(n)) return 0;
-  return n;
+  return Math.round(n * 100);
 }
 
 function extractAmountAndDate(cell: any): { amount: number; dateISO: string | null } | null {

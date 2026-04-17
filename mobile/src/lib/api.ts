@@ -80,8 +80,11 @@ api.interceptors.response.use(
   }
 );
 
-export function formatBDT(amountMinor: number) {
-  const taka = amountMinor / 100;
-  return new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(taka);
+export function formatAmount(amountMinor: number) {
+  const amount = amountMinor / 100;
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 

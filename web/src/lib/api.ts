@@ -10,7 +10,7 @@ export const api = axios.create({
 export function formatAmount(amountMinor: number) {
   const amount = amountMinor / 100;
   return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
 }

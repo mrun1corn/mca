@@ -118,9 +118,9 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
               </div>
               <div className="grid grid-cols-12 text-xs uppercase tracking-wide text-slate-400 px-2">
                 <div className="col-span-3">Date</div>
-                <div className="col-span-4">Details</div>
+                <div className="col-span-3">Details</div>
                 <div className="col-span-3 text-right">Amount</div>
-                <div className="col-span-2 text-right">{me.data?.role !== "user" ? "Actions" : ""}</div>
+                <div className="col-span-3 text-right">{me.data?.role !== "user" ? "Actions" : ""}</div>
               </div>
               {txsLoading ? (
                 <div className="mt-4">
@@ -135,13 +135,13 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                     >
                       <span className="text-slate-600 dark:text-slate-300 sm:col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
                       <span
-                        className={`font-medium sm:col-span-4 ${t.type === "deposit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                        className={`font-medium sm:col-span-3 truncate ${t.type === "deposit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
                       >
                         {t.note || t.type}
                       </span>
                       <span className="font-semibold sm:text-right sm:col-span-3">{formatAmount(t.amount)}</span>
                       {me.data?.role !== "user" ? (
-                        <span className="flex gap-2 sm:justify-end sm:col-span-2">
+                        <span className="flex gap-2 sm:justify-end sm:col-span-3">
                           <Button
                             variant="ghost"
                             size="sm"

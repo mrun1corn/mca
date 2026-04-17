@@ -1,6 +1,6 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
 
@@ -126,7 +126,7 @@ function DepositForm({ userId }: { userId: string }) {
               <option value="">Select due…</option>
               {dues.data?.map((d: any) => (
                 <option key={d._id} value={d._id}>
-                  Principal {formatBDT(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
+                  Principal {formatAmount(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
                 </option>
               ))}
             </select>
@@ -136,7 +136,7 @@ function DepositForm({ userId }: { userId: string }) {
             </label>
             <div className="text-xs text-blue-700 dark:text-blue-200 bg-white/60 dark:bg-slate-900/40 rounded-xl px-3 py-2 inline-flex items-center gap-2">
               <span className="h-2 w-2 bg-blue-500 rounded-full" aria-hidden />
-              Suggested instalment: <strong>{formatBDT(suggested)}</strong>
+              Suggested instalment: <strong>{formatAmount(suggested)}</strong>
             </div>
           </div>
         )}

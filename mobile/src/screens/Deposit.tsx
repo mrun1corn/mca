@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, formatBDT } from '../lib/api';
+import { api, formatAmount as apiFormatAmount } from '../lib/api';
 import UserSelect from '../components/UserSelect';
 import { useTheme } from '../theme';
 import Screen from '../components/ui/Screen';
@@ -11,7 +11,7 @@ import ThemeButton from '../components/ui/ThemeButton';
 import ThemeInput from '../components/ui/ThemeInput';
 
 function formatAmount(value: number) {
-  return formatBDT(value);
+  return apiFormatAmount(value);
 }
 
 

@@ -90,64 +90,128 @@ router.get("/", requireAuth as any, async (req: any, res, next) => {
     }
 
     // Admin/Accountant: full overview
-    const users = await User.find({ status: "active" }).sort({ name: 1 });
-    const activeUserIds = new Set(users.map((u) => String(u._id)));
-    let groupBalance = 0;
-    
-    // Only include transactions from active users (exclude orphaned)
-    const totalsAgg = await Transaction.aggregate([
-      { $match: { 
-        deletedAt: { $exists: false },
-        userId: { $in: users.map((u) => u._id) }  // Only active users
-      } },
-      { $group: {
-        _id: null,
-        deposits: { $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amount", 0] } },
-        withdraws: { $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amount", 0] } },
-        balance: { $sum: "$amount" },
-      } },
-    ]);
-    const totals = totalsAgg[0] || { deposits: 0, withdraws: 0, balance: 0 };
-    const cards = [] as any[];
     const arrearsCount = await Due.countDocuments({ "schedule.status": { $in: ["pending", "partial"] } });
-    for (const u of users) {
-      const txs = await Transaction.find({ userId: u._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 });
-      const balance = txs.reduce((acc, t) => acc + t.amount, 0);
-      let totalDeposits = 0;
-      let totalWithdraws = 0;
-      for (const tx of txs) {
-        if (tx.type === "deposit") totalDeposits += tx.amount;
-        if (tx.type === "withdraw") totalWithdraws += Math.abs(tx.amount);
+    const cards = await User.aggregate([
+      { $match: { status: "active" } },
+      { $sort: { name: 1 } },
+      {
+        $lookup: {
+          from: "transactions",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$userId"] },
+                    { $not: ["$deletedAt"] }
+                  ]
+                }
+              }
+            },
+            { $sort: { occurredAt: -1 } }
+          ],
+          as: "txs"
+        }
+      },
+      {
+        $addFields: {
+          totalDeposits: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$txs",
+                    as: "t",
+                    cond: { $eq: ["$$t.type", "deposit"] }
+                  }
+                },
+                as: "t",
+                in: "$$t.amount"
+              }
+            }
+          },
+          totalWithdraws: {
+            $abs: {
+              $sum: {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$txs",
+                      as: "t",
+                      cond: { $eq: ["$$t.type", "withdraw"] }
+                    }
+                  },
+                  as: "t",
+                  in: "$$t.amount"
+                }
+              }
+            }
+          },
+          balance: { $sum: "$txs.amount" },
+          lastMonth: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$txs",
+                    as: "t",
+                    cond: {
+                      $and: [
+                        { $gte: ["$$t.occurredAt", lastMonthStart] },
+                        { $lt: ["$$t.occurredAt", thisMonthStart] },
+                        ...(lastMonthMode === "deposit" ? [{ $eq: ["$$t.type", "deposit"] }] : [])
+                      ]
+                    }
+                  }
+                },
+                as: "t",
+                in: "$$t.amount"
+              }
+            }
+          },
+          recent: {
+            $slice: [
+              {
+                $map: {
+                  input: "$txs",
+                  as: "t",
+                  in: {
+                    date: "$$t.occurredAt",
+                    type: "$$t.type",
+                    amount: "$$t.amount",
+                    note: "$$t.note"
+                  }
+                }
+              },
+              recentCount
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          userId: "$_id",
+          name: 1,
+          lastMonth: 1,
+          balance: 1,
+          totalDeposits: 1,
+          totalWithdraws: 1,
+          recent: 1
+        }
       }
+    ]);
 
-      groupBalance += balance;
-      let lastMonth = 0;
-      if (lastMonthMode === "deposit") {
-        lastMonth = txs
-          .filter((t) => t.type === "deposit" && t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amount, 0);
-      } else {
-        lastMonth = txs
-          .filter((t) => t.occurredAt >= lastMonthStart && t.occurredAt < thisMonthStart)
-          .reduce((acc, t) => acc + t.amount, 0);
-      }
-      cards.push({
-        userId: u._id,
-        name: u.name,
-        lastMonth,
-        balance,
-        totalDeposits,
-        totalWithdraws,
-        recent: txs.slice(0, recentCount).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amount, note: t.note })),
-      });
-    }
+    const groupBalance = cards.reduce((acc, c) => acc + c.balance, 0);
+    const totalDeposits = cards.reduce((acc, c) => acc + c.totalDeposits, 0);
+    const totalWithdraws = cards.reduce((acc, c) => acc + c.totalWithdraws, 0);
 
     res.json({
-      membersCount: users.length,
+      membersCount: cards.length,
       groupBalance,
-      totalDeposits: totals.deposits,
-      totalWithdraws: Math.abs(totals.withdraws || 0),
-      remainingBalance: totals.balance,
+      totalDeposits,
+      totalWithdraws,
+      remainingBalance: groupBalance,
       arrearsCount,
       investments: {
         activeCount: investmentSummary.count,

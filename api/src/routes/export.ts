@@ -23,20 +23,57 @@ router.get("/summary.csv", requireAuth as any, requireRole(["admin", "accountant
   try {
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
     const to = req.query.to ? new Date(String(req.query.to)) : undefined;
-    const q: any = { deletedAt: { $exists: false } };
-    if (from || to) q.occurredAt = {};
-    if (from) q.occurredAt.$gte = from;
-    if (to) q.occurredAt.$lte = to;
-    const users = await User.find({});
-    const rows: any[] = [];
-    for (const u of users) {
-      const txs = await Transaction.find({ ...q, userId: u._id });
-      const deposits = txs.filter((t) => t.type === "deposit").reduce((a, t) => a + t.amount, 0);
-      const withdraws = txs.filter((t) => t.type === "withdraw").reduce((a, t) => a + t.amount, 0);
-      const balance = txs.reduce((a, t) => a + t.amount, 0);
-      const depositsDisplay = deposits.toString();
-      rows.push({ name: u.name, email: u.email || "", deposits, withdraws, balance });
+
+    const match: any = { deletedAt: { $exists: false } };
+    if (from || to) {
+      match.occurredAt = {};
+      if (from) match.occurredAt.$gte = from;
+      if (to) match.occurredAt.$lte = to;
     }
+
+    const aggregation = await Transaction.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$userId",
+          deposits: {
+            $sum: { $cond: [{ $eq: ["$type", "deposit"] }, "$amount", 0] },
+          },
+          withdraws: {
+            $sum: { $cond: [{ $eq: ["$type", "withdraw"] }, "$amount", 0] },
+          },
+          balance: { $sum: "$amount" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          name: "$user.name",
+          email: "$user.email",
+          deposits: 1,
+          withdraws: 1,
+          balance: 1,
+        },
+      },
+      { $sort: { name: 1 } },
+    ]);
+
+    const rows = aggregation.map((row) => ({
+      name: row.name,
+      email: row.email || "",
+      deposits: (row.deposits / 100).toFixed(2),
+      withdraws: (row.withdraws / 100).toFixed(2),
+      balance: (row.balance / 100).toFixed(2),
+    }));
+
     const csv = toCsv(rows, ["name", "email", "deposits", "withdraws", "balance"]);
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=summary.csv");
@@ -74,7 +111,7 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
         name: user?.name || "",
         email: user?.email || "",
         type: t.type,
-        amount: t.amount.toString(),
+        amount: (t.amount / 100).toFixed(2),
         note: t.note || "",
       };
     });

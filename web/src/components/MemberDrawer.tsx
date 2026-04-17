@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, formatBDT } from "../lib/api";
+import { api, formatAmount } from "../lib/api";
 import { CloseIcon, PencilIcon, TrashIcon } from "./Icon";
 import DepositForm from "./DepositForm";
 import WithdrawForm from "./WithdrawForm";
@@ -139,7 +139,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                       >
                         {t.note || t.type}
                       </span>
-                      <span className="font-semibold sm:text-right sm:col-span-3">{formatBDT(t.amount)}</span>
+                      <span className="font-semibold sm:text-right sm:col-span-3">{formatAmount(t.amount)}</span>
                       {me.data?.role !== "user" ? (
                         <span className="flex gap-2 sm:justify-end sm:col-span-2">
                           <Button
@@ -193,11 +193,11 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                 <div className="mt-2 space-y-3 max-h-[420px] overflow-auto pr-1 text-sm">
                   {duesData.map((d: any) => (
                     <div key={d._id} className="rounded-2xl border border-slate-100 dark:border-slate-800">
-                      <div className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Principal: {formatBDT(d.principal)}</div>
+                      <div className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Principal: {formatAmount(d.principal)}</div>
                       {d.schedule.slice(0, 3).map((it: any, i: number) => (
                         <div key={i} className="grid grid-cols-3 items-center px-3 py-2 border-t border-slate-50 dark:border-slate-800">
                           <span>{new Date(it.dueDate).toLocaleDateString("en-BD")}</span>
-                          <span>{formatBDT(it.totalDue)}</span>
+                          <span>{formatAmount(it.totalDue)}</span>
                           <span className="text-right text-xs uppercase tracking-wide">{it.status}</span>
                         </div>
                       ))}

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Modal, View } from 'react-native';
 import { useTheme } from '../theme';
 import { useQuery } from '@tanstack/react-query';
-import { api, formatBDT } from '../lib/api';
+import { api, formatAmount } from '../lib/api';
 import ThemeText from './ui/ThemeText';
 import ThemeButton from './ui/ThemeButton';
 import ThemedCard from './ui/ThemedCard';
@@ -65,7 +65,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
                 >
                   <ThemeText tone="dim">{new Date(item.occurredAt).toISOString().slice(0, 10)}</ThemeText>
                   <ThemeText tone={item.type === 'deposit' ? 'success' : 'danger'}>
-                    {formatBDT(item.amount)}
+                    {formatAmount(item.amount)}
                   </ThemeText>
                 </View>
               ))}
@@ -87,7 +87,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
                   style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
                 >
                   <ThemeText tone="dim">{new Date(item.dueDate).toISOString().slice(0, 10)}</ThemeText>
-                  <ThemeText>{formatBDT((item.totalDue || 0) - (item.paid || 0))}</ThemeText>
+                  <ThemeText>{formatAmount((item.totalDue || 0) - (item.paid || 0))}</ThemeText>
                 </View>
               ))}
             </View>

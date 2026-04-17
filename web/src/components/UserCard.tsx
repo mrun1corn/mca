@@ -1,6 +1,6 @@
 import { memo } from "react";
 import Button from "./Button";
-import { formatBDT } from "../lib/api";
+import { formatAmount } from "../lib/api";
 
 type Props = {
   user: any;
@@ -20,8 +20,8 @@ function UserCard({ user, onEdit, onDelete }: Props) {
           </div>
           <div className="text-sm text-right space-y-1">
             <div className="text-xs text-gray-500 dark:text-gray-400">Balance</div>
-            <div className="font-semibold text-emerald-600 dark:text-emerald-300">{formatBDT(user.balance || 0)}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Last month {formatBDT(user.lastMonth || 0)}</div>
+            <div className="font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(user.balance || 0)}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Last month {formatAmount(user.lastMonth || 0)}</div>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 justify-end">

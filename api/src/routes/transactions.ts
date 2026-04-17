@@ -44,7 +44,8 @@ const DepositSchema = z.object({
   userId: z.string(),
   mode: z.enum(["simple", "pay_due"]),
   dueId: z.string().optional().nullable(),
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
+  amountPoisha: z.number().positive().optional(),
   date: z.string(),
   note: z.string().optional(),
   includePenalty: z.boolean().optional(),
@@ -55,9 +56,14 @@ const DepositSchema = z.object({
 router.post("/deposit", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req: any, res, next) => {
   try {
     const body = parseBody(DepositSchema, req.body);
-    const amount = typeof body.amount === 'number' ? body.amount : 0;
-    if (!amount || !Number.isFinite(amount) || amount <= 0) throw new AppError("Invalid amount", 400);
-    const result = await handleDeposit({ ...body, amount, actorUserId: req.user.sub });
+    let amountPoisha = 0;
+    if (typeof body.amountPoisha === "number") {
+      amountPoisha = body.amountPoisha;
+    } else if (typeof body.amount === "number") {
+      amountPoisha = Math.round(body.amount * 100);
+    }
+    if (!amountPoisha || !Number.isFinite(amountPoisha) || amountPoisha <= 0) throw new AppError("Invalid amount", 400);
+    const result = await handleDeposit({ ...body, amount: amountPoisha, actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -86,7 +92,7 @@ router.post("/withdraw", requireAuth as any, requireRole(["admin", "accountant"]
     const body = parseBody(WithdrawSchema, req.body);
     const amount = typeof body.amount === 'number' ? body.amount : 0;
     if (!amount || !Number.isFinite(amount) || amount <= 0) throw new AppError("Invalid amount", 400);
-    const result = await handleWithdraw({ ...body, amount, actorUserId: req.user.sub });
+    const result = await handleWithdraw({ ...body, amount: Math.round(amount * 100), actorUserId: req.user.sub });
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -111,7 +117,7 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
     if (note !== undefined) update.note = note;
     if (date !== undefined) update.occurredAt = new Date(String(date));
     if (amount !== undefined && tx.type === "deposit") {
-      const amountInt = Math.round(Number(amount));
+      const amountInt = Math.round(Number(amount) * 100);
       if (!Number.isFinite(amountInt)) throw new AppError("Invalid amount", 400);
       update.amount = amountInt;
     }

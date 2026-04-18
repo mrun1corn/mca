@@ -1,3 +1,4 @@
+import "./src/lib/env";
 import { app } from "./src/app";
 import { connectDb } from "./src/lib/db";
 

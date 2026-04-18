@@ -24,7 +24,25 @@ export function loadEnv() {
   }
 }
 
+export function validateEnv() {
+  const required = ["MONGODB_URI", "JWT_SECRET", "DB_NAME"];
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length > 0) {
+    const msg = `[env] Warning: Missing environment variables: ${missing.join(", ")}`;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`${msg}. Production requires all environment variables to be set.`);
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(msg);
+      // eslint-disable-next-line no-console
+      console.warn("[env] Default values will be used for some variables, which is insecure for production.");
+    }
+  }
+}
+
 if (!process.env.__APP_ENV_LOADED) {
   loadEnv();
+  validateEnv();
   process.env.__APP_ENV_LOADED = "1";
 }

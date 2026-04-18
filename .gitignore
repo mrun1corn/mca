@@ -42,3 +42,4 @@ mobile/android/app/build/
 mobile/android/app/debug.keystore
 mobile/.expo/
 .vercel
+.env*.local

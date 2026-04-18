@@ -40,7 +40,7 @@ export async function handleWithdraw(input: WithdrawInput) {
         actorUserId,
       } = input;
 
-      const amount = Math.round(rawAmount);
+      const amount = Number(rawAmount);
       const occurredAt = parseISO(date);
 
       // Fetch taker and eligible users to get names for transaction records
@@ -76,11 +76,11 @@ export async function handleWithdraw(input: WithdrawInput) {
         throw new AppError("No eligible members available for split", 400);
       }
 
-      const base = Math.floor(amount / eligibleCount);
-      const remainder = amount - base * eligibleCount;
+      const base = Math.floor(amount * 100 / eligibleCount) / 100;
+      const remainder = Math.round((amount - base * eligibleCount) * 100) / 100;
       // Create per-eligible-member withdraw tx with -split
       const txs = eligible.map((u, i) => {
-        const share = base + (i === eligible.length - 1 ? remainder : 0);
+        const share = Math.round((base + (i === eligible.length - 1 ? remainder : 0)) * 100) / 100;
         return {
           userId: u._id,
           userName: u.name,
@@ -95,8 +95,8 @@ export async function handleWithdraw(input: WithdrawInput) {
 
       // Create Due schedule for taker
       const principal = amount;
-      const perMonthPrincipal = Math.floor(principal / months);
-      let remainderPrincipal = principal - perMonthPrincipal * months;
+      const perMonthPrincipal = Math.floor(principal * 100 / months) / 100;
+      let remainderPrincipal = Math.round((principal - perMonthPrincipal * months) * 100) / 100;
       let remainingPrincipal = principal;
       const schedule: any[] = [];
 
@@ -115,10 +115,10 @@ export async function handleWithdraw(input: WithdrawInput) {
       }
 
       for (let m = 0; m < months; m++) {
-        const principalPart = perMonthPrincipal + (m === months - 1 ? remainderPrincipal : 0);
+        const principalPart = Math.round((perMonthPrincipal + (m === months - 1 ? remainderPrincipal : 0)) * 100) / 100;
         // Interest each month = remainingPrincipal * (rate/100)
-        const interest = Math.floor((remainingPrincipal * monthlyRatePct) / 100);
-        const total = principalPart + interest;
+        const interest = Math.round((remainingPrincipal * monthlyRatePct)) / 100;
+        const total = Math.round((principalPart + interest) * 100) / 100;
         schedule.push({
           dueDate: dates[m],
           principalPart: principalPart,
@@ -127,7 +127,7 @@ export async function handleWithdraw(input: WithdrawInput) {
           paid: 0,
           status: "pending",
         });
-        remainingPrincipal -= principalPart;
+        remainingPrincipal = Math.round((remainingPrincipal - principalPart) * 100) / 100;
         if (remainingPrincipal < 0) remainingPrincipal = 0;
       }
 

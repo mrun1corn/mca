@@ -13,7 +13,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const [mode, setMode] = useState<"member" | "investment">("member");
   const effectiveMode = userId ? "member" : mode;
   const [takerId, setTakerId] = useState("");
-  const [amount, setAmount] = useState(""); // BDT (taka)
+  const [amount, setAmount] = useState(""); // Whole amount unit
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [months, setMonths] = useState(3);
   const [rate, setRate] = useState(2);

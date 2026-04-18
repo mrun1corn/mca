@@ -36,13 +36,12 @@ export default function Deposit() {
 
   const mutate = useMutation({
     mutationFn: () => {
-      const amountValue = Number(amount) || undefined;
+      const amountValue = Number(amount) || suggested;
       return api.post('/deposit', {
         userId,
         mode,
         dueId: mode === 'pay_due' ? dueId : undefined,
         amount: amountValue,
-        amountPoisha: !amountValue && mode === 'pay_due' ? suggested : undefined,
         date: new Date().toISOString().slice(0, 10),
         note: note || undefined,
         includePenalty: mode === 'pay_due' ? includePenalty : undefined,
@@ -74,7 +73,8 @@ export default function Deposit() {
       withGrace.setDate(withGrace.getDate() + grace);
       let total = base;
       if (includePenalty && today > withGrace && selectedDue.penaltyRule?.enabled) {
-        total += Math.floor((item.totalDue * pct) / 100);
+        const penalty = Math.round((item.totalDue * pct)) / 100;
+        total = Math.round((total + penalty) * 100) / 100;
       }
       return total;
     }
@@ -102,7 +102,7 @@ export default function Deposit() {
 
   useEffect(() => {
     if (mode === 'pay_due' && amount === '' && suggested) {
-      setAmount((suggested / 100).toFixed(2));
+      setAmount(suggested.toFixed(2));
     }
   }, [mode, suggested, amount]);
 
@@ -156,7 +156,7 @@ export default function Deposit() {
           </View>
         ) : null}
 
-        <ThemeText variant="label" style={{ marginTop: 20 }}>Amount (BDT)</ThemeText>
+        <ThemeText variant="label" style={{ marginTop: 20 }}>Amount</ThemeText>
         <ThemeInput
           placeholder="0.00"
           keyboardType="numeric"

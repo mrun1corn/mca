@@ -30,7 +30,7 @@ export async function handleDeposit(input: DepositInput) {
   try {
     await session.withTransaction(async () => {
       const { userId, mode, amount: rawAmount, date, note, actorUserId } = input;
-      const amount = Math.round(rawAmount);
+      const amount = Number(rawAmount);
       const occurredAt = parseISO(date);
 
       // Fetch user to get name for transaction record
@@ -127,19 +127,19 @@ export async function handleDeposit(input: DepositInput) {
           if (input.includePenalty) {
             if (isOverdue(new Date(item.dueDate), occurredAt, grace) && rule.enabled) {
               // Simple monthly penalty on totalDue
-              const penalty = Math.floor((totalDue * penaltyPct) / 100);
-              totalDue += penalty;
+              const penalty = Math.round((totalDue * penaltyPct)) / 100;
+              totalDue = Math.round((totalDue + penalty) * 100) / 100;
             }
           }
 
-          const remainingForItem = totalDue - (item.paid || 0);
+          const remainingForItem = Math.round((totalDue - (item.paid || 0)) * 100) / 100;
           if (remainingForItem <= 0) continue;
 
           const pay = Math.min(remaining, remainingForItem);
-          item.paid = (item.paid || 0) + pay;
+          item.paid = Math.round(((item.paid || 0) + pay) * 100) / 100;
           if (item.paid >= totalDue) item.status = "paid";
           else item.status = "partial";
-          remaining -= pay;
+          remaining = Math.round((remaining - pay) * 100) / 100;
           changed = true;
         }
 

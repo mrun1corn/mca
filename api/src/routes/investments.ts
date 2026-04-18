@@ -30,7 +30,7 @@ router.post("/", requireAuth as any, requireRole(["admin", "accountant"]) as any
     }
     const result = await handleInvestment({
       name: body.name,
-      amount: Math.round(amount * 100),
+      amount: amount,
       startDate: body.startDate,
       months: openEnded ? undefined : body.months,
       monthlyRatePct: openEnded ? 0 : body.monthlyRatePct,
@@ -81,7 +81,7 @@ router.post("/:id/return", requireAuth as any, requireRole(["admin", "accountant
     }
     const result = await handleInvestmentReturn({
       investmentId: req.params.id,
-      amount: Math.round(amount * 100),
+      amount: amount,
       date: body.date,
       note: body.note,
       markCompleted: body.markCompleted,

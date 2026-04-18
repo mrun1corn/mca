@@ -8,13 +8,13 @@ import { SkeletonCard } from "./Skeleton";
 type InvestmentRow = {
   id: string;
   name: string;
-  amountPoisha: number;
-  expectedInterestPoisha: number;
+  amount: number;
+  expectedInterest: number;
   months: number;
   monthlyRatePct: number;
   startDate: string;
   status: "active" | "completed";
-  returnedPoisha?: number;
+  returnedAmount?: number;
 };
 
 export default function InvestmentReturnForm() {
@@ -41,7 +41,7 @@ export default function InvestmentReturnForm() {
   useEffect(() => {
     if (!selectedInvestment) return;
     const suggested =
-      (selectedInvestment.amountPoisha + selectedInvestment.expectedInterestPoisha - (selectedInvestment.returnedPoisha || 0)) / 100;
+      (selectedInvestment.amount + selectedInvestment.expectedInterest - (selectedInvestment.returnedAmount || 0));
     if (!amount && suggested > 0) {
       setAmount(suggested.toFixed(2));
     }
@@ -63,13 +63,13 @@ export default function InvestmentReturnForm() {
       setMarkCompleted(true);
     },
     onError: (err: any) => notify(err?.response?.data?.error || "Failed to record investment return", "error"),
-  });
+    });
 
-  const onSubmit = () => {
+    const onSubmit = () => {
     const amt = Number(amount);
-    if (!selectedId || !amt || !isFinite(amt)) return;
+    if (!selectedId || !amt || !isFinite(amt) || amt <= 0) return;
     mutation.mutate({ amount: amt, date, note, markCompleted });
-  };
+    };
 
   if (isLoading) {
     return (
@@ -91,14 +91,14 @@ export default function InvestmentReturnForm() {
         <select className="input w-full h-12" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
           {activeInvestments.map((inv) => (
             <option key={inv.id} value={inv.id}>
-              {inv.name} · {formatAmount(inv.amountPoisha)} out
+              {inv.name} · {formatAmount(inv.amount)} out
             </option>
           ))}
         </select>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount returning (BDT)</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount returning</label>
           <input
             className="input w-full h-12"
             type="number"
@@ -111,7 +111,7 @@ export default function InvestmentReturnForm() {
           {selectedInvestment ? (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Expected total:{" "}
-              {formatAmount(selectedInvestment.amountPoisha + selectedInvestment.expectedInterestPoisha - (selectedInvestment.returnedPoisha || 0))}
+              {formatAmount(selectedInvestment.amount + selectedInvestment.expectedInterest - (selectedInvestment.returnedAmount || 0))}
             </p>
           ) : null}
         </div>

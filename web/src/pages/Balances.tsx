@@ -54,7 +54,7 @@ export default function BalancesPage() {
         )}
       </div>
 
-      <Panel title="Per-member breakdown" description="All amounts shown in BDT.">
+      <Panel title="Per-member breakdown" description="Detailed list of all member balances.">
         {isLoading ? (
           <div className="py-6">
             <SkeletonTable rows={6} columns={4} />

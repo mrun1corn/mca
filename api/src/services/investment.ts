@@ -31,7 +31,7 @@ export async function handleInvestment(input: InvestmentInput) {
   try {
     await session.withTransaction(async () => {
       const { name, amount: rawAmount, startDate, months, monthlyRatePct = 0, excludeMemberIds = [], actorUserId } = input;
-      const amount = Math.round(rawAmount);
+      const amount = Number(rawAmount);
       const commencedAt = parseISO(startDate);
       const boundedMonths = typeof months === "number" && months > 0 ? months : null;
 
@@ -41,12 +41,12 @@ export async function handleInvestment(input: InvestmentInput) {
       if (!eligible.length) throw new AppError("No eligible contributors for this investment", 400);
 
       const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
-      const base = Math.floor(amount / eligible.length);
-      const remainder = amount - base * eligible.length;
+      const base = Math.floor(amount * 100 / eligible.length) / 100;
+      const remainder = Math.round((amount - base * eligible.length) * 100) / 100;
 
       const contributors = eligible.map((u, idx) => ({
         userId: u._id,
-        share: base + (idx === eligible.length - 1 ? remainder : 0),
+        share: Math.round((base + (idx === eligible.length - 1 ? remainder : 0)) * 100) / 100,
       }));
 
       const txs = contributors.map((contrib) => ({
@@ -63,7 +63,7 @@ export async function handleInvestment(input: InvestmentInput) {
       let expectedInterest = 0;
       if (boundedMonths) {
         for (let i = 0; i < boundedMonths; i++) {
-          const interest = Math.floor((amount * monthlyRatePct) / 100);
+          const interest = Math.round((amount * monthlyRatePct)) / 100;
           expectedInterest += interest;
           schedule.push({
             monthIndex: i,
@@ -106,7 +106,7 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
   try {
     await session.withTransaction(async () => {
       const { investmentId, amount: rawAmount, date, note, markCompleted, actorUserId } = input;
-      const amount = Math.round(rawAmount);
+      const amount = Number(rawAmount);
       const occurredAt = parseISO(date);
 
       const investment = await Investment.findById(investmentId).session(session);
@@ -118,14 +118,14 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
 
       const allocations = investment.contributors.map((contrib) => ({
         userId: contrib.userId,
-        amount: Math.floor((amount * (contrib.share || 0)) / totalShare),
+        amount: Math.floor((amount * (contrib.share || 0) * 100) / totalShare) / 100,
       }));
       let allocated = allocations.reduce((sum, a) => sum + a.amount, 0);
-      let remainder = amount - allocated;
+      let remainder = Math.round((amount - allocated) * 100) / 100;
       let idx = 0;
       while (remainder > 0 && allocations.length > 0) {
-        allocations[idx % allocations.length].amount += 1;
-        remainder -= 1;
+        allocations[idx % allocations.length].amount = Math.round((allocations[idx % allocations.length].amount + 0.01) * 100) / 100;
+        remainder = Math.round((remainder - 0.01) * 100) / 100;
         idx += 1;
       }
 

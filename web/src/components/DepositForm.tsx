@@ -34,7 +34,8 @@ function DepositForm({ userId }: { userId: string }) {
       dueDate.setDate(dueDate.getDate() + grace);
       let total = base;
       if (includePenalty && today > dueDate && selected.penaltyRule?.enabled) {
-        total += Math.floor((item.totalDue * pct) / 100);
+        const penalty = Math.round((item.totalDue * pct)) / 100;
+        total = Math.round((total + penalty) * 100) / 100;
       }
       return total;
     }
@@ -49,7 +50,7 @@ function DepositForm({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (mode === "pay_due" && selected && amount === "") {
-      const taka = (suggested || 0) / 100;
+      const taka = suggested;
       setAmount(taka ? taka.toFixed(2) : "");
     }
   }, [mode, selected, suggested]);
@@ -72,8 +73,7 @@ function DepositForm({ userId }: { userId: string }) {
   const onSubmit = () => {
     const amtTaka = Number(amount);
     const payload: any = { userId, mode, date, note, includePenalty };
-    if (amount) payload.amount = isFinite(amtTaka) ? amtTaka : 0;
-    else payload.amountPoisha = suggested || 0;
+    payload.amount = isFinite(amtTaka) ? amtTaka : suggested;
     if (mode === "pay_due") payload.dueId = dueId;
     mutation.mutate(payload);
   };
@@ -148,7 +148,7 @@ function DepositForm({ userId }: { userId: string }) {
           <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Amount (BDT)">
+          <Field label="Amount">
             <input
               className="input w-full h-12"
               type="number"

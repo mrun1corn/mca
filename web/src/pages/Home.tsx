@@ -64,7 +64,12 @@ export default function Home() {
     gcTime: STALE_TIME * 4,
     refetchOnWindowFocus: false,
   });
-  const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => (await api.get("/me")).data,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
   const role = me.data?.role as undefined | "admin" | "accountant" | "user";
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
   const [yearSummaries, setYearSummaries] = useState<Record<number, number>>({});
@@ -91,11 +96,15 @@ export default function Home() {
     queryKey: ["withdrawals", "totals"],
     queryFn: async () => (await api.get("/transactions", { params: { type: "withdraw", limit: 20 } })).data,
     enabled: showTotalsDrawer,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
   const investmentsQuery = useQuery<InvestmentSummary[]>({
     queryKey: ["investments", "totals-view"],
     queryFn: async () => (await api.get("/investments")).data,
     enabled: showTotalsDrawer,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const nextEmi = useMemo(() => {
@@ -189,7 +198,7 @@ export default function Home() {
       { label: "Active members", value: data.membersCount, icon: <UsersIcon className="w-5 h-5" />, variant: "info" as const },
       { label: "Open dues", value: data.arrearsCount, icon: <HomeIcon className="w-5 h-5" />, variant: "danger" as const },
     ];
-    if (role !== "user") {
+    if (role === "admin" || role === "accountant") {
       const info = data.investments || { principal: 0, expectedInterest: 0 };
       stats.push(
         { label: "Invested funds", value: formatAmount(info.principal), icon: <MoneyIcon className="w-5 h-5" />, variant: "info" as const },
@@ -209,6 +218,20 @@ export default function Home() {
           <SkeletonCard />
           <SkeletonCard />
         </div>
+      </div>
+    );
+  }
+
+  if (home.isError) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-600 dark:text-red-400 mb-4">Failed to load dashboard data.</p>
+        <button
+          onClick={() => home.refetch()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }

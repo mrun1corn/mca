@@ -17,6 +17,8 @@ function DepositForm({ userId }: { userId: string }) {
     queryKey: ["dues", userId],
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
     enabled: !!userId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
   const [dueId, setDueId] = useState<string | null>(null);
   const hasOpenDues = !!dues.data?.length;

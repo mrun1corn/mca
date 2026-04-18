@@ -26,7 +26,12 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const [investmentRate, setInvestmentRate] = useState(3);
   const [investmentOpenEnded, setInvestmentOpenEnded] = useState(false);
 
-  const users = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get(`/users`)).data });
+  const users = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await api.get(`/users`)).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
   useEffect(() => {
     if (userId) {
       setTakerId(userId);

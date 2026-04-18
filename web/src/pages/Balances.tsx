@@ -19,10 +19,12 @@ type HomeResponse = {
 };
 
 export default function BalancesPage() {
-  const { data, isLoading } = useQuery<HomeResponse>({
-    queryKey: ["balances-view"],
+  const { data, isLoading, isError, error, refetch } = useQuery<HomeResponse>({
+    queryKey: ["home"],
     queryFn: async () => (await api.get("/home")).data,
     staleTime: 30_000,
+    gcTime: 120_000,
+    refetchOnWindowFocus: false,
   });
 
   const rows = data?.cards ?? [];
@@ -38,60 +40,74 @@ export default function BalancesPage() {
         description="Totals include every transaction on record. Balances update automatically when you record deposits, dues payments, withdrawals, or investment returns."
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {isLoading ? (
-          <>
-            <SkeletonCard lines={1} />
-            <SkeletonCard lines={1} />
-            <SkeletonCard lines={1} />
-          </>
-        ) : (
-          <>
-            <Summary tile="Total collected" value={formatAmount(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} />
-            <Summary tile="Total deducted" value={formatAmount(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} />
-            <Summary tile="Available cash" value={formatAmount(totalBalance)} icon={<MoneyIcon className="w-5 h-5" />} />
-          </>
-        )}
-      </div>
+      {isError ? (
+        <div className="p-6 text-center">
+          <p className="text-red-600 dark:text-red-400 mb-4">Failed to load balances data.</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {isLoading ? (
+            <>
+              <Summary tile="Total collected" value="—" icon={<MoneyIcon className="w-5 h-5" />} />
+              <Summary tile="Total deducted" value="—" icon={<HomeIcon className="w-5 h-5" />} />
+              <Summary tile="Available cash" value="—" icon={<MoneyIcon className="w-5 h-5" />} />
+            </>
+          ) : (
+            <>
+              <Summary tile="Total collected" value={formatAmount(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} />
+              <Summary tile="Total deducted" value={formatAmount(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} />
+              <Summary tile="Available cash" value={formatAmount(totalBalance)} icon={<MoneyIcon className="w-5 h-5" />} />
+            </>
+          )}
+        </div>
 
-      <Panel title="Per-member breakdown" description="Detailed list of all member balances.">
-        {isLoading ? (
-          <div className="py-6">
-            <SkeletonTable rows={6} columns={4} />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="text-sm text-slate-500">No members found.</div>
-        ) : (
-          <div className="overflow-auto">
-            <table className="min-w-[720px] text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 dark:text-slate-400">
-                  <th className="py-2 pr-3 font-medium">Member</th>
-                  <th className="py-2 px-3 font-medium text-right">Deposited</th>
-                  <th className="py-2 px-3 font-medium text-right">Deducted</th>
-                  <th className="py-2 pl-3 font-medium text-right">Current balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
-                    <td className="py-2 pr-3 text-slate-900 dark:text-white font-medium">{row.name}</td>
-                    <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
-                    <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
-                    <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+        <Panel title="Per-member breakdown" description="Detailed list of all member balances.">
+          {isLoading ? (
+            <div className="py-6">
+              <SkeletonTable rows={6} columns={4} />
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="text-sm text-slate-500">No members found.</div>
+          ) : (
+            <div className="overflow-auto">
+              <table className="min-w-[720px] text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 dark:text-slate-400">
+                    <th className="py-2 pr-3 font-medium">Member</th>
+                    <th className="py-2 px-3 font-medium text-right">Deposited</th>
+                    <th className="py-2 px-3 font-medium text-right">Deducted</th>
+                    <th className="py-2 pl-3 font-medium text-right">Current balance</th>
                   </tr>
-                ))}
-                <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
-                  <td className="py-2 pr-3 font-semibold text-slate-900 dark:text-white">Total</td>
-                  <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalDeposits)}</td>
-                  <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalWithdraws)}</td>
-                  <td className="py-2 pl-3 text-right font-semibold">{formatAmount(totalBalance)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
+                      <td className="py-2 pr-3 text-slate-900 dark:text-white font-medium">{row.name}</td>
+                      <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
+                      <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
+                      <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
+                    <td className="py-2 pr-3 font-semibold text-slate-900 dark:text-white">Total</td>
+                    <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalDeposits)}</td>
+                    <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalWithdraws)}</td>
+                    <td className="py-2 pl-3 text-right font-semibold">{formatAmount(totalBalance)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+        </>
+      )}
     </div>
   );
 }

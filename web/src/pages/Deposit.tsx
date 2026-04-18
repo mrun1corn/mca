@@ -12,7 +12,12 @@ const helperNotes = [
 ];
 
 export default function DepositPage() {
-  const users = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get(`/users`)).data });
+  const users = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await api.get(`/users`)).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
   const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {

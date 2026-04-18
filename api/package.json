@@ -2,17 +2,16 @@
   "name": "community-savings-api",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "seed": "ts-node-dev --transpile-only src/seed/seed.ts",
-    "create-admin": "ts-node-dev --transpile-only src/seed/createAdmin.ts",
-    "import-excel": "ts-node-dev --transpile-only src/seed/importExcel.ts",
-    "import-summary": "ts-node-dev --transpile-only src/seed/importSummary.ts",
-    "replace:transactions": "tsx src/scripts/replaceTransactions.ts",
-    "change-password": "tsx src/seed/changePassword.ts"
-  },
+   "scripts": {
+     "dev": "tsx watch src/server.ts",
+     "build": "tsc -p tsconfig.json",
+     "start": "node dist/server.js",
+     "seed": "ts-node-dev --transpile-only src/seed/seed.ts",
+     "create-admin": "ts-node-dev --transpile-only src/seed/createAdmin.ts",
+     "import-excel": "ts-node-dev --transpile-only src/seed/importExcel.ts",
+     "import-summary": "ts-node-dev --transpile-only src/seed/importSummary.ts",
+     "change-password": "tsx src/seed/changePassword.ts"
+   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",

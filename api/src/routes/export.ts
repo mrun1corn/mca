@@ -69,9 +69,9 @@ router.get("/summary.csv", requireAuth as any, requireRole(["admin", "accountant
     const rows = aggregation.map((row) => ({
       name: row.name,
       email: row.email || "",
-      deposits: (row.deposits / 100).toFixed(2),
-      withdraws: (row.withdraws / 100).toFixed(2),
-      balance: (row.balance / 100).toFixed(2),
+      deposits: row.deposits.toFixed(2),
+      withdraws: row.withdraws.toFixed(2),
+      balance: row.balance.toFixed(2),
     }));
 
     const csv = toCsv(rows, ["name", "email", "deposits", "withdraws", "balance"]);
@@ -111,7 +111,7 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
         name: user?.name || "",
         email: user?.email || "",
         type: t.type,
-        amount: (t.amount / 100).toFixed(2),
+        amount: t.amount.toFixed(2),
         note: t.note || "",
       };
     });

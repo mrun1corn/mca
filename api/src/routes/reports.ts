@@ -50,7 +50,7 @@ router.get("/yearly-collection", requireAuth as any, async (req: any, res, next)
     for (const row of rows) {
       const userId = row._id.userId?.toString();
       const monthIdx = Math.min(11, Math.max(0, (row._id.month || 1) - 1));
-      const amount = (row.amount || 0) / 100;
+      const amount = (row.amount || 0);
       const userMonths = userMonthlyMap.get(userId || "");
       if (!userMonths) continue;
       userMonths[monthIdx] += amount;

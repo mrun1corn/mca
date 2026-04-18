@@ -31,7 +31,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
       await qc.cancelQueries({ queryKey: ["txs", userId] });
       const previous = qc.getQueryData<any[]>(["txs", userId]);
       if (previous && editing) {
-        const next = previous.map((tx) => (tx._id === editing._id ? { ...tx, note: body.note, occurredAt: body.date, amount: body.amount ? Math.round(body.amount * 100) : tx.amount } : tx));
+        const next = previous.map((tx) => (tx._id === editing._id ? { ...tx, note: body.note, occurredAt: body.date, amount: body.amount ?? tx.amount } : tx));
         qc.setQueryData(["txs", userId], next);
       }
       return { previous };
@@ -234,15 +234,15 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                 <input className="input w-full" placeholder="Note" value={editing.note || ""} onChange={(e) => setEditing({ ...(editing as any), note: e.target.value })} />
               </label>
               <label className="space-y-1 block">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Amount (BDT)</span>
+                <span className="text-xs uppercase tracking-wide text-slate-500">Amount</span>
                 <input
                   className="input w-full"
                   type="number"
                   step="0.01"
-                  placeholder="Amount (BDT)"
-                  value={(editing.amount / 100).toFixed(2)}
+                  placeholder="Amount"
+                  value={editing.amount}
                   disabled={editing.type !== "deposit"}
-                  onChange={(e) => setEditing({ ...(editing as any), amount: Math.round(Number(e.target.value) * 100) })}
+                  onChange={(e) => setEditing({ ...(editing as any), amount: Number(e.target.value) })}
                 />
               </label>
             </div>
@@ -254,7 +254,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                 disabled={patchTx.isPending}
                 onClick={() => {
                   const body: any = { note: editing?.note, date: editing?.occurredAt };
-                  if (editing?.type === "deposit" && typeof editing.amount === "number") body.amount = editing.amount / 100;
+                  if (editing?.type === "deposit" && typeof editing.amount === "number") body.amount = editing.amount;
                   patchTx.mutate(body);
                 }}
               >

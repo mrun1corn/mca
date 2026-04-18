@@ -18,7 +18,7 @@ function toAmount(val: any): number {
   if (val == null) return 0;
   const raw = typeof val === "number" ? val : parseFloat(String(val).replace(/[^0-9.-]/g, ""));
   if (isNaN(raw)) return 0;
-  return Math.round(raw * 100);
+  return raw;
 }
 
 function parseDate(val: any): Date {

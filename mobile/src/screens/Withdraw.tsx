@@ -131,7 +131,7 @@ export default function Withdraw() {
         )}
 
         <ThemeText variant="label" style={{ marginTop: 20 }}>
-          Amount (BDT)
+          Amount
         </ThemeText>
         <ThemeInput value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="0.00" />
 

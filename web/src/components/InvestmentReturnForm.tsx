@@ -23,6 +23,8 @@ export default function InvestmentReturnForm() {
   const { data: investments, isLoading } = useQuery<InvestmentRow[]>({
     queryKey: ["investments"],
     queryFn: async () => (await api.get("/investments")).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const activeInvestments = useMemo(() => investments?.filter((inv) => inv.status === "active") ?? [], [investments]);

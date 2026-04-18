@@ -11,10 +11,33 @@ import { SkeletonList, SkeletonTable } from "./Skeleton";
 export default function MemberDrawer({ userId, onClose }: { userId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { notify } = useToast();
-  const { data: txsData = [], isLoading: txsLoading } = useQuery<any[]>({ queryKey: ["txs", userId], queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data, enabled: !!userId });
-  const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get(`/me`)).data });
-  const { data: duesData = [], isLoading: duesLoading } = useQuery<any[]>({ queryKey: ["dues", userId], queryFn: async () => (await api.get(`/users/${userId}/dues`)).data, enabled: !!userId });
-  const { data: member } = useQuery({ queryKey: ["member", userId], queryFn: async () => (await api.get(`/users/${userId}`)).data, enabled: !!userId });
+  const { data: txsData = [], isLoading: txsLoading } = useQuery<any[]>({
+    queryKey: ["txs", userId],
+    queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data,
+    enabled: !!userId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => (await api.get(`/me`)).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+  const { data: duesData = [], isLoading: duesLoading } = useQuery<any[]>({
+    queryKey: ["dues", userId],
+    queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
+    enabled: !!userId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+  const { data: member } = useQuery({
+    queryKey: ["member", userId],
+    queryFn: async () => (await api.get(`/users/${userId}`)).data,
+    enabled: !!userId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
   const [show, setShow] = useState(false);
   useEffect(() => { setShow(true); }, []);
   useEffect(() => {

@@ -43,7 +43,12 @@ export default function People() {
     },
     onError: () => notify("Delete failed", "error"),
   });
-  const me = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => (await api.get("/me")).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
   const isAdmin = me.data?.role === "admin";
 
   const [form, setForm] = useState({ name: "", email: "", role: "user" });

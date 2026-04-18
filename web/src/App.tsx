@@ -5,6 +5,7 @@ import { ToastProvider } from "./components/Toast";
 import { api } from "./lib/api";
 import ThemeToggle from "./components/ThemeToggle";
 import AppShell from "./components/layout/AppShell";
+import Login from "./pages/Login";
 
 // Auth context to manage auth state globally
 type AuthUser = { id: string; name: string; role: string } | null;
@@ -33,7 +34,6 @@ const DepositPage = lazy(() => import("./pages/Deposit"));
 const WithdrawPage = lazy(() => import("./pages/Withdraw"));
 const Export = lazy(() => import("./pages/Export"));
 const Setup = lazy(() => import("./pages/Setup"));
-const Login = lazy(() => import("./pages/Login"));
 const YearlyCollection = lazy(() => import("./pages/YearlyCollection"));
 const Balances = lazy(() => import("./pages/Balances"));
 
@@ -136,9 +136,7 @@ export default function App() {
           <ThemeToggle />
         </div>
         <div className="px-4 pb-10">
-          <Suspense fallback={<LoadingScreen />}>
-            <Login />
-          </Suspense>
+          <Login />
         </div>
       </div>
     </AuthContext.Provider>

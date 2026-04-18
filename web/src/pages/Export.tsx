@@ -9,7 +9,12 @@ export default function Export() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const users = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get(`/users`)).data });
+  const users = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await api.get(`/users`)).data,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
   const qs = new URLSearchParams();
   if (from) qs.set("from", from);
   if (to) qs.set("to", to);

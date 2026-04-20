@@ -25,7 +25,7 @@ export type WithdrawInput = {
 
 export async function handleWithdraw(input: WithdrawInput) {
   const session = await mongoose.startSession();
-  let result: { takerTx: any; due: any } | undefined;
+  let result: { splitTxIds: string[]; due: any } | undefined;
 
   try {
     await session.withTransaction(async () => {
@@ -43,29 +43,13 @@ export async function handleWithdraw(input: WithdrawInput) {
       const amount = Number(rawAmount);
       const occurredAt = parseISO(date);
 
-      // Fetch taker and eligible users to get names for transaction records
+      // Fetch taker to validate existence and get name
       const taker = await User.findById(takerId).session(session);
       if (!taker) throw new Error("Taker not found");
       const takerName = taker.name;
 
       const takerObjectId = new Types.ObjectId(takerId);
       const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
-
-      // Taker withdraw transaction (negative amount)
-      const [takerTx] = await Transaction.create(
-        [
-          {
-            userId: takerObjectId,
-            userName: takerName,
-            type: "withdraw",
-            amount: -Math.abs(amount),
-            occurredAt,
-            note: reason ? `Cash out: ${reason}` : "Cash out",
-            createdBy: actorId,
-          },
-        ],
-        { session }
-      );
 
       // Determine eligible members for split (all active except taker and excluded)
       const allActive = await User.find({ status: "active" }).session(session);
@@ -76,9 +60,9 @@ export async function handleWithdraw(input: WithdrawInput) {
         throw new AppError("No eligible members available for split", 400);
       }
 
+      // Split the amount across eligible members (they fund the cash-out)
       const base = Math.floor(amount * 100 / eligibleCount) / 100;
       const remainder = Math.round((amount - base * eligibleCount) * 100) / 100;
-      // Create per-eligible-member withdraw tx with -split
       const txs = eligible.map((u, i) => {
         const share = Math.round((base + (i === eligible.length - 1 ? remainder : 0)) * 100) / 100;
         return {
@@ -91,9 +75,9 @@ export async function handleWithdraw(input: WithdrawInput) {
           createdBy: actorId,
         };
       });
-      await Transaction.insertMany(txs, { session });
+      const splitTxDocs = await Transaction.insertMany(txs, { session });
 
-      // Create Due schedule for taker
+      // Create Due schedule for taker (their obligation to repay)
       const principal = amount;
       const perMonthPrincipal = Math.floor(principal * 100 / months) / 100;
       let remainderPrincipal = Math.round((principal - perMonthPrincipal * months) * 100) / 100;
@@ -107,7 +91,6 @@ export async function handleWithdraw(input: WithdrawInput) {
         for (let m = 0; m < months; m++) dates.push(addMonths(first, m));
       } else if (!useDefaultDate && startDate && endDate) {
         const start = parseISO(startDate);
-        // Spread monthly from start, ignoring end alignment complexities
         for (let m = 0; m < months; m++) dates.push(addMonths(start, m));
       } else {
         const fallback = addMonths(occurredAt, 1);
@@ -116,7 +99,6 @@ export async function handleWithdraw(input: WithdrawInput) {
 
       for (let m = 0; m < months; m++) {
         const principalPart = Math.round((perMonthPrincipal + (m === months - 1 ? remainderPrincipal : 0)) * 100) / 100;
-        // Interest each month = remainingPrincipal * (rate/100)
         const interest = Math.round((remainingPrincipal * monthlyRatePct)) / 100;
         const total = Math.round((principalPart + interest) * 100) / 100;
         schedule.push({
@@ -124,6 +106,7 @@ export async function handleWithdraw(input: WithdrawInput) {
           principalPart: principalPart,
           interest: interest,
           totalDue: total,
+          penaltyApplied: 0,
           paid: 0,
           status: "pending",
         });
@@ -135,21 +118,23 @@ export async function handleWithdraw(input: WithdrawInput) {
         [
           {
             userId: takerObjectId,
-            cashOutTxId: takerTx._id,
             principal: principal,
             months,
             monthlyRatePct,
             schedule,
+            status: "active",
+            reason: reason || `Cash out by ${takerName}`,
             penaltyRule: penalty,
           },
         ],
         { session }
       );
 
-      result = { takerTx, due: dueDoc };
+      result = { splitTxIds: splitTxDocs.map((t) => String(t._id)), due: dueDoc };
     });
     return result!;
   } finally {
     await session.endSession();
   }
 }
+

@@ -13,7 +13,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
   const { notify } = useToast();
   const { data: txsData = [], isLoading: txsLoading } = useQuery<any[]>({
     queryKey: ["txs", userId],
-    queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data,
+    queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data?.rows ?? [],
     enabled: !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,

@@ -44,6 +44,8 @@ export async function handleInvestment(input: InvestmentInput) {
       const base = Math.floor(amount * 100 / eligible.length) / 100;
       const remainder = Math.round((amount - base * eligible.length) * 100) / 100;
 
+      const userMap = new Map(eligible.map((u) => [String(u._id), u.name]));
+
       const contributors = eligible.map((u, idx) => ({
         userId: u._id,
         share: Math.round((base + (idx === eligible.length - 1 ? remainder : 0)) * 100) / 100,
@@ -51,6 +53,7 @@ export async function handleInvestment(input: InvestmentInput) {
 
       const txs = contributors.map((contrib) => ({
         userId: contrib.userId,
+        userName: userMap.get(String(contrib.userId)) || "",
         type: "withdraw",
         amount: -contrib.share,
         occurredAt: commencedAt,
@@ -129,10 +132,16 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
         idx += 1;
       }
 
+      // Build a user map for userName lookup
+      const contribUserIds = allocations.map((a) => a.userId);
+      const contribUsers = await User.find({ _id: { $in: contribUserIds } }).session(session);
+      const userNameMap = new Map(contribUsers.map((u) => [String(u._id), u.name]));
+
       const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
       const txs = await Transaction.insertMany(
         allocations.map((alloc) => ({
           userId: alloc.userId,
+          userName: userNameMap.get(String(alloc.userId)) || "",
           type: "deposit",
           amount: alloc.amount,
           occurredAt,

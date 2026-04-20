@@ -15,7 +15,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
   const { colors } = useTheme();
   const txs = useQuery({
     queryKey: ['txs', userId],
-    queryFn: async () => (await api.get('/transactions', { params: { userId, limit: 20 } })).data,
+    queryFn: async () => (await api.get('/transactions', { params: { userId, limit: 20 } })).data?.rows ?? [],
     enabled: open,
   });
   const dues = useQuery({

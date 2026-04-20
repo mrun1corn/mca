@@ -89,8 +89,10 @@ function WithdrawForm({ userId }: { userId?: string }) {
   });
 
   const onSubmit = () => {
-    const amtTaka = Number(amount);
-    if (!amtTaka || !isFinite(amtTaka)) return;
+    const raw = Number(amount);
+    // Normalize to 2dp to avoid floating-point drift
+    const amtTaka = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
+    if (!amtTaka) return;
     if (effectiveMode === "member") {
       withdrawMutation.mutate({
         takerId,

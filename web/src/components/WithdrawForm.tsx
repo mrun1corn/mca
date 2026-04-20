@@ -54,14 +54,14 @@ function WithdrawForm({ userId }: { userId?: string }) {
 
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   useEffect(() => {
-    const amtTaka = Number(amount);
-    if (!amtTaka || amtTaka <= 0 || !isFinite(amtTaka)) {
+    const amt = Number(amount);
+    if (!amt || amt <= 0 || !isFinite(amt)) {
       setPreview(null);
       return;
     }
     const excludeIds = excluded.join(",");
     api
-      .get(`/preview/withdraw-split`, { params: { amount: amtTaka, excludeIds } })
+      .get(`/preview/withdraw-split`, { params: { amount: amt, excludeIds } })
       .then((r) => setPreview(r.data))
       .catch(() => setPreview(null));
   }, [amount, excluded]);
@@ -91,12 +91,12 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const onSubmit = () => {
     const raw = Number(amount);
     // Normalize to 2dp to avoid floating-point drift
-    const amtTaka = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
-    if (!amtTaka) return;
+    const amt = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
+    if (!amt) return;
     if (effectiveMode === "member") {
       withdrawMutation.mutate({
         takerId,
-        amount: amtTaka,
+        amount: amt,
         date,
         reason: "Withdraw",
         excludeMemberIds: excluded,
@@ -106,7 +106,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
     } else {
       investmentMutation.mutate({
         name: investmentName || `Investment ${new Date(investmentStart).toLocaleDateString()}`,
-        amount: amtTaka,
+        amount: amt,
         startDate: investmentStart,
         months: investmentOpenEnded ? undefined : investmentMonths,
         monthlyRatePct: investmentOpenEnded ? undefined : investmentRate,
@@ -248,7 +248,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
           <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Amount (BDT)">
+          <Field label="Amount">
             <input className="input w-full h-12" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </Field>
           <Field label="Date">

@@ -52,8 +52,8 @@ function DepositForm({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (mode === "pay_due" && selected && amount === "") {
-      const taka = suggested;
-      setAmount(taka ? taka.toFixed(2) : "");
+      const suggestedAmount = suggested;
+      setAmount(suggestedAmount ? suggestedAmount.toFixed(2) : "");
     }
   }, [mode, selected, suggested]);
 
@@ -75,9 +75,9 @@ function DepositForm({ userId }: { userId: string }) {
   const onSubmit = () => {
     const raw = Number(amount);
     // Normalize to 2dp to avoid floating-point drift (e.g. 1000.10 → 1000.0999...)
-    const amtTaka = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
+    const amt = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
     const payload: any = { userId, mode, date, note, includePenalty };
-    payload.amount = amtTaka || suggested;
+    payload.amount = amt || suggested;
     if (mode === "pay_due") payload.dueId = dueId;
     mutation.mutate(payload);
   };

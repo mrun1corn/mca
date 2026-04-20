@@ -80,7 +80,7 @@ export async function importExcel() {
     const phone = obj.phone || obj.mobile || undefined;
     const typeRaw = (obj.type || obj.tx_type || obj.category || "deposit").toString().toLowerCase();
     const type = typeRaw.includes("with") || typeRaw.includes("cash") ? "withdraw" : "deposit";
-    const amount = toAmount(obj.amount || obj.amount_poisha || obj.value || 0);
+    const amount = toAmount(obj.amount || obj.value || 0);
     const date = parseDate(obj.date || obj.occurred_at || obj.when || new Date());
     const note = obj.note || obj.description || "Imported";
     if (!name || !amount) continue;

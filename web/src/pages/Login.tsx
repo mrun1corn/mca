@@ -20,6 +20,7 @@ export default function Login() {
       const res = await api.post("/auth/login", { identifier, password });
       // Set user directly from login response
       if (res.data?.user) {
+        localStorage.setItem("hasSession", "true");
         setUser(res.data.user);
       }
       navigate("/");

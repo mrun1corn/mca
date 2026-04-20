@@ -31,9 +31,12 @@ export const FullScreenLoader = () => (
   </div>
 );
 
+import { SkeletonCard, SkeletonList } from "./components/Skeleton";
+
 export const PageLoader = () => (
-  <div className="p-10 flex justify-center">
-    <div className="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin" />
+  <div className="space-y-6 animate-fade-in p-2">
+    <SkeletonCard lines={2} />
+    <SkeletonList rows={3} columns={1} />
   </div>
 );
 
@@ -93,7 +96,9 @@ function ProtectedLayout() {
 
 export default function App() {
   const [user, setUser] = useState<AuthUser>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(() => {
+    return localStorage.getItem("hasSession") === "true";
+  });
   const [queryClient] = useState(() => ({
     invalidateQueries: () => Promise.resolve(),
     clear: () => {},

@@ -1,6 +1,7 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../../lib/api";
 import { APP_NAME } from "../../lib/config";
 import ThemeToggle from "../ThemeToggle";
@@ -52,10 +53,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const mobileNavRef = useRef<HTMLDivElement | null>(null);
-  const [mobileNavHeight, setMobileNavHeight] = useState<"auto" | number>(0);
-  const [navAnimating, setNavAnimating] = useState(false);
-  const navVisible = mobileNavOpen || navAnimating;
 
   const role = (me?.role ?? "user") as Role;
   const filteredNav = navItems.filter((item) => !item.roles || item.roles.includes(role));
@@ -64,34 +61,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  useEffect(() => {
-    const el = mobileNavRef.current;
-    if (!el) return;
-    if (mobileNavOpen) {
-      const contentHeight = el.scrollHeight;
-      setNavAnimating(true);
-      setMobileNavHeight(contentHeight);
-      const timeout = setTimeout(() => {
-        setMobileNavHeight("auto");
-        setNavAnimating(false);
-      }, 260);
-      return () => clearTimeout(timeout);
-    } else {
-      setNavAnimating(true);
-      const currentHeight = el.scrollHeight;
-      setMobileNavHeight(currentHeight);
-      requestAnimationFrame(() => {
-        setMobileNavHeight(0);
-      });
-      const timeout = setTimeout(() => setNavAnimating(false), 260);
-      return () => clearTimeout(timeout);
-    }
-  }, [mobileNavOpen]);
-
   const logout = async () => {
     try {
       await api.post("/auth/logout");
     } finally {
+      localStorage.removeItem("hasSession");
+      localStorage.setItem("logout", Date.now().toString());
       navigate("/login", { replace: true });
     }
   };
@@ -164,58 +139,62 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <span className={`h-0.5 w-5 rounded-full bg-current transition ${mobileNavOpen ? "-translate-y-1 -rotate-45" : ""}`} />
             </button>
           </div>
-          <div
-            ref={mobileNavRef}
-            className={`w-full sm:px-1 sm:-mx-1 lg:mx-0 flex flex-col gap-3 overflow-hidden transition-[height,opacity] duration-250 ${
-              navVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            style={{ height: mobileNavHeight === "auto" ? "auto" : `${mobileNavHeight}px` }}
-            aria-hidden={!navVisible}
-          >
-            <div
-              className={`rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/80 px-3 py-4 shadow-sm transition duration-300 ${
-                mobileNavOpen ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
-              }`}
-            >
-              <ThemeToggle />
-              <button
-                onClick={logout}
-                className="inline-flex items-center gap-2 text-sm font-medium text-rose-600 hover:text-rose-500 dark:text-rose-400"
+          <AnimatePresence initial={false}>
+            {mobileNavOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="w-full sm:px-1 sm:-mx-1 lg:mx-0 flex flex-col gap-3 overflow-hidden"
               >
-                <LogoutIcon className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
-            <div
-              className={`flex flex-wrap gap-2 w-full sm:flex-nowrap sm:overflow-x-auto sm:pb-1 transition duration-300 ${
-                mobileNavOpen ? "opacity-100 translate-y-0 delay-75" : "opacity-0 -translate-y-2"
-              }`}
-            >
-                {filteredNav.map((item) => {
-                  const isActive = location.pathname === item.to;
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border w-full justify-center sm:w-auto sm:justify-start shadow-sm ${
-                        isActive
-                          ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-100"
-                          : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4" />
-                      {item.label}
-                    </NavLink>
-                  );
-                })}
-            </div>
-          </div>
+                <div className="rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/80 px-3 py-4 shadow-sm">
+                  <ThemeToggle />
+                  <button
+                    onClick={logout}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-rose-600 hover:text-rose-500 dark:text-rose-400 mt-2"
+                  >
+                    <LogoutIcon className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 w-full sm:flex-nowrap sm:overflow-x-auto sm:pb-1">
+                  {filteredNav.map((item) => {
+                    const isActive = location.pathname === item.to;
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm border w-full justify-center sm:w-auto sm:justify-start shadow-sm ${
+                          isActive
+                            ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-100"
+                            : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                        }`}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        {item.label}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-          <div key={location.pathname} className="mx-auto max-w-6xl animate-page-fade">
-            {children}
-          </div>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8 overflow-x-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="mx-auto max-w-6xl"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
           <footer className="max-w-6xl mx-auto text-xs text-slate-400 dark:text-slate-500 mt-8 text-center">
             Built for community groups that prefer clarity over corporate-speak.
           </footer>

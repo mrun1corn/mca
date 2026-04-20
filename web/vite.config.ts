@@ -61,6 +61,16 @@ export default defineConfig(({ mode }) => {
     esbuild: {
       target: "es2018"
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            query: ['@tanstack/react-query']
+          }
+        }
+      }
+    },
     server,
   };
 });

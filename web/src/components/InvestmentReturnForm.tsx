@@ -4,6 +4,9 @@ import { api, formatAmount } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
 import { SkeletonCard } from "./Skeleton";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
+import { EmptyState } from "./ui/EmptyState";
 
 type InvestmentRow = {
   id: string;
@@ -83,49 +86,33 @@ export default function InvestmentReturnForm() {
   }
 
   if (!activeInvestments.length) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">No active investments to return yet.</div>;
+    return <EmptyState title="No active investments" message="There are no active investments to return yet." />;
   }
 
   return (
     <div className="space-y-5">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Which investment is returning?</label>
-        <select className="input w-full h-12" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-          {activeInvestments.map((inv) => (
-            <option key={inv.id} value={inv.id}>
-              {inv.name} · {formatAmount(inv.amount)} out
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select label="Which investment is returning?" className="h-12" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        {activeInvestments.map((inv) => (
+          <option key={inv.id} value={inv.id}>
+            {inv.name} · {formatAmount(inv.amount)} out
+          </option>
+        ))}
+      </Select>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount returning</label>
-          <input
-            className="input w-full h-12"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-          {selectedInvestment ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Expected total:{" "}
-              {formatAmount(selectedInvestment.amount + selectedInvestment.expectedInterest - (selectedInvestment.returnedAmount || 0))}
-            </p>
-          ) : null}
-        </div>
-        <div>
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Date received</label>
-          <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
+        <Input
+          label="Amount returning"
+          className="h-12"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          hint={selectedInvestment ? `Expected total: ${formatAmount(selectedInvestment.amount + selectedInvestment.expectedInterest - (selectedInvestment.returnedAmount || 0))}` : undefined}
+        />
+        <Input label="Date received" className="h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
-      <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Note</label>
-        <input className="input w-full" value={note} onChange={(e) => setNote(e.target.value)} />
-      </div>
+      <Input label="Note" className="w-full" value={note} onChange={(e) => setNote(e.target.value)} />
       <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
         <input type="checkbox" checked={markCompleted} onChange={(e) => setMarkCompleted(e.target.checked)} />
         Mark this investment as completed

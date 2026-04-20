@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
 import { useToast } from "./Toast";
 import Button from "./Button";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
+import { Field } from "./ui/Field";
 
 type PreviewResponse = { eligibleCount: number; rows: { userId: string; name: string; share: number }[] };
 
@@ -151,34 +154,35 @@ function WithdrawForm({ userId }: { userId?: string }) {
           </h3>
         </header>
         {effectiveMode === "member" ? (
-          <Field label="Member">
-            {userId ? (
+          userId ? (
+            <Field label="Member">
               <div className="text-base font-semibold text-slate-900 dark:text-white">
                 {users.data?.find((u: any) => u.id === userId)?.name || userId}
               </div>
-            ) : (
-              <select className="input w-full h-12" value={takerId} onChange={(e) => setTakerId(e.target.value)}>
-                {users.data?.map((u: any) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
+            </Field>
+          ) : (
+            <Select label="Member" className="h-12" value={takerId} onChange={(e) => setTakerId(e.target.value)}>
+              {users.data?.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </Select>
+          )
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Investment name">
-              <input
-                className="input w-full"
-                placeholder="e.g. Community fridge fund"
-                value={investmentName}
-                onChange={(e) => setInvestmentName(e.target.value)}
-              />
-            </Field>
-            <Field label="Start date">
-              <input className="input w-full" type="date" value={investmentStart} onChange={(e) => setInvestmentStart(e.target.value)} />
-            </Field>
+            <Input
+              label="Investment name"
+              placeholder="e.g. Community fridge fund"
+              value={investmentName}
+              onChange={(e) => setInvestmentName(e.target.value)}
+            />
+            <Input
+              label="Start date"
+              type="date"
+              value={investmentStart}
+              onChange={(e) => setInvestmentStart(e.target.value)}
+            />
             <Field label="Months invested">
               <div className="space-y-2">
                 <input
@@ -199,16 +203,14 @@ function WithdrawForm({ userId }: { userId?: string }) {
                 </label>
               </div>
             </Field>
-            <Field label="Monthly interest %">
-              <input
-                className="input w-full"
-                type="number"
-                step="0.1"
-                value={investmentRate}
-                onChange={(e) => setInvestmentRate(Number(e.target.value))}
-                disabled={investmentOpenEnded}
-              />
-            </Field>
+            <Input
+              label="Monthly interest %"
+              type="number"
+              step="0.1"
+              value={investmentRate}
+              onChange={(e) => setInvestmentRate(Number(e.target.value))}
+              disabled={investmentOpenEnded}
+            />
           </div>
         )}
       </section>
@@ -220,24 +222,16 @@ function WithdrawForm({ userId }: { userId?: string }) {
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">How will this be paid back?</h3>
           </header>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Months">
-              <input className="input w-full" type="number" min={1} value={months} onChange={(e) => setMonths(Number(e.target.value))} />
-            </Field>
-            <Field label="Monthly rate %">
-              <input className="input w-full" type="number" step="0.1" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
-            </Field>
+            <Input label="Months" type="number" min={1} value={months} onChange={(e) => setMonths(Number(e.target.value))} />
+            <Input label="Monthly rate %" type="number" step="0.1" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
           </div>
           <label className="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
             Apply penalty when overdue
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Penalty % per month">
-              <input className="input" type="number" step="0.1" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
-            </Field>
-            <Field label="Grace days">
-              <input className="input" type="number" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
-            </Field>
+            <Input label="Penalty % per month" type="number" step="0.1" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
+            <Input label="Grace days" type="number" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
           </div>
         </section>
       )}
@@ -248,12 +242,8 @@ function WithdrawForm({ userId }: { userId?: string }) {
           <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Amount">
-            <input className="input w-full h-12" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </Field>
-          <Field label="Date">
-            <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field>
+          <Input label="Amount" className="h-12" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input label="Date" className="h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <Field label="Exclude members from this split" hint={preview ? `${preview.eligibleCount} sharing` : "Everyone shares"}>
           <div className="max-h-32 overflow-auto border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-sm space-y-1.5 bg-white/70 dark:bg-slate-900/40">
@@ -320,26 +310,6 @@ function ModeCard({
       <div className="text-sm font-semibold">{title}</div>
       <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">{body}</div>
     </button>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
-        {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}
-      </div>
-      {children}
-    </div>
   );
 }
 

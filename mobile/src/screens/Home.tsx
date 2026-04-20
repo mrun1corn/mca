@@ -167,7 +167,7 @@ export default function Home() {
     );
   }
 
-  const metrics = [
+  const metrics: { title: string; value: string; icon: JSX.Element; tone: 'default' | 'surface' | 'success' | 'danger' | 'primary' }[] = [
     {
       title: 'Members',
       value: String(data.membersCount),

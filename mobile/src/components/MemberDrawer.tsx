@@ -6,6 +6,7 @@ import { api, formatAmount } from '../lib/api';
 import ThemeText from './ui/ThemeText';
 import ThemeButton from './ui/ThemeButton';
 import ThemedCard from './ui/ThemedCard';
+import ThemeEmptyState from './ui/ThemeEmptyState';
 
 type TxRow = { _id: string; occurredAt: string; type: string; amount: number };
 type DueRow = { dueDate: string; totalDue: number; paid: number; status: string };
@@ -71,9 +72,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
               ))}
             </View>
           ) : (
-            <ThemeText tone="dim" style={{ marginBottom: 16 }}>
-              No recent transactions.
-            </ThemeText>
+            <ThemeEmptyState message="No recent transactions." />
           )}
 
           <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
@@ -92,7 +91,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
               ))}
             </View>
           ) : (
-            <ThemeText tone="dim">No open dues.</ThemeText>
+            <ThemeEmptyState message="No open dues." />
           )}
 
           <ThemeButton title="Close" variant="secondary" onPress={onClose} style={{ marginTop: 20 }} />

@@ -19,12 +19,21 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const LoadingScreen = () => (
-  <div className="p-4">
-    <div className="animate-pulse space-y-3 max-w-2xl">
-      <div className="h-6 w-32 rounded-full bg-slate-200 dark:bg-slate-800" />
-      <div className="h-10 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+export const FullScreenLoader = () => (
+  <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+    <div className="flex flex-col items-center space-y-6 animate-fade-in">
+      <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin" />
+      <div className="text-center space-y-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Community Savings</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-widest">Preparing Workspace</p>
+      </div>
     </div>
+  </div>
+);
+
+export const PageLoader = () => (
+  <div className="p-10 flex justify-center">
+    <div className="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin" />
   </div>
 );
 
@@ -42,7 +51,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   
   // While checking auth, show loading (but user already on login page)
   if (isAuthChecking) {
-    return <LoadingScreen />;
+    return <FullScreenLoader />;
   }
   
   // Not authenticated - redirect to login
@@ -74,7 +83,7 @@ function ProtectedLayout() {
   return (
     <RequireAuth>
       <AppShell>
-        <Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>
       </AppShell>
@@ -129,7 +138,7 @@ export default function App() {
     }
   }, []);
 
-  const loginScreen = (
+  const loginScreen = user ? <Navigate to="/" replace /> : (
     <AuthContext.Provider value={{ user, setUser, isAuthChecking }}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <div className="flex justify-end px-4 pt-4">
@@ -141,6 +150,7 @@ export default function App() {
       </div>
     </AuthContext.Provider>
   );
+
 
   return (
     <ToastProvider>

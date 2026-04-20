@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from '../screens/Login';
 import MainTabs from './tabs';
@@ -36,7 +37,13 @@ export default function RootNavigator() {
   if (!ready) {
     return (
       <Screen style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <ThemeText tone="dim">Preparing your workspace…</ThemeText>
+        <ActivityIndicator size="large" style={{ marginBottom: 20 }} />
+        <ThemeText variant="subtitle" style={{ fontWeight: '600' }}>
+          Community Savings
+        </ThemeText>
+        <ThemeText tone="dim" style={{ marginTop: 8 }}>
+          Preparing your workspace…
+        </ThemeText>
       </Screen>
     );
   }

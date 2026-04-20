@@ -9,35 +9,10 @@ import StatCard from "../components/ui/StatCard";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/layout/PageHeader";
 import { MoneyIcon, UsersIcon, HomeIcon, CloseIcon } from "../components/Icon";
+import TotalsDrawer, { MemberSummary, TransactionSnapshot, InvestmentSummary } from "../components/TotalsDrawer";
+import { motion } from "framer-motion";
 
-type MemberSummary = {
-  userId: string;
-  name: string;
-  balance: number;
-  lastMonth: number;
-  totalDeposits: number;
-  totalWithdraws: number;
-  recent: Array<{ date: string; type: string; amount: number; note?: string }>;
-};
 
-type TransactionSnapshot = {
-  _id: string;
-  userId: string;
-  type: string;
-  amount: number;
-  occurredAt: string;
-  note?: string;
-};
-
-type InvestmentSummary = {
-  id: string;
-  name: string;
-  amount: number;
-  expectedInterest: number;
-  returnedAmount?: number;
-  status: "active" | "completed";
-  startDate: string;
-};
 
 type HomeResponse = {
   membersCount: number;
@@ -312,6 +287,9 @@ export default function Home() {
               { label: "Last year collection", year: lastYear },
             ].map((item) => {
               const total = yearSummaries[item.year];
+              const maxVal = Math.max(yearSummaries[currentYear] || 1, yearSummaries[lastYear] || 1);
+              const pct = typeof total === "number" ? Math.min(100, Math.max(5, (total / maxVal) * 100)) : 0;
+              
               const display =
                 typeof total === "number" ? (
                   formatAmount(total)
@@ -325,11 +303,21 @@ export default function Home() {
                   key={item.year}
                   type="button"
                   onClick={() => navigate(`/yearly?year=${item.year}`)}
-                  className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                  className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
                 >
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
-                  <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{display}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{item.year}</p>
+                  <div className="relative z-10">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400 group-hover:text-slate-500 transition-colors">{item.label}</p>
+                    <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{display}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{item.year}</p>
+                  </div>
+                  {typeof total === "number" && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className="absolute bottom-0 left-0 h-1 bg-blue-500/20 dark:bg-blue-400/20"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -352,176 +340,18 @@ export default function Home() {
       </Panel>
 
       {drawerUserId && <MemberDrawer userId={drawerUserId} onClose={() => setDrawerUserId(null)} />}
-      {showTotalsDrawer && data ? (
-        <TotalBalanceDrawer
-          totalDeposits={data.totalDeposits}
-          totalWithdraws={data.totalWithdraws}
-          available={data.groupBalance}
-          rows={memberCards}
-          withdraws={withdraws.data}
-          investments={investmentsQuery.data}
-          loadingWithdraws={withdraws.isLoading}
-          loadingInvestments={investmentsQuery.isLoading}
-          onClose={() => setShowTotalsDrawer(false)}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function TotalBalanceDrawer({
-  totalDeposits,
-  totalWithdraws,
-  available,
-  rows,
-  withdraws,
-  investments,
-  loadingWithdraws,
-  loadingInvestments,
-  onClose,
-}: {
-  totalDeposits: number;
-  totalWithdraws: number;
-  available: number;
-  rows: MemberSummary[];
-  withdraws?: TransactionSnapshot[];
-  investments?: InvestmentSummary[];
-  loadingWithdraws: boolean;
-  loadingInvestments: boolean;
-  onClose: () => void;
-}) {
-  const net = totalDeposits - totalWithdraws;
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    setShow(true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, []);
-
-  const close = () => {
-    setShow(false);
-    setTimeout(onClose, 180);
-  };
-
-  return (
-    <div
-      className={`fixed inset-0 z-40 bg-white dark:bg-slate-950 overflow-y-auto transition-transform duration-200 ${
-        show ? "translate-y-0" : "translate-y-full"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Total balance</p>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Collections vs. deductions</h2>
-          </div>
-          <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" onClick={close}>
-            <CloseIcon className="w-4 h-4" /> Close
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-4">
-          <StatCard label="Collected overall" value={formatAmount(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
-          <StatCard label="Deducted / invested" value={formatAmount(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} variant="danger" />
-          <StatCard label="Net balance" value={formatAmount(net)} icon={<MoneyIcon className="w-5 h-5" />} variant="info" />
-          <StatCard label="Available cash" value={formatAmount(available)} icon={<MoneyIcon className="w-5 h-5" />} variant="default" />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Panel title="Per-member totals" description="All-time deposits and deductions">
-            <div className="overflow-auto max-h-72 pr-1">
-              <table className="min-w-[480px] text-sm">
-                <thead>
-                  <tr className="text-left text-slate-500 dark:text-slate-400">
-                    <th className="py-2 pr-3 font-medium">Member</th>
-                    <th className="py-2 px-3 font-medium text-right">Deposited</th>
-                    <th className="py-2 px-3 font-medium text-right">Deducted</th>
-                    <th className="py-2 pl-3 font-medium text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
-                      <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">{row.name}</td>
-                      <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
-                      <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
-                      <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
-                    </tr>
-                  ))}
-                  {!rows.length && (
-                    <tr>
-                      <td colSpan={4} className="py-3 text-center text-slate-500">
-                        No members yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-
-          <Panel title="Recent withdrawals / investments" description="Latest 20 records">
-            {loadingWithdraws ? (
-              <div className="space-y-3">
-                <SkeletonList rows={4} columns={2} />
-              </div>
-            ) : withdraws && withdraws.length ? (
-              <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                {withdraws.map((tx) => (
-                  <div key={tx._id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{tx.note || "Withdrawal"}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(tx.occurredAt).toLocaleDateString("en-BD")}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{formatAmount(Math.abs(tx.amount || 0))}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-slate-500">No withdrawals recorded yet.</div>
-            )}
-          </Panel>
-        </div>
-
-        <Panel title="Investments overview" description="Track funds currently out of circulation">
-          {loadingInvestments ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SkeletonCard lines={2} />
-              <SkeletonCard lines={2} />
-            </div>
-          ) : investments && investments.length ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {investments.map((inv) => {
-                const returned = inv.returnedAmount || 0;
-                const total = inv.amount + (inv.expectedInterest || 0);
-                const pct = total ? Math.min(100, Math.round((returned / total) * 100)) : 0;
-                return (
-                  <div key={inv.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-slate-900 dark:text-white">{inv.name}</p>
-                      <span className="text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300">
-                        {inv.status === "completed" ? "Completed" : "Active"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Principal: {formatAmount(inv.amount)}</p>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Returned {formatAmount(returned)} of {formatAmount(total)} ({pct}%)
-                    </div>
-                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-sm text-slate-500">No investments recorded yet.</div>
-          )}
-        </Panel>
-      </div>
+      <TotalsDrawer
+        isOpen={showTotalsDrawer && !!data}
+        totalDeposits={data?.totalDeposits || 0}
+        totalWithdraws={data?.totalWithdraws || 0}
+        available={data?.groupBalance || 0}
+        rows={memberCards}
+        withdraws={withdraws.data}
+        investments={investmentsQuery.data}
+        loadingWithdraws={withdraws.isLoading}
+        loadingInvestments={investmentsQuery.isLoading}
+        onClose={() => setShowTotalsDrawer(false)}
+      />
     </div>
   );
 }

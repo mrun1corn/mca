@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { FlatList, View } from 'react-native';
+import { FlatList, View, RefreshControl, Modal, Pressable } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api, formatAmount } from '../lib/api';
 import MemberDrawer from '../components/MemberDrawer';
@@ -29,8 +29,15 @@ export default function Home() {
   const home = useQuery({ queryKey: ['home'], queryFn: async () => (await api.get('/home')).data });
   const me = useQuery({ queryKey: ['me'], queryFn: async () => (await api.get('/me')).data });
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
+  const [showTotalsModal, setShowTotalsModal] = useState(false);
   const role = me.data?.role as Role;
   const myId = me.data?.id as string | undefined;
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    home.refetch().finally(() => setRefreshing(false));
+  }, [home]);
 
   const dues = useQuery({
     queryKey: ['dues', myId],
@@ -42,6 +49,13 @@ export default function Home() {
     queryKey: ['txs', myId, 10],
     queryFn: async () => (await api.get('/transactions', { params: { limit: 10 } })).data?.rows ?? [],
     enabled: role === 'user' && !!myId,
+  });
+
+  const currentYear = new Date().getFullYear();
+  const yearlyCollection = useQuery({
+    queryKey: ['yearly-collection', currentYear],
+    queryFn: async () => (await api.get('/reports/yearly-collection', { params: { year: currentYear } })).data,
+    enabled: role === 'admin' || role === 'accountant',
   });
 
   const nextEmi = useMemo(() => {
@@ -91,7 +105,7 @@ export default function Home() {
     const totalDeposits = data.totalDeposits || 0;
 
     return (
-      <Screen scroll>
+      <Screen scroll refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}>
         <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 12 }}>
           Hello {me.data.name}
         </ThemeText>
@@ -179,6 +193,7 @@ export default function Home() {
       value: formatAmount(data.groupBalance),
       icon: <Ionicons name="wallet" size={22} color="#2563eb" />,
       tone: 'surface' as const,
+      onPress: () => setShowTotalsModal(true),
     },
     {
       title: 'Open dues',
@@ -200,8 +215,17 @@ export default function Home() {
     tone: 'success' as const,
   });
 
+  if (yearlyCollection.data) {
+    metrics.push({
+      title: 'Collected this year',
+      value: formatAmount(yearlyCollection.data.total),
+      icon: <Ionicons name="bar-chart" size={20} color="#0f766e" />,
+      tone: 'primary' as const,
+    });
+  }
+
   return (
-    <Screen scroll>
+    <Screen scroll refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}>
       <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 12 }}>
         {APP_NAME} overview
       </ThemeText>
@@ -213,6 +237,7 @@ export default function Home() {
             value={metric.value}
             icon={metric.icon}
             tone={metric.tone}
+            onPress={(metric as any).onPress}
             style={{ flexBasis: '48%' }}
           />
         ))}
@@ -257,6 +282,38 @@ export default function Home() {
       </View>
 
       <MemberDrawer userId={drawerUserId} onClose={() => setDrawerUserId(null)} />
+
+      <Modal visible={showTotalsModal} animationType="slide" transparent={true} onRequestClose={() => setShowTotalsModal(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setShowTotalsModal(false)}>
+          <Pressable style={{ backgroundColor: colors.surface, padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <ThemeText variant="title">Financial Breakdown</ThemeText>
+              <Pressable onPress={() => setShowTotalsModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textDim} />
+              </Pressable>
+            </View>
+            <View style={{ gap: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <ThemeText>Total Deposits</ThemeText>
+                <ThemeText tone="success">{formatAmount(data.totalDeposits)}</ThemeText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <ThemeText>Total Withdrawals</ThemeText>
+                <ThemeText tone="danger">-{formatAmount(data.totalWithdraws)}</ThemeText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <ThemeText>Active Investments</ThemeText>
+                <ThemeText tone="primary">{formatAmount(investmentInfo.principal)}</ThemeText>
+              </View>
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <ThemeText style={{ fontWeight: '700' }}>Calculated Balance</ThemeText>
+                <ThemeText style={{ fontWeight: '700' }}>{formatAmount(data.groupBalance)}</ThemeText>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }

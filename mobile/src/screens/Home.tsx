@@ -40,7 +40,7 @@ export default function Home() {
 
   const txs = useQuery({
     queryKey: ['txs', myId, 10],
-    queryFn: async () => (await api.get('/transactions', { params: { limit: 10 } })).data,
+    queryFn: async () => (await api.get('/transactions', { params: { limit: 10 } })).data?.rows ?? [],
     enabled: role === 'user' && !!myId,
   });
 

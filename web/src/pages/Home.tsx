@@ -87,14 +87,14 @@ export default function Home() {
   });
   const txs = useQuery<any[]>({
     queryKey: ["txs", myId, 10],
-    queryFn: async () => (await api.get(`/transactions`, { params: { limit: 10 } })).data,
+    queryFn: async () => (await api.get(`/transactions`, { params: { limit: 10 } })).data?.rows ?? [],
     enabled: role === "user" && !!myId,
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
   const withdraws = useQuery<TransactionSnapshot[]>({
     queryKey: ["withdrawals", "totals"],
-    queryFn: async () => (await api.get("/transactions", { params: { type: "withdraw", limit: 20 } })).data,
+    queryFn: async () => (await api.get("/transactions", { params: { type: "withdraw", limit: 20 } })).data?.rows ?? [],
     enabled: showTotalsDrawer,
     staleTime: 30_000,
     refetchOnWindowFocus: false,

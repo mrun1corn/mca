@@ -5,11 +5,18 @@ import { parseBody } from "../lib/validation";
 import { handleInvestment, handleInvestmentReturn } from "../services/investment";
 import Investment from "../models/Investment";
 
+// Shared refinement: reject amounts with more than 2 decimal places
+// Use epsilon tolerance to avoid IEEE 754 false rejections (e.g. 1000.10 * 100 = 100009.999...)
+const amount2dp = z.number().positive().refine(
+  (v) => Math.abs(Math.round(v * 100) - v * 100) < 0.01,
+  { message: "Amount must have at most 2 decimal places" }
+);
+
 const router = Router();
 
 const CreateInvestmentSchema = z.object({
   name: z.string().min(2),
-  amount: z.number().positive(),
+  amount: amount2dp,
   startDate: z.string(),
   months: z.number().int().min(1).optional(),
   monthlyRatePct: z.number().min(0).optional(),
@@ -66,7 +73,7 @@ router.get("/", requireAuth as any, requireRole(["admin", "accountant"]) as any,
 });
 
 const ReturnInvestmentSchema = z.object({
-  amount: z.number().positive(),
+  amount: amount2dp,
   date: z.string(),
   note: z.string().optional(),
   markCompleted: z.boolean().optional(),

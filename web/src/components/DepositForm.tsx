@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
 import Button from "./Button";
 import { useToast } from "./Toast";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
 
 function DepositForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
@@ -126,14 +128,14 @@ function DepositForm({ userId }: { userId: string }) {
                 {dues.data?.length || 0} open
               </span>
             </div>
-            <select className="input w-full h-12" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
+            <Select className="h-12" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
               <option value="">Select due…</option>
               {dues.data?.map((d: any) => (
                 <option key={d._id} value={d._id}>
                   Principal {formatAmount(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
                 </option>
               ))}
-            </select>
+            </Select>
             <label className="inline-flex items-center gap-2 text-sm">
               <input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} />
               Add penalty when grace period is over
@@ -152,28 +154,30 @@ function DepositForm({ userId }: { userId: string }) {
           <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Amount">
-            <input
-              className="input w-full h-12"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </Field>
-          <Field label="Date">
-            <input className="input w-full h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field>
-        </div>
-        <Field label="Note for future you" hint="Plain words help everyone understand later.">
-          <input
-            className="input w-full"
-            placeholder="e.g. Weekly market sales"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="h-12"
           />
-        </Field>
+          <Input
+            label="Date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="h-12"
+          />
+        </div>
+        <Input
+          label="Note for future you"
+          hint="Plain words help everyone understand later."
+          placeholder="e.g. Weekly market sales"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
       </section>
 
       <div className="flex flex-wrap gap-3 justify-end">
@@ -209,26 +213,6 @@ function ModeCard({
       <div className="text-sm font-semibold">{title}</div>
       <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">{body}</div>
     </button>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
-        {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}
-      </div>
-      {children}
-    </div>
   );
 }
 

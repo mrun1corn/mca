@@ -4,6 +4,7 @@ import DueModel from "../models/Due";
 import User from "../models/User";
 import { AppError } from "../lib/errors";
 import { parseISO } from "../lib/date";
+import * as math from "../lib/math";
 
 export type DepositInput = {
   userId: string;
@@ -31,7 +32,7 @@ export async function handleDeposit(input: DepositInput) {
   try {
     await session.withTransaction(async () => {
       const { userId, mode, amount: rawAmount, date, note, actorUserId } = input;
-      const amount = Number(rawAmount);
+      const amount = math.round(Number(rawAmount));
       const occurredAt = parseISO(date);
 
       // Fetch user to get name for transaction record
@@ -126,27 +127,28 @@ export async function handleDeposit(input: DepositInput) {
           const penaltyPct = input.penaltyPctPerMonth ?? rule.monthlyPenaltyPct;
           let effectiveTotalDue = item.totalDue;
 
-          // Penalty: calculate and persist if overdue and includePenalty is true
+          // Penalty: calculate based on remaining balance if overdue
           if (input.includePenalty && rule.enabled) {
             if (isOverdue(new Date(item.dueDate), occurredAt, grace)) {
-              const penalty = Math.round((item.totalDue * penaltyPct)) / 100;
+              const currentBalance = math.round(item.totalDue - (item.paid || 0));
+              const penalty = math.round(currentBalance * penaltyPct) / 100;
               if (penalty > 0 && (item as any).penaltyApplied === 0) {
                 // Persist penalty to the schedule item
                 (item as any).penaltyApplied = penalty;
-                item.totalDue = Math.round((item.totalDue + penalty) * 100) / 100;
+                item.totalDue = math.round(item.totalDue + penalty);
               }
               effectiveTotalDue = item.totalDue;
             }
           }
 
-          const remainingForItem = Math.round((effectiveTotalDue - (item.paid || 0)) * 100) / 100;
+          const remainingForItem = math.round(effectiveTotalDue - (item.paid || 0));
           if (remainingForItem <= 0) continue;
 
           const pay = Math.min(remaining, remainingForItem);
-          item.paid = Math.round(((item.paid || 0) + pay) * 100) / 100;
+          item.paid = math.round((item.paid || 0) + pay);
           if (item.paid >= effectiveTotalDue) item.status = "paid";
           else item.status = "partial";
-          remaining = Math.round((remaining - pay) * 100) / 100;
+          remaining = math.round(remaining - pay);
           changed = true;
         }
 

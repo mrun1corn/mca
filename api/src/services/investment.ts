@@ -4,6 +4,7 @@ import User from "../models/User";
 import Transaction from "../models/Transaction";
 import Investment from "../models/Investment";
 import { addMonths, parseISO } from "../lib/date";
+import * as math from "../lib/math";
 
 type InvestmentInput = {
   name: string;
@@ -41,14 +42,13 @@ export async function handleInvestment(input: InvestmentInput) {
       if (!eligible.length) throw new AppError("No eligible contributors for this investment", 400);
 
       const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
-      const base = Math.floor(amount * 100 / eligible.length) / 100;
-      const remainder = Math.round((amount - base * eligible.length) * 100) / 100;
+      const splitAmounts = math.distribute(amount, eligible.length);
 
       const userMap = new Map(eligible.map((u) => [String(u._id), u.name]));
 
       const contributors = eligible.map((u, idx) => ({
         userId: u._id,
-        share: Math.round((base + (idx === eligible.length - 1 ? remainder : 0)) * 100) / 100,
+        share: splitAmounts[idx],
       }));
 
       const txs = contributors.map((contrib) => ({
@@ -66,16 +66,17 @@ export async function handleInvestment(input: InvestmentInput) {
       let expectedInterest = 0;
       if (boundedMonths) {
         for (let i = 0; i < boundedMonths; i++) {
-          const interest = Math.round((amount * monthlyRatePct)) / 100;
+          const interest = math.round(amount * monthlyRatePct) / 100;
           expectedInterest += interest;
           schedule.push({
             monthIndex: i,
-            dueDate: addMonths(commencedAt, i + 1),
+            dueDate: addMonths(commencedAt, i + 1, commencedAt),
             interest: interest,
             status: "pending" as const,
           });
         }
       }
+      expectedInterest = math.round(expectedInterest);
 
       const [investment] = await Investment.create(
         [
@@ -109,7 +110,7 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
   try {
     await session.withTransaction(async () => {
       const { investmentId, amount: rawAmount, date, note, markCompleted, actorUserId } = input;
-      const amount = Number(rawAmount);
+      const amount = math.round(Number(rawAmount));
       const occurredAt = parseISO(date);
 
       const investment = await Investment.findById(investmentId).session(session);
@@ -119,29 +120,21 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
       const totalShare = investment.contributors.reduce((sum, c) => sum + (c.share || 0), 0);
       if (!totalShare) throw new AppError("Invalid contributor shares", 400);
 
-      const allocations = investment.contributors.map((contrib) => ({
-        userId: contrib.userId,
-        amount: Math.floor((amount * (contrib.share || 0) * 100) / totalShare) / 100,
-      }));
-      let allocated = allocations.reduce((sum, a) => sum + a.amount, 0);
-      let remainder = Math.round((amount - allocated) * 100) / 100;
-      let idx = 0;
-      while (remainder > 0 && allocations.length > 0) {
-        allocations[idx % allocations.length].amount = Math.round((allocations[idx % allocations.length].amount + 0.01) * 100) / 100;
-        remainder = Math.round((remainder - 0.01) * 100) / 100;
-        idx += 1;
-      }
+      const allocations = math.allocate(amount, investment.contributors.map(c => ({
+        id: String(c.userId),
+        weight: c.share || 0
+      })));
 
       // Build a user map for userName lookup
-      const contribUserIds = allocations.map((a) => a.userId);
+      const contribUserIds = allocations.map((a) => a.id);
       const contribUsers = await User.find({ _id: { $in: contribUserIds } }).session(session);
       const userNameMap = new Map(contribUsers.map((u) => [String(u._id), u.name]));
 
       const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
       const txs = await Transaction.insertMany(
         allocations.map((alloc) => ({
-          userId: alloc.userId,
-          userName: userNameMap.get(String(alloc.userId)) || "",
+          userId: new Types.ObjectId(alloc.id),
+          userName: userNameMap.get(alloc.id) || "",
           type: "deposit",
           amount: alloc.amount,
           occurredAt,
@@ -151,7 +144,7 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
         { session }
       );
 
-      investment.returnedAmount = (investment.returnedAmount || 0) + amount;
+      investment.returnedAmount = math.round((investment.returnedAmount || 0) + amount);
       if (markCompleted) {
         investment.status = "completed";
       } else {

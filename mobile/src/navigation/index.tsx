@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from '../screens/Login';
+import Balances from '../screens/Balances';
+import YearlyCollection from '../screens/YearlyCollection';
 import MainTabs from './tabs';
 import { getAccessToken } from '../lib/api';
 import Screen from '../components/ui/Screen';
@@ -10,6 +12,8 @@ import ThemeText from '../components/ui/ThemeText';
 export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
+  Balances: undefined;
+  YearlyCollection: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,6 +56,8 @@ export default function RootNavigator() {
     <Stack.Navigator initialRouteName={initialRoute}>
       <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="Balances" component={Balances} options={{ title: 'Balances' }} />
+      <Stack.Screen name="YearlyCollection" component={YearlyCollection} options={{ title: 'Yearly Report' }} />
     </Stack.Navigator>
   );
 }

@@ -9,6 +9,7 @@ import ThemeText from '../components/ui/ThemeText';
 import ThemedCard from '../components/ui/ThemedCard';
 import ThemeButton from '../components/ui/ThemeButton';
 import ThemeInput from '../components/ui/ThemeInput';
+import { useToast } from '../components/ui/Toast';
 
 function formatAmount(value: number) {
   return apiFormatAmount(value);
@@ -17,6 +18,7 @@ function formatAmount(value: number) {
 
 export default function Deposit() {
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const qc = useQueryClient();
   const users = useQuery({ queryKey: ['users'], queryFn: async () => (await api.get('/users')).data });
   const [userId, setUserId] = useState('');
@@ -51,8 +53,12 @@ export default function Deposit() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['home'] });
+      showToast('Deposit recorded successfully', 'success');
       setAmount('');
       setNote('');
+    },
+    onError: (error: any) => {
+      showToast(error?.response?.data?.error || 'Failed to record deposit', 'error');
     },
   });
 

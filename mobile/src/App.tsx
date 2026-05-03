@@ -1,12 +1,12 @@
 import React from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import RootNavigator from './navigation';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './theme';
 import { StatusBar, View } from 'react-native';
-
-const qc = new QueryClient();
+import { queryClient, asyncStoragePersister } from './lib/queryClient';
+import { ToastProvider } from './components/ui/Toast';
 
 function Shell() {
   const { scheme, colors } = useTheme();
@@ -24,23 +24,31 @@ function Shell() {
   };
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={qc}>
-        <View style={{ flex: 1, backgroundColor: colors.bg }}>
-          <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-          <NavigationContainer theme={navigationTheme}>
-            <RootNavigator />
-          </NavigationContainer>
-        </View>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <StatusBar 
+        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={colors.card}
+      />
+      <NavigationContainer theme={navigationTheme}>
+        <RootNavigator />
+      </NavigationContainer>
+    </View>
   );
 }
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <Shell />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: asyncStoragePersister }}
+      >
+        <ThemeProvider>
+          <ToastProvider>
+            <Shell />
+          </ToastProvider>
+        </ThemeProvider>
+      </PersistQueryClientProvider>
+    </SafeAreaProvider>
   );
 }

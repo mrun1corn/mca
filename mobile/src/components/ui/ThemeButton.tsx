@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 44,
   },
   title: {
     fontWeight: '600',

@@ -9,9 +9,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTheme } from '../theme';
 import UserSelect from '../components/UserSelect';
+import { useToast } from '../components/ui/Toast';
 
 export default function Withdraw() {
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const qc = useQueryClient();
   const users = useQuery({ queryKey: ['users'], queryFn: async () => (await api.get('/users')).data });
   const [mode, setMode] = useState<'member' | 'investment'>('member');
@@ -65,7 +67,11 @@ export default function Withdraw() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['home'] });
+      showToast('Withdrawal recorded successfully', 'success');
       setAmount('');
+    },
+    onError: (error: any) => {
+      showToast(error?.response?.data?.error || 'Failed to record withdrawal', 'error');
     },
   });
 
@@ -81,8 +87,12 @@ export default function Withdraw() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['home'] });
+      showToast('Investment recorded successfully', 'success');
       setAmount('');
       setInvestmentName('');
+    },
+    onError: (error: any) => {
+      showToast(error?.response?.data?.error || 'Failed to record investment', 'error');
     },
   });
 

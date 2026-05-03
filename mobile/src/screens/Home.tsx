@@ -181,7 +181,7 @@ export default function Home() {
     );
   }
 
-  const metrics: { title: string; value: string; icon: JSX.Element; tone: 'default' | 'surface' | 'success' | 'danger' | 'primary' }[] = [
+  const metrics: { title: string; value: string; icon: JSX.Element; tone: 'default' | 'surface' | 'success' | 'danger' | 'primary'; onPress?: () => void }[] = [
     {
       title: 'Members',
       value: String(data.membersCount),
@@ -193,7 +193,7 @@ export default function Home() {
       value: formatAmount(data.groupBalance),
       icon: <Ionicons name="wallet" size={22} color="#2563eb" />,
       tone: 'surface' as const,
-      onPress: () => setShowTotalsModal(true),
+      onPress: () => navigation.navigate('Balances'),
     },
     {
       title: 'Open dues',
@@ -221,6 +221,7 @@ export default function Home() {
       value: formatAmount(yearlyCollection.data.total),
       icon: <Ionicons name="bar-chart" size={20} color="#0f766e" />,
       tone: 'primary' as const,
+      onPress: () => navigation.navigate('YearlyCollection'),
     });
   }
 
@@ -237,8 +238,9 @@ export default function Home() {
             value={metric.value}
             icon={metric.icon}
             tone={metric.tone}
-            onPress={(metric as any).onPress}
-            style={{ flexBasis: '48%' }}
+            onPress={metric.onPress}
+            style={{ flexBasis: '48%', minHeight: 100 }}
+            accessibilityLabel={`${metric.title}: ${metric.value}`}
           />
         ))}
         <ThemedCard
@@ -246,7 +248,9 @@ export default function Home() {
           value={formatAmount(data.remainingBalance)}
           icon={<Ionicons name="cash" size={22} color="#15803d" />}
           tone="success"
-          style={{ flexBasis: '48%' }}
+          onPress={() => setShowTotalsModal(true)}
+          style={{ flexBasis: '48%', minHeight: 100 }}
+          accessibilityLabel={`Available balance: ${formatAmount(data.remainingBalance)}. Tap for financial breakdown.`}
         />
       </View>
 

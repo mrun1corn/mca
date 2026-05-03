@@ -4,6 +4,7 @@ import Transaction from "../models/Transaction";
 import Due from "../models/Due";
 import { AppError } from "../lib/errors";
 import { addMonths, parseISO } from "../lib/date";
+import * as math from "../lib/math";
 
 export type WithdrawInput = {
   takerId: string;
@@ -40,7 +41,7 @@ export async function handleWithdraw(input: WithdrawInput) {
         actorUserId,
       } = input;
 
-      const amount = Number(rawAmount);
+      const amount = math.round(Number(rawAmount));
       const occurredAt = parseISO(date);
 
       // Fetch taker to validate existence and get name
@@ -61,15 +62,13 @@ export async function handleWithdraw(input: WithdrawInput) {
       }
 
       // Split the amount across eligible members (they fund the cash-out)
-      const base = Math.floor(amount * 100 / eligibleCount) / 100;
-      const remainder = Math.round((amount - base * eligibleCount) * 100) / 100;
+      const splitAmounts = math.distribute(amount, eligibleCount);
       const txs = eligible.map((u, i) => {
-        const share = Math.round((base + (i === eligible.length - 1 ? remainder : 0)) * 100) / 100;
         return {
           userId: u._id,
           userName: u.name,
           type: "withdraw",
-          amount: -share,
+          amount: -splitAmounts[i],
           occurredAt,
           note: `Share for cash out of ${takerName}`,
           createdBy: actorId,
@@ -79,8 +78,7 @@ export async function handleWithdraw(input: WithdrawInput) {
 
       // Create Due schedule for taker (their obligation to repay)
       const principal = amount;
-      const perMonthPrincipal = Math.floor(principal * 100 / months) / 100;
-      let remainderPrincipal = Math.round((principal - perMonthPrincipal * months) * 100) / 100;
+      const principalParts = math.distribute(principal, months);
       let remainingPrincipal = principal;
       const schedule: any[] = [];
 
@@ -88,19 +86,19 @@ export async function handleWithdraw(input: WithdrawInput) {
       let dates: Date[] = [];
       if (useDefaultDate && defaultDate) {
         const first = parseISO(defaultDate);
-        for (let m = 0; m < months; m++) dates.push(addMonths(first, m));
+        for (let m = 0; m < months; m++) dates.push(addMonths(first, m, first));
       } else if (!useDefaultDate && startDate && endDate) {
         const start = parseISO(startDate);
-        for (let m = 0; m < months; m++) dates.push(addMonths(start, m));
+        for (let m = 0; m < months; m++) dates.push(addMonths(start, m, start));
       } else {
         const fallback = addMonths(occurredAt, 1);
-        for (let m = 0; m < months; m++) dates.push(addMonths(fallback, m));
+        for (let m = 0; m < months; m++) dates.push(addMonths(fallback, m, fallback));
       }
 
       for (let m = 0; m < months; m++) {
-        const principalPart = Math.round((perMonthPrincipal + (m === months - 1 ? remainderPrincipal : 0)) * 100) / 100;
-        const interest = Math.round((remainingPrincipal * monthlyRatePct)) / 100;
-        const total = Math.round((principalPart + interest) * 100) / 100;
+        const principalPart = principalParts[m];
+        const interest = math.round(remainingPrincipal * monthlyRatePct) / 100;
+        const total = math.round(principalPart + interest);
         schedule.push({
           dueDate: dates[m],
           principalPart: principalPart,
@@ -110,7 +108,7 @@ export async function handleWithdraw(input: WithdrawInput) {
           paid: 0,
           status: "pending",
         });
-        remainingPrincipal = Math.round((remainingPrincipal - principalPart) * 100) / 100;
+        remainingPrincipal = math.round(remainingPrincipal - principalPart);
         if (remainingPrincipal < 0) remainingPrincipal = 0;
       }
 

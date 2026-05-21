@@ -230,7 +230,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
             <input type="checkbox" checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
             Apply penalty when overdue
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Penalty % per month" type="number" step="0.1" value={penaltyPct} onChange={(e) => setPenaltyPct(Number(e.target.value))} />
             <Input label="Grace days" type="number" value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} />
           </div>

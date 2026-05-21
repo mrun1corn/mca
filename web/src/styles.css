@@ -70,26 +70,31 @@ body {
 
 /* Glass panel utility */
 .glass {
-  @apply bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md;
+  @apply bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 shadow-md transition-shadow hover:shadow-lg;
 }
 
 /* Inputs */
 .input {
-  @apply border border-gray-300 dark:border-gray-700 rounded bg-white/90 dark:bg-gray-900/60 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2 outline-none transition-colors;
+  @apply border border-transparent bg-slate-100/80 dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-4 py-2.5 rounded-xl outline-none transition-all shadow-sm;
 }
-.input:focus { @apply ring-2 ring-blue-500/40 border-blue-400 dark:border-blue-500; }
-select.input { @apply pr-8; }
+.input:focus { @apply ring-2 ring-blue-500/40 border-transparent bg-white dark:bg-slate-900 shadow-inner; }
+select.input { @apply pr-10; }
 
 /* Buttons */
 .btn {
-  @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded font-medium transition-all active:scale-[0.98] shadow-sm;
+  @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-medium transition-all active:scale-[0.97] hover:-translate-y-0.5 shadow-sm hover:shadow-md;
 }
-.btn-primary { @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white; }
-.btn-secondary { @apply bg-gradient-to-r from-sky-100 to-blue-50 hover:from-blue-100 hover:to-blue-100 text-blue-700 border border-blue-200 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700 dark:text-blue-200; }
-.btn-danger { @apply bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white; }
-.btn-ghost { @apply bg-white/70 hover:bg-blue-50 text-blue-600 dark:bg-transparent dark:hover:bg-slate-800 dark:text-blue-300; }
+.btn-primary { @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25; }
+.btn-secondary { @apply bg-gradient-to-r from-sky-50 to-blue-50 hover:from-blue-100 hover:to-blue-100 text-blue-700 border border-blue-100 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700 dark:text-blue-200; }
+.btn-danger { @apply bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-rose-500/25; }
+.btn-ghost { @apply bg-white/50 hover:bg-white text-blue-600 dark:bg-transparent dark:hover:bg-slate-800 dark:text-blue-300 shadow-none hover:shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-700; }
 
 /* Card */
 .card {
-  @apply bg-gradient-to-br from-white via-white to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border border-blue-100/60 dark:border-slate-700/70 rounded-2xl p-4 animate-fade-in shadow-md hover:shadow-xl transition-shadow;
+  @apply bg-gradient-to-br from-white via-white to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border border-blue-100/60 dark:border-slate-700/70 rounded-2xl p-4 animate-fade-in shadow-md hover:shadow-xl hover:scale-[1.01] transition-all;
+}
+
+/* Tables */
+table tbody tr {
+  @apply transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40;
 }

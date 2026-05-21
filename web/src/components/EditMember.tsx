@@ -57,7 +57,7 @@ export default function EditMember({ user, onClose, onSaved }: { user: UserRow; 
           <Input label="Email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <Input label="Phone" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as any })}>
               <option value="user">user</option>
               <option value="accountant">accountant</option>
@@ -72,7 +72,7 @@ export default function EditMember({ user, onClose, onSaved }: { user: UserRow; 
           <Input label="New password" type="password" placeholder="(optional)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </div>
         
-        <div className="mt-6 flex justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="mt-6 flex flex-wrap justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <Button variant="danger" onClick={async () => { try { await api.delete(`/users/${user.id}`); notify("Member deleted", "success"); onSaved(); onClose(); } catch { notify("Delete failed", "error"); } }}>Delete</Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>

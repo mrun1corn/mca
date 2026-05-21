@@ -278,7 +278,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
           variant="danger"
           onClick={onSubmit}
           disabled={!amount || (effectiveMode === "member" && !takerId)}
-          isLoading={effectiveMode === "member" ? (withdrawMutation.isPending || withdrawMutation.isLoading) : (investmentMutation.isPending || investmentMutation.isLoading)}
+          isLoading={effectiveMode === "member" ? withdrawMutation.isPending : investmentMutation.isPending}
           className="px-6 h-12 text-base font-semibold shadow-lg shadow-rose-500/20"
         >
           {effectiveMode === "member" ? "Record withdrawal" : "Record investment"}

@@ -182,7 +182,7 @@ function DepositForm({ userId }: { userId: string }) {
       </section>
 
       <div className="flex flex-wrap gap-3 justify-end">
-        <Button onClick={onSubmit} isLoading={mutation.isPending || mutation.isLoading} className="px-6 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
+        <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
           Save deposit
         </Button>
       </div>

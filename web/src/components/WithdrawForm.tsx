@@ -1,6 +1,7 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
+import { queryKeys } from "../lib/queryKeys";
 import { useToast } from "./Toast";
 import Button from "./Button";
 import { Input } from "./ui/Input";
@@ -30,7 +31,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const [investmentOpenEnded, setInvestmentOpenEnded] = useState(false);
 
   const users = useQuery({
-    queryKey: ["users"],
+    queryKey: queryKeys.users(),
     queryFn: async () => (await api.get(`/users`)).data,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -72,8 +73,8 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const withdrawMutation = useMutation({
     mutationFn: (body: any) => api.post("/withdraw", body),
     onSuccess: () => {
-      if (takerId) qc.invalidateQueries({ queryKey: ["txs", takerId] });
-      qc.invalidateQueries({ queryKey: ["home"] });
+      if (takerId) qc.invalidateQueries({ queryKey: queryKeys.txs(takerId) });
+      qc.invalidateQueries({ queryKey: queryKeys.home() });
       notify("Withdraw recorded", "success");
       setAmount("");
     },
@@ -83,7 +84,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
   const investmentMutation = useMutation({
     mutationFn: (body: any) => api.post("/investments", body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["home"] });
+      qc.invalidateQueries({ queryKey: queryKeys.home() });
       notify("Investment recorded", "success");
       setAmount("");
       setInvestmentName("");
@@ -277,6 +278,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
           variant="danger"
           onClick={onSubmit}
           disabled={!amount || (effectiveMode === "member" && !takerId)}
+          isLoading={effectiveMode === "member" ? (withdrawMutation.isPending || withdrawMutation.isLoading) : (investmentMutation.isPending || investmentMutation.isLoading)}
           className="px-6 h-12 text-base font-semibold shadow-lg shadow-rose-500/20"
         >
           {effectiveMode === "member" ? "Record withdrawal" : "Record investment"}

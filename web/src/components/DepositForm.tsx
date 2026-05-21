@@ -1,6 +1,7 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
+import { queryKeys } from "../lib/queryKeys";
 import Button from "./Button";
 import { useToast } from "./Toast";
 import { Input } from "./ui/Input";
@@ -16,7 +17,7 @@ function DepositForm({ userId }: { userId: string }) {
   const [includePenalty, setIncludePenalty] = useState(true);
 
   const dues = useQuery({
-    queryKey: ["dues", userId],
+    queryKey: queryKeys.dues(userId),
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
     enabled: !!userId,
     staleTime: 30_000,
@@ -38,8 +39,8 @@ function DepositForm({ userId }: { userId: string }) {
       dueDate.setDate(dueDate.getDate() + grace);
       let total = base;
       if (includePenalty && today > dueDate && selected.penaltyRule?.enabled) {
-        const penalty = Math.round((item.totalDue * pct)) / 100;
-        total = Math.round((total + penalty) * 100) / 100;
+        const penalty = Math.round((item.totalDue * pct) + Number.EPSILON) / 100;
+        total = Math.round((total + penalty) * 100 + Number.EPSILON) / 100;
       }
       return total;
     }
@@ -66,8 +67,8 @@ function DepositForm({ userId }: { userId: string }) {
   const mutation = useMutation({
     mutationFn: (body: any) => api.post("/deposit", body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["txs", userId] });
-      qc.invalidateQueries({ queryKey: ["home"] });
+      qc.invalidateQueries({ queryKey: queryKeys.txs(userId) });
+      qc.invalidateQueries({ queryKey: queryKeys.home() });
       notify("Deposit recorded", "success");
       setAmount("");
     },
@@ -77,8 +78,8 @@ function DepositForm({ userId }: { userId: string }) {
   const onSubmit = () => {
     const raw = Number(amount);
     // Normalize to 2dp to avoid floating-point drift (e.g. 1000.10 → 1000.0999...)
-    const amt = isFinite(raw) ? Math.round(raw * 100) / 100 : 0;
-    const payload: any = { userId, mode, date, note, includePenalty };
+    const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
+    const payload: Record<string, any> = { userId, mode, date, note, includePenalty };
     payload.amount = amt || suggested;
     if (mode === "pay_due") payload.dueId = dueId;
     mutation.mutate(payload);
@@ -181,7 +182,7 @@ function DepositForm({ userId }: { userId: string }) {
       </section>
 
       <div className="flex flex-wrap gap-3 justify-end">
-        <Button onClick={onSubmit} className="px-6 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
+        <Button onClick={onSubmit} isLoading={mutation.isPending || mutation.isLoading} className="px-6 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
           Save deposit
         </Button>
       </div>

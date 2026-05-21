@@ -1,6 +1,8 @@
-import * as SecureStore from 'expo-secure-store';
+import { MMKV } from 'react-native-mmkv';
 import { QueryClient } from '@tanstack/react-query';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+
+const storage = new MMKV();
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,14 +13,23 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Wrapper to make SecureStore compatible with AsyncStorage interface
-const storage = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+// Wrapper to make MMKV compatible with AsyncStorage interface
+const clientStorage = {
+  setItem: (key: string, value: string) => {
+    storage.set(key, value);
+    return Promise.resolve();
+  },
+  getItem: (key: string) => {
+    const value = storage.getString(key);
+    return Promise.resolve(value === undefined ? null : value);
+  },
+  removeItem: (key: string) => {
+    storage.delete(key);
+    return Promise.resolve();
+  },
 };
 
 export const asyncStoragePersister = createAsyncStoragePersister({
-  storage,
+  storage: clientStorage,
   key: 'SAVINGS_MOBILE_OFFLINE_CACHE',
 });

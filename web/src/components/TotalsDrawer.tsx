@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { formatAmount } from "../lib/api";
 import { MoneyIcon, HomeIcon, CloseIcon } from "./Icon";
 import Panel from "./ui/Panel";
@@ -75,7 +76,7 @@ export default function TotalsDrawer({
     };
   }, [isOpen]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -199,6 +200,7 @@ export default function TotalsDrawer({
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

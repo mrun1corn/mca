@@ -33,7 +33,7 @@ export function setAuthCookies(res: Response, access: string, refresh: string) {
   const domain = process.env.COOKIE_DOMAIN || undefined;
   const cookieBase = {
     httpOnly: true,
-    sameSite: "lax" as const,
+    sameSite: "strict" as const,
     secure: isProd,
     domain,
     path: "/",
@@ -100,7 +100,7 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export async function hashPassword(password: string) {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   return bcrypt.hash(password, salt);
 }
 

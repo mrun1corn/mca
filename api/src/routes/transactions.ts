@@ -111,6 +111,12 @@ router.post("/withdraw", requireAuth as any, requireRole(["admin", "accountant"]
   }
 });
 
+const UpdateTransactionSchema = z.object({
+  amount: amount2dp.optional(),
+  date: z.string().optional(),
+  note: z.string().optional(),
+});
+
 // Update a transaction (admin/accountant). Rules:
 // - Allow updating note and date for any transaction
 // - Allow updating amount only for deposits
@@ -119,7 +125,10 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
   try {
     const tx = await Transaction.findById(req.params.id);
     if (!tx) return res.status(404).json({ error: "Not found" });
-    const { amount, date, note } = req.body as { amount?: number; date?: string; note?: string };
+    
+    const body = parseBody(UpdateTransactionSchema, req.body);
+    const { amount, date, note } = body;
+    
     if (tx.type === "withdraw" && amount !== undefined) {
       return res.status(400).json({ error: "Cannot edit withdrawal amount. Use the revert endpoint instead." });
     }
@@ -127,8 +136,6 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
     if (note !== undefined) update.note = note;
     if (date !== undefined) update.occurredAt = new Date(String(date));
     if (amount !== undefined && tx.type === "deposit") {
-      if (!Number.isFinite(amount)) throw new AppError("Invalid amount", 400);
-      if (Math.abs(Math.round(amount * 100) - amount * 100) >= 0.01) throw new AppError("Amount must have at most 2 decimal places", 400);
       update.amount = amount;
     }
     await Transaction.findByIdAndUpdate(tx._id, update);

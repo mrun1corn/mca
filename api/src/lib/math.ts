@@ -7,7 +7,7 @@
  * Rounds a number to 2 decimal places.
  */
 export function round(val: number): number {
-  return Math.round(val * 100) / 100;
+  return Math.round(val * 100 + Number.EPSILON) / 100;
 }
 
 /**

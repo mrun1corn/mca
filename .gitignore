@@ -43,3 +43,8 @@ mobile/android/app/debug.keystore
 mobile/.expo/
 .vercel
 .env*.local
+
+.gemini/
+graphify-out/
+icon.png
+cropped.png

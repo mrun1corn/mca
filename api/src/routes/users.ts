@@ -58,7 +58,7 @@ const UpsertUserSchema = z.object({
   name: z.string().min(1),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
-  password: z.string().min(6).optional(),
+  password: z.string().min(8).optional(),
   role: z.enum(["admin", "accountant", "user"]).optional(),
   status: z.enum(["active", "inactive"]).optional(),
 });

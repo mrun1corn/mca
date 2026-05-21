@@ -4,6 +4,8 @@ import express from "express";
 import path from "node:path";
 import fs from "node:fs";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./lib/errors";
 import authRoutes from "./routes/auth";
@@ -18,6 +20,41 @@ import reportRoutes from "./routes/reports";
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
+
+// Trust the reverse proxy so rate-limiter gets the correct client IP
+app.set("trust proxy", 1);
+
+// Global rate limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // Limit each IP to 300 requests per windowMs
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter limiter for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // Limit each IP to 20 auth-related requests per 15 minutes
+  message: { error: "Too many login attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "https:"],
+      "script-src": ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
+
+// Apply limits
+app.use("/api/", globalLimiter);
+app.use("/api/auth/", authLimiter);
 
 app.use(express.json());
 app.use(cookieParser());

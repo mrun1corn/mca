@@ -11,7 +11,15 @@ const UserSchema = new Schema(
     role: { type: String, enum: ["admin", "accountant", "user"], default: "user" },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: {
+      transform: (_doc, ret) => {
+        delete ret.passwordHash;
+        return ret;
+      }
+    }
+  }
 );
 
 export default model("User", UserSchema);

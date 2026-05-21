@@ -41,6 +41,7 @@ export default function UserSelect({ value, onChange, label = 'Member' }: { valu
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
+          minHeight: 48,
         }}
       >
         <ThemeText tone={current ? 'default' : 'dim'}>
@@ -70,6 +71,8 @@ export default function UserSelect({ value, onChange, label = 'Member' }: { valu
                     paddingHorizontal: 16,
                     borderBottomWidth: 1,
                     borderBottomColor: colors.border,
+                    minHeight: 48,
+                    justifyContent: 'center',
                   }}
                 >
                   <ThemeText style={{ fontWeight: '600' }}>{item.name}</ThemeText>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
+import { queryKeys } from "../lib/queryKeys";
 import { CloseIcon, PencilIcon, TrashIcon } from "./Icon";
 import DepositForm from "./DepositForm";
 import WithdrawForm from "./WithdrawForm";
@@ -12,27 +14,27 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
   const qc = useQueryClient();
   const { notify } = useToast();
   const { data: txsData = [], isLoading: txsLoading } = useQuery<any[]>({
-    queryKey: ["txs", userId],
+    queryKey: queryKeys.txs(userId),
     queryFn: async () => (await api.get(`/transactions?userId=${userId}`)).data?.rows ?? [],
     enabled: !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
   const me = useQuery({
-    queryKey: ["me"],
+    queryKey: ["me"], // Global, omit from factory for now or add to factory later
     queryFn: async () => (await api.get(`/me`)).data,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
   const { data: duesData = [], isLoading: duesLoading } = useQuery<any[]>({
-    queryKey: ["dues", userId],
+    queryKey: queryKeys.dues(userId),
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
     enabled: !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
   const { data: member } = useQuery({
-    queryKey: ["member", userId],
+    queryKey: queryKeys.member(userId),
     queryFn: async () => (await api.get(`/users/${userId}`)).data,
     enabled: !!userId,
     staleTime: 30_000,
@@ -51,36 +53,45 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
   const patchTx = useMutation({
     mutationFn: (body: any) => api.patch(`/transactions/${editing?._id}`, body),
     onMutate: async (body: any) => {
-      await qc.cancelQueries({ queryKey: ["txs", userId] });
-      const previous = qc.getQueryData<any[]>(["txs", userId]);
+      await qc.cancelQueries({ queryKey: queryKeys.txs(userId) });
+      const previous = qc.getQueryData<any[]>(queryKeys.txs(userId));
       if (previous && editing) {
         const next = previous.map((tx) => (tx._id === editing._id ? { ...tx, note: body.note, occurredAt: body.date, amount: body.amount ?? tx.amount } : tx));
-        qc.setQueryData(["txs", userId], next);
+        qc.setQueryData(queryKeys.txs(userId), next);
       }
       return { previous };
     },
-    onError: (_err, _vars, context) => { if (context?.previous) qc.setQueryData(["txs", userId], context.previous); notify("Update failed", "error"); },
+    onError: (_err, _vars, context) => { if (context?.previous) qc.setQueryData(queryKeys.txs(userId), context.previous); notify("Update failed", "error"); },
     onSuccess: () => { notify("Transaction updated", "success"); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["txs", userId] }); setEditing(null); },
+    onSettled: () => { 
+      qc.invalidateQueries({ queryKey: queryKeys.txs(userId) }); 
+      qc.invalidateQueries({ queryKey: queryKeys.home() });
+      qc.invalidateQueries({ queryKey: queryKeys.member(userId) });
+      setEditing(null); 
+    },
   });
   const deleteTx = useMutation({
     mutationFn: (id: string) => api.delete(`/transactions/${id}`),
     onMutate: async (id: string) => {
-      await qc.cancelQueries({ queryKey: ["txs", userId] });
-      const previous = qc.getQueryData<any[]>(["txs", userId]);
-      if (previous) qc.setQueryData(["txs", userId], previous.filter((tx) => tx._id !== id));
+      await qc.cancelQueries({ queryKey: queryKeys.txs(userId) });
+      const previous = qc.getQueryData<any[]>(queryKeys.txs(userId));
+      if (previous) qc.setQueryData(queryKeys.txs(userId), previous.filter((tx) => tx._id !== id));
       return { previous };
     },
-    onError: (e: any, _vars, context) => { if (context?.previous) qc.setQueryData(["txs", userId], context.previous); notify(e?.response?.data?.error || "Delete failed", "error"); },
+    onError: (err, _vars, context) => { if (context?.previous) qc.setQueryData(queryKeys.txs(userId), context.previous); notify("Delete failed", "error"); },
     onSuccess: () => notify("Transaction deleted", "success"),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["txs", userId] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.txs(userId) });
+      qc.invalidateQueries({ queryKey: queryKeys.home() });
+      qc.invalidateQueries({ queryKey: queryKeys.member(userId) });
+    },
   });
   const closeWithAnim = () => {
     setShow(false);
     setTimeout(() => onClose(), 220);
   };
   const [tab, setTab] = useState<"ledger" | "deposit" | "withdraw" | "dues">("ledger");
-  return (
+  return createPortal(
     <>
       <div
         className={`fixed inset-0 z-40 bg-white dark:bg-slate-950 overflow-y-auto transition-transform duration-200 ${
@@ -97,6 +108,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
               </p>
             </div>
             <button
+              aria-label="Close"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-3 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={closeWithAnim}
             >
@@ -154,7 +166,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                   {txsData.map((t: any) => (
                     <div
                       key={t._id}
-                      className="rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 text-sm flex flex-col gap-2 sm:grid sm:grid-cols-12 sm:items-center"
+                      className="group rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 text-sm flex flex-col gap-2 sm:grid sm:grid-cols-12 sm:items-center"
                     >
                       <span className="text-slate-600 dark:text-slate-300 sm:col-span-3">{new Date(t.occurredAt).toLocaleDateString("en-BD")}</span>
                       <span
@@ -164,28 +176,24 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                       </span>
                       <span className="font-semibold sm:text-right sm:col-span-3">{formatAmount(t.amount)}</span>
                       {me.data?.role !== "user" ? (
-                        <span className="flex gap-2 sm:justify-end sm:col-span-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex-1 sm:flex-none bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-200 dark:hover:bg-slate-700"
+                        <div className="flex gap-1 sm:justify-end sm:col-span-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            aria-label="Edit"
+                            className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-md transition-colors"
                             onClick={() => setEditing({ ...t, occurredAt: String(t.occurredAt).slice(0, 10) })}
                           >
-                            <PencilIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">Edit</span>
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="flex-1 sm:flex-none"
+                            <PencilIcon />
+                          </button>
+                          <button
+                            aria-label="Delete"
+                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/20 rounded-md transition-colors"
                             onClick={() => {
                               if (confirm("Delete this transaction?")) deleteTx.mutate(t._id);
                             }}
                           >
-                            <TrashIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">Delete</span>
-                          </Button>
-                        </span>
+                            <TrashIcon />
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   ))}
@@ -287,6 +295,7 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

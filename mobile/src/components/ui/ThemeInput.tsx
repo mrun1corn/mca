@@ -17,6 +17,7 @@ export default function ThemeInput({ style, ...props }: TextInputProps) {
           borderRadius: 12,
           paddingVertical: 12,
           paddingHorizontal: 14,
+          minHeight: 48,
         },
         style,
       ]}

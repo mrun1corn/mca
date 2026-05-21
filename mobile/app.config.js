@@ -1,5 +1,3 @@
-require('dotenv/config');
-
 const baseConfig = require('./app.json');
 
 const DEFAULT_NAME = 'SavingsMobile';

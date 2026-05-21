@@ -1,8 +1,17 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export type Role = "admin" | "accountant" | "user";
 
-const UserSchema = new Schema(
+export interface IUser extends Document {
+  name: string;
+  phone?: string;
+  email?: string;
+  passwordHash: string;
+  role: Role;
+  status: "active" | "inactive";
+}
+
+const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     phone: String,
@@ -14,7 +23,7 @@ const UserSchema = new Schema(
   { 
     timestamps: true,
     toJSON: {
-      transform: (_doc, ret) => {
+      transform: (_doc, ret: any) => {
         delete ret.passwordHash;
         return ret;
       }
@@ -22,5 +31,5 @@ const UserSchema = new Schema(
   }
 );
 
-export default model("User", UserSchema);
+export default model<IUser>("User", UserSchema);
 

@@ -1,0 +1,14 @@
+# Ignore Android resources and assets
+**/android/app/src/main/res/**
+**/public/*.png
+**/favicon.png
+**/icon.png
+**/cropped.png
+**/adaptive-icon.png
+icon.png
+cropped.png
+*.png
+*.webp
+*.jpg
+*.jpeg
+*.gif

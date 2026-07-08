@@ -20,6 +20,7 @@ import reportRoutes from "./routes/reports";
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
+const isProd = process.env.NODE_ENV === "production";
 
 // Trust the reverse proxy so rate-limiter gets the correct client IP
 app.set("trust proxy", 1);
@@ -88,7 +89,6 @@ app.use("/api/investments", investmentRoutes);
 app.use("/api/reports", reportRoutes);
 
 // In production, serve the built web app (single-port deploy)
-const isProd = process.env.NODE_ENV === "production";
 const isVercel = !!process.env.VERCEL;
 const webDist = path.resolve(__dirname, "../../web/dist");
 
@@ -115,21 +115,23 @@ function buildAllowedOrigins(envValue: string | undefined, port: number) {
 }
 
 function isOriginAllowed(origin: string, allowed: string[]) {
-  if (allowed.includes("*")) return true;
+  if (allowed.includes("*") && !isProd) return true;
   try {
     const url = new URL(origin);
+    const urlPort = url.port || (url.protocol === "https:" ? "443" : "80");
+
     return allowed.some((entry) => {
       try {
-        const allowedUrl = new URL(entry);
+        const hasProtocol = /^https?:\/\//i.test(entry);
+        const entryStr = hasProtocol ? entry : `${url.protocol}//${entry}`;
+        const allowedUrl = new URL(entryStr);
+
         if (allowedUrl.hostname !== url.hostname) return false;
-        if (allowedUrl.protocol && allowedUrl.protocol !== url.protocol) return false;
-        if (!allowedUrl.port) return true;
-        return allowedUrl.port === url.port;
+        if (hasProtocol && allowedUrl.protocol !== url.protocol) return false;
+
+        const allowedPort = allowedUrl.port || (allowedUrl.protocol === "https:" ? "443" : "80");
+        return allowedPort === urlPort;
       } catch {
-        // allow host-only or host:port entries
-        if (entry === url.hostname) return true;
-        if (entry === `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "80")}`) return true;
-        if (entry === `${url.protocol}//${url.hostname}`) return true;
         return false;
       }
     });

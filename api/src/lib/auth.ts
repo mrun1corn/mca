@@ -51,7 +51,7 @@ export function setAuthCookies(res: Response, access: string, refresh: string) {
 export function clearAuthCookies(res: Response) {
   const isProd = process.env.NODE_ENV === "production";
   const domain = process.env.COOKIE_DOMAIN || undefined;
-  const opts = { httpOnly: true, sameSite: "lax" as const, secure: isProd, domain, path: "/" };
+  const opts = { httpOnly: true, sameSite: "strict" as const, secure: isProd, domain, path: "/" };
   res.clearCookie("access", opts);
   res.clearCookie("refresh", opts);
 }

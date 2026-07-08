@@ -28,14 +28,18 @@ export async function clearTokens() {
   await SecureStore.deleteItemAsync(REFRESH_KEY);
 }
 
-export const api = axios.create({ baseURL });
+export const api = axios.create({
+  baseURL,
+  headers: {
+    "X-Client": "mobile",
+  },
+});
 
 // Attach Bearer token
 api.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
   if (token) {
-    config.headers = config.headers || {};
-    (config.headers as any).Authorization = `Bearer ${token}`;
+    config.headers.set("Authorization", `Bearer ${token}`);
   }
   return config;
 });
@@ -55,7 +59,10 @@ api.interceptors.response.use(
           if (!refresh) return null;
           try {
             const r = await axios.post(`${baseURL}/auth/refresh`, {}, {
-              headers: { Authorization: `Bearer ${refresh}` },
+              headers: { 
+                Authorization: `Bearer ${refresh}`,
+                "X-Client": "mobile",
+              },
               withCredentials: false,
             });
             const tokens: Tokens | undefined = r.data?.tokens;
@@ -71,8 +78,7 @@ api.interceptors.response.use(
       }
       const newAccess = await refreshing;
       if (newAccess) {
-        original.headers = original.headers || {};
-        original.headers.Authorization = `Bearer ${newAccess}`;
+        original.headers.set("Authorization", `Bearer ${newAccess}`);
         return api.request(original);
       }
     }

@@ -14,9 +14,10 @@ router.post("/login", async (req, res, next) => {
     const { user, access, refresh } = await authenticateByIdentifierPassword(body.identifier, body.password);
     setAuthCookies(res, access, refresh);
     // Return user info directly so client can set auth state immediately
+    const isMobile = req.headers["x-client"] === "mobile";
     res.json({ 
       user: { id: user._id, name: user.name, role: user.role }, 
-      tokens: { access, refresh } 
+      tokens: isMobile ? { access, refresh } : { access } 
     });
   } catch (e) {
     next(e);
@@ -34,7 +35,8 @@ router.post("/refresh", async (req, res, next) => {
     const access = signAccessToken({ sub: String(user._id), role: user.role, name: user.name });
     const newRefresh = signRefreshToken({ sub: String(user._id), role: user.role, name: user.name });
     setAuthCookies(res, access, newRefresh);
-    res.json({ ok: true, tokens: { access, refresh: newRefresh } });
+    const isMobile = req.headers["x-client"] === "mobile";
+    res.json({ ok: true, tokens: isMobile ? { access, refresh: newRefresh } : { access } });
   } catch (e) {
     next(e);
   }

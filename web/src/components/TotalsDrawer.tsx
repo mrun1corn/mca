@@ -108,34 +108,54 @@ export default function TotalsDrawer({
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Panel title="Per-member totals" description="All-time deposits and deductions">
-                <div className="overflow-auto max-h-72 pr-1">
-                  <table className="min-w-[480px] text-sm">
-                    <thead>
-                      <tr className="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                        <th className="py-2 pr-3 font-medium">Member</th>
-                        <th className="py-2 px-3 font-medium text-right">Deposited</th>
-                        <th className="py-2 px-3 font-medium text-right">Deducted</th>
-                        <th className="py-2 pl-3 font-medium text-right">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row) => (
-                        <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
-                          <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">{row.name}</td>
-                          <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
-                          <td className="py-2 px-3 text-right text-rose-500">{formatAmount(row.totalWithdraws || 0)}</td>
-                          <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+                <div className="max-h-72 overflow-auto pr-1">
+                  {/* Mobile View */}
+                  <div className="sm:hidden space-y-2.5">
+                    {rows.map((row) => (
+                      <div key={row.userId} className="rounded-xl border border-slate-100 dark:border-slate-800 p-3 bg-white dark:bg-slate-900 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-slate-900 dark:text-white text-sm">{row.name}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-300 text-sm">{formatAmount(row.balance || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                          <span>Deposited: {formatAmount(row.totalDeposits || 0)}</span>
+                          <span className="text-rose-500">Deducted: {formatAmount(row.totalWithdraws || 0)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {!rows.length && <div className="text-center text-slate-500 text-sm py-2">No members yet.</div>}
+                  </div>
+
+                  {/* Desktop View */}
+                  <div className="hidden sm:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                          <th className="py-2 pr-3 font-medium">Member</th>
+                          <th className="py-2 px-3 font-medium text-right">Deposited</th>
+                          <th className="py-2 px-3 font-medium text-right">Deducted</th>
+                          <th className="py-2 pl-3 font-medium text-right">Balance</th>
                         </tr>
-                      ))}
-                      {!rows.length && (
-                        <tr>
-                          <td colSpan={4} className="py-3 text-center text-slate-500">
-                            No members yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
+                            <td className="py-2 pr-3 font-medium text-slate-900 dark:text-white">{row.name}</td>
+                            <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
+                            <td className="py-2 px-3 text-right text-rose-500">{formatAmount(row.totalWithdraws || 0)}</td>
+                            <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+                          </tr>
+                        ))}
+                        {!rows.length && (
+                          <tr>
+                            <td colSpan={4} className="py-3 text-center text-slate-500">
+                              No members yet.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </Panel>
 

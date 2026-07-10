@@ -186,7 +186,7 @@ function YearlyCollectionCards({
       </div>
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Monthly totals</p>
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 gap-3 text-sm">
           {MONTH_LABELS.map((label, idx) => (
             <div key={`monthly-total-${label}`}>
               <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
@@ -258,7 +258,7 @@ function YearlyCollectionDrawer({
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Monthly history</p>
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
             {MONTH_LABELS.map((label, idx) => (
               <div key={`${user.userId}-drawer-${label}`} className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
                 <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>

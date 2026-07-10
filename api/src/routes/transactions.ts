@@ -8,6 +8,7 @@ import Due from "../models/Due";
 import { handleDeposit } from "../services/deposit";
 import { handleWithdraw } from "../services/withdraw";
 import { AppError } from "../lib/errors";
+import { runInTransaction } from "../lib/db";
 
 const router = Router();
 
@@ -162,11 +163,8 @@ router.delete("/transactions/:id", requireAuth as any, requireRole(["admin", "ac
 
 // POST /api/transactions/:id/revert — safely reverse a withdrawal and its related records
 router.post("/transactions/:id/revert", requireAuth as any, requireRole(["admin"]) as any, async (req: any, res, next) => {
-  const session = await mongoose.startSession();
   try {
-    let revertResult: any;
-
-    await session.withTransaction(async () => {
+    const revertResult = await runInTransaction(async (session) => {
       const tx = await Transaction.findById(req.params.id).session(session);
       if (!tx) throw new AppError("Transaction not found", 404);
       if (tx.type !== "withdraw") throw new AppError("Only withdrawal transactions can be reverted", 400);
@@ -222,7 +220,7 @@ router.post("/transactions/:id/revert", requireAuth as any, requireRole(["admin"
         cancelledDues.push(String(due._id));
       }
 
-      revertResult = {
+      return {
         revertedTransactions: txIds.length,
         cancelledDues,
       };
@@ -231,8 +229,6 @@ router.post("/transactions/:id/revert", requireAuth as any, requireRole(["admin"
     res.json({ ok: true, ...revertResult });
   } catch (e) {
     next(e);
-  } finally {
-    await session.endSession();
   }
 });
 

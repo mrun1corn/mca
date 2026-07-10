@@ -29,6 +29,7 @@ api.interceptors.response.use(
           } catch (e) {
             // Trigger a storage event to log the user out in App.tsx
             window.localStorage.setItem("logout", Date.now().toString());
+            window.dispatchEvent(new StorageEvent("storage", { key: "logout" }));
             return false;
           } finally {
             refreshing = null;

@@ -76,33 +76,76 @@ export default function BalancesPage() {
           ) : rows.length === 0 ? (
             <div className="text-sm text-slate-500">No members found.</div>
           ) : (
-            <div className="overflow-auto">
-              <table className="min-w-[720px] text-sm">
-                <thead>
-                  <tr className="text-left text-slate-500 dark:text-slate-400">
-                    <th className="py-2 pr-3 font-medium">Member</th>
-                    <th className="py-2 px-3 font-medium text-right">Deposited</th>
-                    <th className="py-2 px-3 font-medium text-right">Deducted</th>
-                    <th className="py-2 pl-3 font-medium text-right">Current balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
-                      <td className="py-2 pr-3 text-slate-900 dark:text-white font-medium">{row.name}</td>
-                      <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
-                      <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
-                      <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+            <div>
+              {/* Responsive Cards for Mobile */}
+              <div className="sm:hidden space-y-3">
+                {rows.map((row) => (
+                  <div key={row.userId} className="rounded-2xl border border-slate-250 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 p-4 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-slate-900 dark:text-white">{row.name}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <div>
+                        <span>Deposited:</span>
+                        <p className="font-medium text-slate-700 dark:text-slate-300">{formatAmount(row.totalDeposits || 0)}</p>
+                      </div>
+                      <div>
+                        <span>Deducted:</span>
+                        <p className="font-medium text-slate-700 dark:text-slate-300">{formatAmount(row.totalWithdraws || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Mobile Total Card */}
+                <div className="rounded-2xl border-2 border-slate-200 dark:border-slate-750 bg-slate-50/60 dark:bg-slate-900/40 p-4 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-900 dark:text-white">Total</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-300">{formatAmount(totalBalance)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <div>
+                      <span>Deposited:</span>
+                      <p className="font-medium text-slate-700 dark:text-slate-300">{formatAmount(totalDeposits)}</p>
+                    </div>
+                    <div>
+                      <span>Deducted:</span>
+                      <p className="font-medium text-slate-700 dark:text-slate-300">{formatAmount(totalWithdraws)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Standard Table for Desktop */}
+              <div className="hidden sm:block overflow-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-500 dark:text-slate-400">
+                      <th className="py-2 pr-3 font-medium">Member</th>
+                      <th className="py-2 px-3 font-medium text-right">Deposited</th>
+                      <th className="py-2 px-3 font-medium text-right">Deducted</th>
+                      <th className="py-2 pl-3 font-medium text-right">Current balance</th>
                     </tr>
-                  ))}
-                  <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
-                    <td className="py-2 pr-3 font-semibold text-slate-900 dark:text-white">Total</td>
-                    <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalDeposits)}</td>
-                    <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalWithdraws)}</td>
-                    <td className="py-2 pl-3 text-right font-semibold">{formatAmount(totalBalance)}</td>
-                  </tr>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.userId} className="border-t border-slate-100 dark:border-slate-800">
+                        <td className="py-2 pr-3 text-slate-900 dark:text-white font-medium">{row.name}</td>
+                        <td className="py-2 px-3 text-right">{formatAmount(row.totalDeposits || 0)}</td>
+                        <td className="py-2 px-3 text-right">{formatAmount(row.totalWithdraws || 0)}</td>
+                        <td className="py-2 pl-3 text-right font-semibold text-emerald-600 dark:text-emerald-300">{formatAmount(row.balance || 0)}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
+                      <td className="py-2 pr-3 font-semibold text-slate-900 dark:text-white">Total</td>
+                      <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalDeposits)}</td>
+                      <td className="py-2 px-3 text-right font-semibold">{formatAmount(totalWithdraws)}</td>
+                      <td className="py-2 pl-3 text-right font-semibold">{formatAmount(totalBalance)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </Panel>

@@ -1,5 +1,6 @@
 import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { Suspense, lazy, useEffect, useState, createContext, useContext } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { APP_NAME } from "./lib/config";
 import { ToastProvider } from "./components/Toast";
 import { api } from "./lib/api";
@@ -99,10 +100,13 @@ export default function App() {
   const [isAuthChecking, setIsAuthChecking] = useState(() => {
     return localStorage.getItem("hasSession") === "true";
   });
-  const [queryClient] = useState(() => ({
-    invalidateQueries: () => Promise.resolve(),
-    clear: () => {},
-  }));
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user) {
+      queryClient.clear();
+    }
+  }, [user, queryClient]);
 
   useEffect(() => {
     // Check auth on mount

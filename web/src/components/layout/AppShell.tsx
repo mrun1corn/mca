@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../../lib/api";
 import { APP_NAME } from "../../lib/config";
 import ThemeToggle from "../ThemeToggle";
+import { useAuth } from "../../App";
 import {
   HomeIcon,
   UsersIcon,
@@ -53,6 +54,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: async () => (await api.get("/me")).data });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { setUser } = useAuth();
 
   const role = (me?.role ?? "user") as Role;
   const filteredNav = navItems.filter((item) => !item.roles || item.roles.includes(role));
@@ -65,8 +67,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
     try {
       await api.post("/auth/logout");
     } finally {
+      setUser(null);
       localStorage.removeItem("hasSession");
       localStorage.setItem("logout", Date.now().toString());
+      window.dispatchEvent(new StorageEvent("storage", { key: "logout" }));
       navigate("/login", { replace: true });
     }
   };

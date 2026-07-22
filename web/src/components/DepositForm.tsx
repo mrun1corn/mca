@@ -6,6 +6,7 @@ import Button from "./Button";
 import { useToast } from "./Toast";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
+import ModeCard from "./ui/ModeCard";
 
 function DepositForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
@@ -92,49 +93,41 @@ function DepositForm({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/70 dark:bg-slate-900/40 space-y-4">
+      <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/60 space-y-4">
         <header className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Step 1</p>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Choose the intent</h3>
-          </div>
-          {hasOpenDues && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {mode === "simple" ? "Money stays flexible" : "We’ll target specific dues"}
-            </span>
-          )}
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Deposit Type</h3>
         </header>
 
         {hasOpenDues ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <ModeCard
               title="Simple deposit"
-              body="Keeps the balance free for future withdrawals."
+              body="Adds directly to member's savings balance."
               active={mode === "simple"}
               onClick={() => setMode("simple")}
             />
             <ModeCard
               title="Pay down a due"
-              body="Apply this to their repayment schedule."
+              body="Allocates payment toward an active loan/due."
               active={mode === "pay_due"}
               onClick={() => setMode("pay_due")}
             />
           </div>
         ) : (
           <div className="text-sm text-slate-500 dark:text-slate-400">
-            No dues are open, so we’ll treat it as a regular deposit.
+            No active dues for this member. Recording as a regular deposit.
           </div>
         )}
 
         {mode === "pay_due" && hasOpenDues && (
-          <div className="rounded-2xl border border-blue-100 dark:border-blue-500/30 bg-blue-50/60 dark:bg-blue-500/10 p-4 space-y-3">
+          <div className="rounded-xl border border-blue-200/70 dark:border-blue-500/30 bg-blue-50/70 dark:bg-blue-500/10 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Target a due</h4>
-              <span className="text-xs text-blue-600 dark:text-blue-200 font-medium bg-blue-100/70 dark:bg-blue-500/20 px-2 py-0.5 rounded-full">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Target Loan / Due</h4>
+              <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-full">
                 {dues.data?.length || 0} open
               </span>
             </div>
-            <Select className="h-12" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
+            <Select className="h-11 text-sm" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
               <option value="">Select due…</option>
               {dues.data?.map((d: any) => (
                 <option key={d._id} value={d._id}>
@@ -142,23 +135,20 @@ function DepositForm({ userId }: { userId: string }) {
                 </option>
               ))}
             </Select>
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} />
-              Add penalty when grace period is over
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              Include penalty if past grace period
             </label>
-            <div className="text-xs text-blue-700 dark:text-blue-200 bg-white/60 dark:bg-slate-900/40 rounded-xl px-3 py-2 inline-flex items-center gap-2">
+            <div className="text-xs text-blue-800 dark:text-blue-200 bg-white/80 dark:bg-slate-900/60 rounded-lg px-3 py-2 inline-flex items-center gap-2 font-medium">
               <span className="h-2 w-2 bg-blue-500 rounded-full" aria-hidden />
-              Suggested instalment: <strong>{formatAmount(suggested)}</strong>
+              Suggested instalment: <strong className="font-bold">{formatAmount(suggested)}</strong>
             </div>
           </div>
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-100 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/50 space-y-4">
-        <header>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Step 2</p>
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white">Fill in the details</h3>
-        </header>
+      <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/60 space-y-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Transaction Details</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Amount"
@@ -167,58 +157,31 @@ function DepositForm({ userId }: { userId: string }) {
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="h-12"
+            className="h-11 text-sm"
           />
           <Input
             label="Date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="h-12"
+            className="h-11 text-sm"
           />
         </div>
         <Input
-          label="Note for future you"
-          hint="Plain words help everyone understand later."
-          placeholder="e.g. Weekly market sales"
+          label="Note"
+          placeholder="e.g. Monthly contribution"
           value={note}
           onChange={(e) => setNote(e.target.value)}
+          className="h-11 text-sm"
         />
       </section>
 
       <div className="flex flex-wrap gap-3 justify-end">
-        <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
-          Save deposit
+        <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20">
+          Save Deposit
         </Button>
       </div>
     </div>
-  );
-}
-
-function ModeCard({
-  title,
-  body,
-  active,
-  onClick,
-}: {
-  title: string;
-  body: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-left rounded-2xl border p-4 transition ${
-        active
-          ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400/60 dark:bg-blue-500/10 dark:text-blue-100 shadow"
-          : "border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:text-slate-300"
-      }`}
-    >
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">{body}</div>
-    </button>
   );
 }
 

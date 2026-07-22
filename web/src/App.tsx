@@ -148,16 +148,14 @@ export default function App() {
   }, []);
 
   const loginScreen = user ? <Navigate to="/" replace /> : (
-    <AuthContext.Provider value={{ user, setUser, isAuthChecking }}>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <div className="flex justify-end px-4 pt-4">
-          <ThemeToggle />
-        </div>
-        <div className="px-4 pb-10">
-          <Login />
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <div className="flex justify-end px-4 pt-4">
+        <ThemeToggle />
       </div>
-    </AuthContext.Provider>
+      <div className="px-4 pb-10">
+        <Login />
+      </div>
+    </div>
   );
 
 

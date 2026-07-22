@@ -60,7 +60,7 @@ function StatCard({ label, value, icon, helper, variant = "default", onClick }: 
       <button
         type="button"
         onClick={onClick}
-        className={`relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${styles.wrapper}`}
+        className={`relative overflow-hidden rounded-2xl p-5 text-left w-full transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${styles.wrapper}`}
       >
         {content}
       </button>

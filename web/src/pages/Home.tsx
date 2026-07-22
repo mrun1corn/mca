@@ -185,6 +185,14 @@ export default function Home() {
     return stats;
   }, [data, role, navigate]);
 
+  const memberCards = useMemo(() => (Array.isArray(data?.cards) ? data.cards : []), [data?.cards]);
+
+  const filteredMemberCards = useMemo(() => {
+    if (!memberSearch.trim()) return memberCards;
+    const query = memberSearch.toLowerCase();
+    return memberCards.filter((card) => card.name.toLowerCase().includes(query));
+  }, [memberCards, memberSearch]);
+
   const loading = !home.data && home.isLoading;
   if (loading) {
     return (
@@ -214,8 +222,6 @@ export default function Home() {
 
   if (!data) return null;
 
-  const memberCards = Array.isArray(data.cards) ? data.cards : [];
-
   const isRefreshing = home.isFetching && !loading;
 
   if (role === "user") {
@@ -226,7 +232,7 @@ export default function Home() {
         <PageHeader
           eyebrow="My savings"
           title={`Hi ${me.data?.name || "there"}, here’s the current picture`}
-          description="Just the basics you need: balance, what you’ve put in, and the next payment if one exists."
+          description="Overview of your personal savings and activity."
         />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -262,12 +268,6 @@ export default function Home() {
       </div>
     );
   }
-
-  const filteredMemberCards = useMemo(() => {
-    if (!memberSearch.trim()) return memberCards;
-    const query = memberSearch.toLowerCase();
-    return memberCards.filter((card) => card.name.toLowerCase().includes(query));
-  }, [memberCards, memberSearch]);
 
   return (
     <div className="space-y-6 animate-page-fade">
@@ -369,15 +369,15 @@ export default function Home() {
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 max-w-sm flex items-center">
               <input
                 type="text"
                 placeholder="Search member by name..."
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
-                className="input w-full pl-9 py-2 text-sm"
+                className="input w-full pl-9 pr-3 h-10 text-sm"
               />
-              <svg className="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 absolute left-3 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>

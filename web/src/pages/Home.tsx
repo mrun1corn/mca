@@ -51,6 +51,7 @@ export default function Home() {
   const [yearSummaryLoading, setYearSummaryLoading] = useState(false);
   const [yearSummaryError, setYearSummaryError] = useState<string | null>(null);
   const [showTotalsDrawer, setShowTotalsDrawer] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const myId = me.data?.id as string | undefined;
   const dues = useQuery<any[]>({
@@ -262,8 +263,42 @@ export default function Home() {
     );
   }
 
+  const filteredMemberCards = useMemo(() => {
+    if (!memberSearch.trim()) return memberCards;
+    const query = memberSearch.toLowerCase();
+    return memberCards.filter((card) => card.name.toLowerCase().includes(query));
+  }, [memberCards, memberSearch]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-page-fade">
+      {(role === "admin" || role === "accountant") && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-transparent p-4 rounded-2xl border border-blue-200/50 dark:border-blue-500/20 backdrop-blur-md">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Quick Management</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Direct shortcuts to key accounting workflows</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => navigate("/deposit")}
+              className="btn btn-primary text-xs py-2 px-3 shadow-md"
+            >
+              + Record Deposit
+            </button>
+            <button
+              onClick={() => navigate("/withdraw")}
+              className="btn btn-secondary text-xs py-2 px-3 shadow-sm"
+            >
+              + Cash Out / Invest
+            </button>
+            <button
+              onClick={() => navigate("/export")}
+              className="btn btn-ghost text-xs py-2 px-3 border border-slate-200 dark:border-slate-700"
+            >
+              Export CSV
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryStats.map((stat) => (
@@ -303,19 +338,19 @@ export default function Home() {
                   key={item.year}
                   type="button"
                   onClick={() => navigate(`/yearly?year=${item.year}`)}
-                  className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
+                  className="text-left rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
                 >
                   <div className="relative z-10">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-400 group-hover:text-slate-500 transition-colors">{item.label}</p>
-                    <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-2">{display}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{item.year}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{display}</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{item.year}</p>
                   </div>
                   {typeof total === "number" && (
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className="absolute bottom-0 left-0 h-1 bg-blue-500/20 dark:bg-blue-400/20"
+                      className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"
                     />
                   )}
                 </button>
@@ -326,16 +361,42 @@ export default function Home() {
         </div>
       ) : null}
 
-      {isRefreshing ? <div className="text-xs text-slate-500">Refreshing data…</div> : null}
+      {isRefreshing ? <div className="text-xs text-slate-500 animate-pulse">Refreshing live data…</div> : null}
 
       <Panel
         title="Members at a glance"
-        description="Click a card to see their balance, recent activity, and dues timeline."
+        description="Click any card to view detailed activity, balances, and due payment schedules."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {memberCards.map((card) => (
-            <MemberCard key={card.userId} card={card} onClick={() => setDrawerUserId(card.userId)} />
-          ))}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="relative flex-1 max-w-sm">
+              <input
+                type="text"
+                placeholder="Search member by name..."
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="input w-full pl-9 py-2 text-sm"
+              />
+              <svg className="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+              Showing {filteredMemberCards.length} of {memberCards.length} members
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filteredMemberCards.map((card) => (
+              <MemberCard key={card.userId} card={card} onClick={() => setDrawerUserId(card.userId)} />
+            ))}
+          </div>
+
+          {!filteredMemberCards.length && (
+            <div className="text-center py-8 text-sm text-slate-400">
+              No members match "{memberSearch}".
+            </div>
+          )}
         </div>
       </Panel>
 

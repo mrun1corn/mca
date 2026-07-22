@@ -7,6 +7,7 @@ import Button from "./Button";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { Field } from "./ui/Field";
+import ModeCard from "./ui/ModeCard";
 
 type PreviewResponse = { eligibleCount: number; rows: { userId: string; name: string; share: number }[] };
 
@@ -136,12 +137,14 @@ function WithdrawForm({ userId }: { userId?: string }) {
               body="Record a loan or withdrawal and create a repayment plan."
               active={mode === "member"}
               onClick={() => setMode("member")}
+              variant="rose"
             />
             <ModeCard
               title="Invest the funds"
               body="Split contributions and track expected interest from elsewhere."
               active={mode === "investment"}
               onClick={() => setMode("investment")}
+              variant="rose"
             />
           </div>
         </section>
@@ -285,33 +288,6 @@ function WithdrawForm({ userId }: { userId?: string }) {
         </Button>
       </div>
     </div>
-  );
-}
-
-function ModeCard({
-  title,
-  body,
-  active,
-  onClick,
-}: {
-  title: string;
-  body: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-left rounded-2xl border p-4 transition ${
-        active
-          ? "border-rose-500 bg-rose-50 text-rose-700 dark:border-rose-400/60 dark:bg-rose-500/10 dark:text-rose-100 shadow"
-          : "border-slate-200 text-slate-600 hover:border-rose-200 hover:bg-rose-50/60 dark:border-slate-700 dark:text-slate-300"
-      }`}
-    >
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="text-xs mt-1 text-slate-500 dark:text-slate-400">{body}</div>
-    </button>
   );
 }
 

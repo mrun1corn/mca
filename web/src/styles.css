@@ -107,47 +107,45 @@
   );
 }
 
-/* App background: rich ambient gradient */
+/* App background: high performance ambient gradient */
 html, body, #root { height: 100%; }
 body {
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(59, 130, 246, 0.12), transparent),
-    radial-gradient(1000px 500px at 90% 0%, rgba(16, 185, 129, 0.1), transparent),
+    radial-gradient(1200px 600px at 10% -10%, rgba(59, 130, 246, 0.08), transparent),
+    radial-gradient(1000px 500px at 90% 0%, rgba(16, 185, 129, 0.06), transparent),
     linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
-  background-attachment: fixed;
 }
 .dark body {
   background:
-    radial-gradient(1200px 600px at 10% -20%, rgba(37, 99, 235, 0.22), transparent),
-    radial-gradient(1000px 500px at 100% -10%, rgba(16, 185, 129, 0.14), transparent),
+    radial-gradient(1200px 600px at 10% -20%, rgba(37, 99, 235, 0.15), transparent),
+    radial-gradient(1000px 500px at 100% -10%, rgba(16, 185, 129, 0.1), transparent),
     linear-gradient(180deg, #0B132B 0%, #060D1E 100%);
-  background-attachment: fixed;
 }
 
-/* Glass panel utility */
+/* Glass panel utility (High performance solid-alpha without blur filter lag) */
 .glass {
-  @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-800/80 shadow-sm transition-all hover:shadow-md;
+  @apply bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-shadow hover:shadow-md;
 }
 
 /* Inputs */
 .input {
-  @apply border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-4 py-2.5 rounded-xl outline-none transition-all shadow-sm;
+  @apply border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-4 py-2.5 rounded-xl outline-none transition-colors shadow-sm;
 }
-.input:focus { @apply ring-2 ring-blue-500/30 border-blue-500 bg-white dark:bg-slate-900 shadow-sm; }
+.input:focus { @apply ring-2 ring-blue-500/30 border-blue-500 bg-white dark:bg-slate-900; }
 select.input { @apply pr-10; }
 
 /* Buttons */
 .btn {
-  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] hover:-translate-y-0.5 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40;
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40;
 }
-.btn-primary { @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25; }
+.btn-primary { @apply bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20; }
 .btn-secondary { @apply bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/70; }
-.btn-danger { @apply bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-rose-500/25; }
-.btn-ghost { @apply bg-transparent hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-300 shadow-none border border-transparent; }
+.btn-danger { @apply bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20; }
+.btn-ghost { @apply bg-transparent hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-300 border border-transparent; }
 
 /* Card */
 .card {
-  @apply bg-white dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-5 animate-fade-in shadow-sm hover:shadow-lg hover:border-blue-200 dark:hover:border-slate-700 transition-all;
+  @apply bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 animate-fade-in shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-slate-700 transition-all;
 }
 
 /* Status Badges */

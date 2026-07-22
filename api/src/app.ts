@@ -60,7 +60,7 @@ app.use("/api/auth/", authLimiter);
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS: allow one or more origins via CORS_ORIGIN (comma-separated)
+// CORS: allow origins via CORS_ORIGIN (comma-separated), localhost, and domain defaults
 const allowedOrigins = buildAllowedOrigins(process.env.CORS_ORIGIN, PORT);
 
 app.use(
@@ -68,7 +68,8 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // non-browser or same-origin
       if (isOriginAllowed(origin, allowedOrigins)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
+      console.warn(`[CORS] Rejected request from origin: ${origin}`);
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -106,7 +107,14 @@ app.use(errorHandler);
 export { app };
 
 function buildAllowedOrigins(envValue: string | undefined, port: number) {
-  const defaults = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+  const defaults = [
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+    `http://localhost:5173`,
+    `http://127.0.0.1:5173`,
+    "mrunicorn.xyz",
+    "*.mrunicorn.xyz",
+  ];
   const list = (envValue || "")
     .split(",")
     .map((s) => s.trim())
@@ -115,24 +123,30 @@ function buildAllowedOrigins(envValue: string | undefined, port: number) {
 }
 
 function isOriginAllowed(origin: string, allowed: string[]) {
-  if (allowed.includes("*") && !isProd) return true;
+  if (allowed.includes("*")) return true;
   try {
     const url = new URL(origin);
-    const urlPort = url.port || (url.protocol === "https:" ? "443" : "80");
+    const hostname = url.hostname;
 
     return allowed.some((entry) => {
+      if (entry === "*") return true;
+      if (entry.startsWith("*.")) {
+        const rootDomain = entry.slice(2);
+        return hostname === rootDomain || hostname.endsWith("." + rootDomain);
+      }
       try {
         const hasProtocol = /^https?:\/\//i.test(entry);
         const entryStr = hasProtocol ? entry : `${url.protocol}//${entry}`;
         const allowedUrl = new URL(entryStr);
 
-        if (allowedUrl.hostname !== url.hostname) return false;
+        if (allowedUrl.hostname !== hostname) return false;
         if (hasProtocol && allowedUrl.protocol !== url.protocol) return false;
 
         const allowedPort = allowedUrl.port || (allowedUrl.protocol === "https:" ? "443" : "80");
+        const urlPort = url.port || (url.protocol === "https:" ? "443" : "80");
         return allowedPort === urlPort;
       } catch {
-        return false;
+        return entry.toLowerCase() === hostname.toLowerCase();
       }
     });
   } catch {

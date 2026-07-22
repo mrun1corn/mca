@@ -63,7 +63,7 @@ export async function handleInvestment(input: InvestmentInput) {
     let expectedInterest = 0;
     if (boundedMonths) {
       for (let i = 0; i < boundedMonths; i++) {
-        const interest = math.round(amount * monthlyRatePct) / 100;
+        const interest = math.round((amount * monthlyRatePct) / 100);
         expectedInterest += interest;
         schedule.push({
           monthIndex: i,

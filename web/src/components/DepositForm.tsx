@@ -60,6 +60,11 @@ function DepositForm({ userId }: { userId: string }) {
     }
   }, [mode, selected, suggested]);
 
+  // Reset amount when mode, target due, or penalty configuration changes
+  useEffect(() => {
+    setAmount("");
+  }, [mode, dueId, includePenalty, userId]);
+
   useEffect(() => {
     if (!hasOpenDues && mode === "pay_due") setMode("simple");
   }, [hasOpenDues, mode]);

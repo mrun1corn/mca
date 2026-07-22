@@ -129,10 +129,35 @@ body {
 
 /* Inputs */
 .input {
-  @apply border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-4 py-2.5 rounded-xl outline-none transition-colors shadow-sm;
+  @apply border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-2.5 rounded-xl outline-none transition-colors shadow-sm;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 .input:focus { @apply ring-2 ring-blue-500/30 border-blue-500 bg-white dark:bg-slate-900; }
-select.input { @apply pr-10; }
+
+/* Important padding utilities to prevent icon text overlap */
+.input.pl-9, input.pl-9 { padding-left: 2.25rem !important; }
+.input.pl-10, input.pl-10 { padding-left: 2.5rem !important; }
+.input.pl-11, input.pl-11 { padding-left: 2.75rem !important; }
+.input.pl-12, input.pl-12 { padding-left: 3rem !important; }
+.input.pr-9, input.pr-9 { padding-right: 2.25rem !important; }
+.input.pr-10, input.pr-10 { padding-right: 2.5rem !important; }
+.input.pr-12, input.pr-12 { padding-right: 3rem !important; }
+
+/* Custom select dropdown styling (prevents browser native arrow overlap) */
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25em 1.25em;
+  padding-right: 2.5rem !important;
+}
+.dark select.input {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/></svg>");
+}
 
 /* Buttons */
 .btn {

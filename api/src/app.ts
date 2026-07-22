@@ -60,7 +60,7 @@ app.use("/api/auth/", authLimiter);
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS: allow origins via CORS_ORIGIN (comma-separated), localhost, and domain defaults
+// CORS: dynamically allow process.env.CORS_ORIGIN, localhost, and incoming Host headers
 const allowedOrigins = buildAllowedOrigins(process.env.CORS_ORIGIN, PORT);
 
 app.use(
@@ -112,8 +112,6 @@ function buildAllowedOrigins(envValue: string | undefined, port: number) {
     `http://127.0.0.1:${port}`,
     `http://localhost:5173`,
     `http://127.0.0.1:5173`,
-    "mrunicorn.xyz",
-    "*.mrunicorn.xyz",
   ];
   const list = (envValue || "")
     .split(",")

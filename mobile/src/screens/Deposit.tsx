@@ -112,6 +112,11 @@ export default function Deposit() {
     }
   }, [mode, suggested, amount]);
 
+  // Reset amount when mode, target due, or penalty configuration changes
+  useEffect(() => {
+    setAmount('');
+  }, [mode, dueId, includePenalty, userId]);
+
   return (
     <Screen scroll>
       <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 16 }}>

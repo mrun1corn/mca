@@ -126,7 +126,7 @@ export async function handleDeposit(input: DepositInput) {
         if (input.includePenalty && rule.enabled) {
           if (isOverdue(new Date(item.dueDate), occurredAt, grace)) {
             const currentBalance = math.round(item.totalDue - (item.paid || 0));
-            const penalty = math.round(currentBalance * penaltyPct) / 100;
+            const penalty = math.round((currentBalance * penaltyPct) / 100);
             if (penalty > 0 && (item as any).penaltyApplied === 0) {
               // Persist penalty to the schedule item
               (item as any).penaltyApplied = penalty;

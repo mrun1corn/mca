@@ -94,7 +94,7 @@ export async function handleWithdraw(input: WithdrawInput) {
 
     for (let m = 0; m < months; m++) {
       const principalPart = principalParts[m];
-      const interest = math.round(remainingPrincipal * monthlyRatePct) / 100;
+      const interest = math.round((remainingPrincipal * monthlyRatePct) / 100);
       const total = math.round(principalPart + interest);
       schedule.push({
         dueDate: dates[m],

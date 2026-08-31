@@ -46,5 +46,8 @@ mobile/.expo/
 
 .gemini/
 graphify-out/
+.repowise/
+.claude/
+*.tsbuildinfo
 icon.png
 cropped.png

@@ -1,4 +1,4 @@
-import { Types, ClientSession, Document } from "mongoose";
+import { Types, ClientSession } from "mongoose";
 import Transaction from "../models/Transaction";
 import DueModel from "../models/Due";
 import User from "../models/User";
@@ -13,6 +13,7 @@ export type DepositInput = {
   dueId?: string | null;
   amount: number;
   date: string; // ISO date
+  cycleMonth?: string | null; // e.g. "2025-07"
   note?: string;
   includePenalty?: boolean;
   penaltyPctPerMonth?: number; // if overriding rule
@@ -151,7 +152,8 @@ export async function createDepositTxRecord(
   amount: number,
   occurredAt: Date,
   note?: string,
-  actorUserId?: string
+  actorUserId?: string,
+  cycleMonth?: string | null
 ) {
   const [tx] = await Transaction.create(
     [
@@ -161,6 +163,7 @@ export async function createDepositTxRecord(
         type: "deposit",
         amount,
         occurredAt,
+        cycleMonth: cycleMonth || occurredAt.toISOString().slice(0, 7),
         note: note || "Deposit",
         createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,
       },
@@ -201,7 +204,7 @@ export async function fetchDuesQueue(
 
 export async function handleDeposit(input: DepositInput) {
   return runInTransaction(async (session) => {
-    const { userId, mode, amount: rawAmount, date, note, actorUserId } = input;
+    const { userId, mode, amount: rawAmount, date, note, actorUserId, cycleMonth } = input;
     const amount = math.round(Number(rawAmount));
     const occurredAt = parseISO(date);
 
@@ -211,14 +214,32 @@ export async function handleDeposit(input: DepositInput) {
 
     // Simple deposit mode
     if (mode === "simple") {
-      const tx = await createDepositTxRecord(session, userId, userName, amount, occurredAt, note, actorUserId);
+      const tx = await createDepositTxRecord(
+        session,
+        userId,
+        userName,
+        amount,
+        occurredAt,
+        note,
+        actorUserId,
+        cycleMonth
+      );
       return { tx, duesAffected: [] };
     }
 
     // Pay due mode: retrieve dues queue
     const duesQueue = await fetchDuesQueue(session, userId, input.dueId);
     if (duesQueue.length === 0) {
-      const tx = await createDepositTxRecord(session, userId, userName, amount, occurredAt, note, actorUserId);
+      const tx = await createDepositTxRecord(
+        session,
+        userId,
+        userName,
+        amount,
+        occurredAt,
+        note,
+        actorUserId,
+        cycleMonth
+      );
       return { tx, duesAffected: [] };
     }
 
@@ -230,7 +251,8 @@ export async function handleDeposit(input: DepositInput) {
       amount,
       occurredAt,
       note || "Deposit (pay due)",
-      actorUserId
+      actorUserId,
+      cycleMonth
     );
 
     let remaining = amount;

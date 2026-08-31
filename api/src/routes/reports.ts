@@ -36,12 +36,31 @@ router.get("/yearly-collection", requireAuth as any, async (req: any, res, next)
           userId: { $in: userIds },
           type: "deposit",
           deletedAt: { $exists: false },
-          occurredAt: { $gte: yearStart, $lt: yearEnd },
+          $or: [
+            { cycleMonth: { $regex: `^${year}-` } },
+            {
+              $and: [
+                { $or: [{ cycleMonth: { $exists: false } }, { cycleMonth: null }, { cycleMonth: "" }] },
+                { occurredAt: { $gte: yearStart, $lt: yearEnd } },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          effectiveMonth: {
+            $cond: [
+              { $and: [{ $ne: ["$cycleMonth", null] }, { $ne: ["$cycleMonth", ""] }] },
+              { $toInt: { $substr: ["$cycleMonth", 5, 2] } },
+              { $month: "$occurredAt" },
+            ],
+          },
         },
       },
       {
         $group: {
-          _id: { userId: "$userId", month: { $month: "$occurredAt" } },
+          _id: { userId: "$userId", month: "$effectiveMonth" },
           amount: { $sum: "$amount" },
         },
       },

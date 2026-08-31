@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { View, Linking } from 'react-native';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, formatAmount as apiFormatAmount } from '../lib/api';
 import UserSelect from '../components/UserSelect';
@@ -61,6 +62,34 @@ export default function Deposit() {
       showToast(error?.response?.data?.error || 'Failed to record deposit', 'error');
     },
   });
+  const onlineMutate = useMutation({
+    mutationFn: async () => {
+      const raw = Number(amount);
+      const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
+      const effectiveAmt = amt || suggested;
+      if (!effectiveAmt || effectiveAmt <= 0) {
+        throw new Error('Please enter a valid deposit amount');
+      }
+      const res = await api.post('/payments/initiate', {
+        amount: effectiveAmt,
+        mode,
+        dueId: mode === 'pay_due' ? dueId : undefined,
+        note: note || (mode === 'pay_due' ? 'Online Dues Payment' : 'Online Deposit'),
+      });
+      return res.data;
+    },
+    onSuccess: async (data) => {
+      if (data?.paymentUrl) {
+        await Linking.openURL(data.paymentUrl);
+      } else {
+        showToast('Failed to open payment gateway', 'error');
+      }
+    },
+    onError: (err: any) => {
+      showToast(err?.response?.data?.message || err?.message || 'Payment initiation failed', 'error');
+    },
+  });
+
 
   const hasOpenDues = Boolean(dues.data?.length);
   const selectedDue = useMemo(() => dues.data?.find((d: any) => d._id === dueId), [dues.data, dueId]);
@@ -201,12 +230,20 @@ export default function Deposit() {
           </View>
         ) : null}
 
-        <ThemeButton
-          title={mutate.isPending ? 'Saving…' : 'Save deposit'}
-          onPress={() => mutate.mutate()}
-          disabled={!userId || !amount || mutate.isPending}
-          style={{ marginTop: 24, backgroundColor: colors.primary }}
-        />
+        <View style={{ marginTop: 24, gap: 12 }}>
+          <ThemeButton
+            title={onlineMutate.isPending ? 'Connecting gateway…' : '💳 Pay with bKash / Nagad'}
+            variant="secondary"
+            onPress={() => onlineMutate.mutate()}
+            disabled={!userId || (!amount && !suggested) || onlineMutate.isPending}
+          />
+          <ThemeButton
+            title={mutate.isPending ? 'Saving…' : 'Save Manual Deposit'}
+            onPress={() => mutate.mutate()}
+            disabled={!userId || !amount || mutate.isPending}
+            style={{ backgroundColor: colors.primary }}
+          />
+        </View>
       </ThemedCard>
     </Screen>
   );

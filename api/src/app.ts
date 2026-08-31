@@ -17,6 +17,7 @@ import exportRoutes from "./routes/export";
 import previewRoutes from "./routes/preview";
 import investmentRoutes from "./routes/investments";
 import reportRoutes from "./routes/reports";
+import paymentRoutes from "./routes/payments";
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
@@ -88,6 +89,7 @@ app.use("/api/export", exportRoutes);
 app.use("/api", previewRoutes);
 app.use("/api/investments", investmentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // In production, serve the built web app (single-port deploy)
 const isVercel = !!process.env.VERCEL;

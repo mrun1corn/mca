@@ -80,6 +80,34 @@ function DepositForm({ userId }: { userId: string }) {
     },
     onError: () => notify("Deposit failed", "error"),
   });
+  const onlineMutation = useMutation({
+    mutationFn: async () => {
+      const raw = Number(amount);
+      const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
+      const effectiveAmt = amt || suggested;
+      if (!effectiveAmt || effectiveAmt <= 0) {
+        throw new Error("Please enter a valid deposit amount");
+      }
+      const res = await api.post("/payments/initiate", {
+        amount: effectiveAmt,
+        mode,
+        dueId: mode === "pay_due" ? dueId : undefined,
+        note: note || (mode === "pay_due" ? "Online Dues Payment" : "Online Deposit"),
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        notify("Failed to get payment checkout link", "error");
+      }
+    },
+    onError: (err: any) => {
+      notify(err?.response?.data?.message || err?.message || "Payment initiation failed", "error");
+    },
+  });
+
 
   const onSubmit = () => {
     const raw = Number(amount);
@@ -176,9 +204,18 @@ function DepositForm({ userId }: { userId: string }) {
         />
       </section>
 
-      <div className="flex flex-wrap gap-3 justify-end">
+      <div className="flex flex-wrap gap-3 justify-end items-center">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onlineMutation.mutate()}
+          isLoading={onlineMutation.isPending}
+          className="px-5 h-11 text-sm font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+        >
+          Pay Online (bKash / Nagad)
+        </Button>
         <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20">
-          Save Deposit
+          Record Manual Deposit
         </Button>
       </div>
     </div>

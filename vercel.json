@@ -22,14 +22,15 @@
       "headers": {
         "cache-control": "public, max-age=31536000, immutable"
       },
-      "dest": "/assets/$1"
+      "dest": "/web/assets/$1"
     },
     {
-      "handle": "filesystem"
+      "src": "/favicon.png",
+      "dest": "/web/favicon.png"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/web/index.html"
     }
   ]
 }

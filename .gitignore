@@ -51,4 +51,5 @@ graphify-out/
 *.tsbuildinfo
 icon.png
 cropped.png
+backups/
 .env*

@@ -91,17 +91,34 @@ app.use("/api/investments", investmentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/payments", paymentRoutes);
 
-// In production, serve the built web app (single-port deploy)
+// In production/standalone, serve the built web app (single-port deploy)
 const isVercel = !!process.env.VERCEL;
-const webDist = path.resolve(__dirname, "../../web/dist");
+const webDist = getWebDistPath();
 
-if (isProd && !isVercel && fs.existsSync(webDist)) {
+if (!isVercel && webDist) {
   app.use(express.static(webDist));
   // SPA fallback for non-API routes
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api/")) return next();
     res.sendFile(path.join(webDist, "index.html"));
   });
+}
+
+function getWebDistPath(): string | null {
+  const candidates = [
+    path.resolve(process.cwd(), "web/dist"),
+    path.resolve(process.cwd(), "../web/dist"),
+    path.resolve(__dirname, "../../web/dist"),
+    path.resolve(__dirname, "../web/dist"),
+    path.resolve(__dirname, "../../../web/dist"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.existsSync(path.join(candidate, "index.html"))) {
+      return candidate;
+    }
+  }
+  return null;
 }
 
 app.use(errorHandler);

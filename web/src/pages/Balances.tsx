@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import { api, formatAmount } from "../lib/api";
 import PageHeader from "../components/layout/PageHeader";
 import Panel from "../components/ui/Panel";
 import { HomeIcon, MoneyIcon } from "../components/Icon";
 import { ReactNode } from "react";
 import { SkeletonCard, SkeletonTable } from "../components/Skeleton";
+import { useToast } from "../components/Toast";
 
 type MemberSummary = {
   userId: string;
@@ -19,6 +22,21 @@ type HomeResponse = {
 };
 
 export default function BalancesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paymentStatus = searchParams.get("payment");
+  const { notify } = useToast();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (paymentStatus === "success") {
+      notify("Online payment received and processed successfully!", "success");
+      qc.invalidateQueries({ queryKey: ["home"] });
+      qc.invalidateQueries({ queryKey: ["txs"] });
+    } else if (paymentStatus === "cancelled") {
+      notify("Payment was cancelled. No charges were made.", "info");
+    }
+  }, [paymentStatus, notify, qc]);
+
   const { data, isLoading, isError, error, refetch } = useQuery<HomeResponse>({
     queryKey: ["home"],
     queryFn: async () => (await api.get("/home")).data,
@@ -34,6 +52,33 @@ export default function BalancesPage() {
 
   return (
     <div className="space-y-6">
+      {paymentStatus === "success" && (
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 flex items-center justify-between gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Payment Completed:</span> Your deposit was received and your balance has been updated.
+          </div>
+          <button
+            onClick={() => setSearchParams({})}
+            className="text-xs font-semibold px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {paymentStatus === "cancelled" && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Payment Cancelled:</span> The payment session was cancelled. No charges were made.
+          </div>
+          <button
+            onClick={() => setSearchParams({})}
+            className="text-xs font-semibold px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 rounded"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <PageHeader
         eyebrow="Available balances"
         title="See what each member has contributed and withdrawn"

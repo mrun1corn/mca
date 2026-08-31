@@ -5,6 +5,7 @@ import { AppError } from "../lib/errors";
 import PaymentSession from "../models/PaymentSession";
 import { handleDeposit } from "../services/deposit";
 import * as math from "../lib/math";
+const router = Router();
 
 type AuthenticatedRequest = Request & { user?: JwtPayload };
 

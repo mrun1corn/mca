@@ -47,6 +47,8 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
     const result = users.map((u) => ({
       id: u._id,
       name: u.name,
+      username: u.username || u.name.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+      memberCode: u.memberCode || "",
       phone: u.phone,
       email: u.email,
       role: u.role,
@@ -54,6 +56,7 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
       lastMonth: lastMonthMap.get(String(u._id)) || 0,
       recent: [],
     }));
+
 
     res.json(result);
   } catch (e) {
@@ -64,6 +67,8 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
 // CRUD
 const UpsertUserSchema = z.object({
   name: z.string().min(1),
+  username: z.string().min(1).optional(),
+  memberCode: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   password: z.string().min(8).optional(),
@@ -75,8 +80,14 @@ router.post("/users", requireAuth as any, requireRole(["admin"]) as any, async (
   try {
     const body = parseBody(UpsertUserSchema, req.body);
     const passwordHash = await hashPassword(body.password || "ChangeMe123!");
+    const count = await User.countDocuments();
+    const defaultCode = `MCA-${String(count + 1).padStart(3, "0")}`;
+    const defaultUsername = (body.username || body.name).toLowerCase().trim().replace(/[^a-z0-9_]/g, "");
+
     const user = await User.create({
       name: body.name,
+      username: defaultUsername,
+      memberCode: (body.memberCode || defaultCode).toUpperCase().trim(),
       phone: body.phone,
       email: body.email || undefined,
       passwordHash,
@@ -84,6 +95,7 @@ router.post("/users", requireAuth as any, requireRole(["admin"]) as any, async (
       status: body.status || "active",
     });
     res.status(201).json({ id: user._id });
+
   } catch (e) {
     next(e);
   }
@@ -103,7 +115,14 @@ router.get("/me", requireAuth as any, async (req: any, res, next) => {
   try {
     const user = await User.findById(req.user.sub);
     if (!user) return res.status(404).json({ error: "Not found" });
-    res.json({ id: user._id, name: user.name, email: user.email, role: user.role });
+    res.json({
+      id: user._id,
+      name: user.name,
+      username: user.username || user.name.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+      memberCode: user.memberCode || "",
+      email: user.email,
+      role: user.role,
+    });
   } catch (e) {
     next(e);
   }

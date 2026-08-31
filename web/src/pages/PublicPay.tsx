@@ -8,9 +8,18 @@ import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import ModeCard from "../components/ui/ModeCard";
 
+export interface PublicMember {
+  id: string;
+  name: string;
+  username: string;
+  memberCode: string;
+  phone?: string;
+  email?: string;
+}
+
 export default function PublicPay() {
   const [searchParams] = useSearchParams();
-  const initialMemberParam = searchParams.get("member") || searchParams.get("userId") || "";
+  const initialMemberParam = (searchParams.get("member") || searchParams.get("userId") || "").trim();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [mode, setMode] = useState<"simple" | "pay_due">("simple");
@@ -37,16 +46,22 @@ export default function PublicPay() {
     queryKey: ["public-members", searchQuery],
     queryFn: async () => {
       const res = await api.get("/payments/public-members", { params: { q: searchQuery } });
-      return res.data as Array<{ id: string; name: string; phone?: string; email?: string }>;
+      return res.data as PublicMember[];
     },
     staleTime: 60_000,
   });
 
-  // Auto-select member if query param matches ID or phone
+  // Auto-select member if query param matches username, memberCode, ID, or phone
   useEffect(() => {
     if (initialMemberParam && membersQuery.data?.length) {
+      const normalizedParam = initialMemberParam.toLowerCase().replace(/^@/, "");
       const match = membersQuery.data.find(
-        (m) => m.id === initialMemberParam || (m.phone && m.phone.includes(initialMemberParam))
+        (m) =>
+          m.id === initialMemberParam ||
+          (m.username && m.username.toLowerCase() === normalizedParam) ||
+          (m.memberCode && m.memberCode.toLowerCase() === normalizedParam) ||
+          (m.name && m.name.toLowerCase() === normalizedParam) ||
+          (m.phone && m.phone.includes(initialMemberParam))
       );
       if (match) {
         setSelectedUserId(match.id);
@@ -61,7 +76,7 @@ export default function PublicPay() {
       if (!selectedUserId) return null;
       const res = await api.get(`/payments/public-dues/${selectedUserId}`);
       return res.data as {
-        user: { id: string; name: string; phone?: string };
+        user: { id: string; name: string; username?: string; memberCode?: string; phone?: string };
         dues: any[];
       };
     },
@@ -132,8 +147,8 @@ export default function PublicPay() {
 
   const generateShareLink = () => {
     const base = window.location.origin;
-    const phone = selectedMember?.phone || "";
-    return `${base}/pay?member=${phone || selectedUserId}`;
+    const identifier = selectedMember?.username || selectedMember?.memberCode || selectedUserId;
+    return `${base}/pay?member=${identifier}`;
   };
 
   const copyPaymentLink = () => {
@@ -146,8 +161,9 @@ export default function PublicPay() {
   const shareOnWhatsApp = () => {
     const link = generateShareLink();
     const name = selectedMember?.name || "Member";
+    const code = selectedMember?.memberCode ? ` (${selectedMember.memberCode})` : "";
     const text = encodeURIComponent(
-      `Hi ${name}, here is your Community Savings payment link (${currencyCode}): ${link}`
+      `Hi ${name}${code}, here is your Community Savings payment link (${currencyCode}): ${link}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
@@ -193,13 +209,16 @@ export default function PublicPay() {
               <option value="">Choose your member profile…</option>
               {membersQuery.data?.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name} {m.phone ? `(${m.phone})` : ""}
+                  {m.name} (@{m.username} · {m.memberCode})
                 </option>
               ))}
             </Select>
 
             {selectedMember && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-2 pt-1 items-center">
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-lg">
+                  @{selectedMember.username} · {selectedMember.memberCode}
+                </span>
                 <button
                   type="button"
                   onClick={shareOnWhatsApp}

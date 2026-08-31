@@ -120,7 +120,13 @@ export async function authenticateByEmailPassword(email: string, password: strin
 export async function authenticateByIdentifierPassword(identifier: string, password: string) {
   const normalized = identifier.trim();
   const user = await UserModel.findOne({
-    $or: [matchInsensitive("email", normalized), matchInsensitive("name", normalized), matchInsensitive("phone", normalized)],
+    $or: [
+      matchInsensitive("username", normalized.replace(/^@/, "")),
+      matchInsensitive("memberCode", normalized),
+      matchInsensitive("email", normalized),
+      matchInsensitive("name", normalized),
+      matchInsensitive("phone", normalized),
+    ],
     status: "active",
   } as any);
   if (!user) throw new AppError("Invalid credentials", 401);

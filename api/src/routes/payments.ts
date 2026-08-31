@@ -30,9 +30,26 @@ function getGatewayConfig() {
   };
 }
 
+async function resolveMember(identifier: string) {
+  const clean = identifier.trim();
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(clean);
+  const normalized = clean.toLowerCase().replace(/^@/, "");
+
+  return UserModel.findOne({
+    $or: [
+      ...(isObjectId ? [{ _id: clean }] : []),
+      { username: normalized },
+      { memberCode: clean.toUpperCase() },
+      { phone: clean },
+      { name: new RegExp(`^${clean}$`, "i") },
+    ],
+    status: "active",
+  });
+}
+
 /**
  * GET /api/payments/public-members
- * Public search endpoint allowing members to find their profile by name/phone without logging in.
+ * Public search endpoint allowing members to find their profile by name/username/code/phone without logging in.
  */
 router.get("/public-members", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -41,30 +58,47 @@ router.get("/public-members", async (req: Request, res: Response, next: NextFunc
     if (q) {
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
+        { username: { $regex: q, $options: "i" } },
+        { memberCode: { $regex: q, $options: "i" } },
         { phone: { $regex: q, $options: "i" } },
       ];
     }
-    const users = await UserModel.find(filter).select("name phone email").sort({ name: 1 }).limit(50);
-    res.json(users.map((u) => ({ id: u._id, name: u.name, phone: u.phone, email: u.email })));
+    const users = await UserModel.find(filter).select("name username memberCode phone email").sort({ name: 1 }).limit(50);
+    res.json(
+      users.map((u) => ({
+        id: u._id,
+        name: u.name,
+        username: u.username || u.name.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+        memberCode: u.memberCode || "",
+        phone: u.phone,
+        email: u.email,
+      }))
+    );
   } catch (err) {
     next(err);
   }
 });
 
 /**
- * GET /api/payments/public-dues/:userId
- * Public endpoint to fetch active dues and suggested installment for a member.
+ * GET /api/payments/public-dues/:identifier
+ * Public endpoint to fetch active dues and suggested installment for a member (by ID, username, or code).
  */
-router.get("/public-dues/:userId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/public-dues/:identifier", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
-    const user = await UserModel.findById(userId);
-    if (!user || user.status !== "active") {
+    const { identifier } = req.params;
+    const user = await resolveMember(identifier);
+    if (!user) {
       throw new AppError("Member not found or inactive", 404);
     }
-    const dues = await getUserDues(userId, "open");
+    const dues = await getUserDues(String(user._id), "open");
     res.json({
-      user: { id: user._id, name: user.name, phone: user.phone },
+      user: {
+        id: user._id,
+        name: user.name,
+        username: user.username || user.name.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+        memberCode: user.memberCode || "",
+        phone: user.phone,
+      },
       dues,
     });
   } catch (err) {
@@ -88,8 +122,8 @@ router.post("/public-initiate", async (req: Request, res: Response, next: NextFu
       throw new AppError("Invalid payment amount", 400);
     }
 
-    const targetUser = await UserModel.findById(userId);
-    if (!targetUser || targetUser.status !== "active") {
+    const targetUser = await resolveMember(userId);
+    if (!targetUser) {
       throw new AppError("Member not found or inactive", 404);
     }
 
@@ -176,7 +210,7 @@ router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, r
     }
 
     const targetUserId = explicitUserId || user.sub;
-    const targetUser = await UserModel.findById(targetUserId);
+    const targetUser = await resolveMember(targetUserId);
     const customerName = targetUser?.name || user.name || "Community Member";
     const customerEmail = targetUser?.email || `${targetUserId}@mca.app`;
 
@@ -187,7 +221,7 @@ router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, r
       email: customerEmail,
       amount,
       metadata: {
-        userId: String(targetUserId),
+        userId: targetUser ? String(targetUser._id) : user.sub,
         mode,
         dueId: dueId || null,
         note: note || (mode === "pay_due" ? "Online Dues Payment" : "Online Deposit"),

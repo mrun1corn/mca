@@ -1,11 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { requireAuth, JwtPayload } from "../lib/auth";
+import UserModel from "../models/User";
 import { AppError } from "../lib/errors";
 import PaymentSession from "../models/PaymentSession";
 import { handleDeposit } from "../services/deposit";
 import * as math from "../lib/math";
-
-const router = Router();
 
 type AuthenticatedRequest = Request & { user?: JwtPayload };
 
@@ -35,21 +34,26 @@ function getGatewayConfig() {
 router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.user!;
-    const { amount: rawAmount, mode = "simple", dueId, note } = req.body;
+    const { userId: explicitUserId, amount: rawAmount, mode = "simple", dueId, note } = req.body;
     const amount = math.round(Number(rawAmount));
 
     if (!amount || amount <= 0 || !isFinite(amount)) {
       throw new AppError("Invalid payment amount", 400);
     }
 
+    const targetUserId = explicitUserId || user.sub;
+    const targetUser = await UserModel.findById(targetUserId);
+    const customerName = targetUser?.name || user.name || "Community Member";
+    const customerEmail = targetUser?.email || `${targetUserId}@mca.app`;
+
     const { baseUrl, apiKey, webBase, apiBase } = getGatewayConfig();
 
     const payload = {
-      full_name: user.name,
-      email: `${user.sub}@mca.app`,
+      full_name: customerName,
+      email: customerEmail,
       amount,
       metadata: {
-        userId: user.sub,
+        userId: String(targetUserId),
         mode,
         dueId: dueId || null,
         note: note || (mode === "pay_due" ? "Online Dues Payment" : "Online Deposit"),
@@ -86,14 +90,9 @@ router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, r
       const urlParts = data.payment_url.split("/");
       invoiceId = urlParts[urlParts.length - 1];
     }
-
-    if (!invoiceId) {
-      invoiceId = `INV-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    }
-
     // Persist local payment session
     await PaymentSession.create({
-      userId: user.sub as any,
+      userId: (targetUser ? targetUser._id : user.sub) as any,
       invoiceId,
       amount,
       mode,

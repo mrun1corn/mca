@@ -15,38 +15,46 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
     const q = String(req.query.q || "").trim();
     const filter: any = q ? { name: { $regex: q, $options: "i" } } : {};
     const users = await User.find(filter).sort({ name: 1 });
+    if (!users.length) return res.json([]);
+
+    const userIds = users.map((u) => u._id);
     const now = new Date();
     const firstOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const firstOfThisMonthMs = firstOfThisMonth.getTime();
-    const lastMonthStart = firstOfLastMonth;
-    const lastMonthEnd = firstOfThisMonth;
 
-    const result = [] as any[];
-    for (const u of users) {
-      const txs = await Transaction.find({ userId: u._id, deletedAt: { $exists: false } }).sort({ occurredAt: -1 }).limit(20);
-      const balanceAgg = await Transaction.aggregate([
-        { $match: { userId: u._id, deletedAt: { $exists: false } } },
-        { $group: { _id: null, s: { $sum: "$amount" } } },
-      ]);
-      const balance = balanceAgg.at(0)?.s || 0;
+    // Parallel batch aggregations for all users at once
+    const [balanceAggs, lastMonthAggs] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { userId: { $in: userIds }, deletedAt: { $exists: false } } },
+        { $group: { _id: "$userId", s: { $sum: "$amount" } } },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: {
+            userId: { $in: userIds },
+            type: "deposit",
+            deletedAt: { $exists: false },
+            occurredAt: { $gte: firstOfLastMonth, $lt: firstOfThisMonth },
+          },
+        },
+        { $group: { _id: "$userId", s: { $sum: "$amount" } } },
+      ]),
+    ]);
 
-      const lastMonth = await Transaction.aggregate([
-        { $match: { userId: u._id, type: "deposit", deletedAt: { $exists: false }, occurredAt: { $gte: lastMonthStart, $lt: lastMonthEnd } } },
-        { $group: { _id: null, s: { $sum: "$amount" } } },
-      ]);
+    const balanceMap = new Map(balanceAggs.map((b) => [String(b._id), b.s || 0]));
+    const lastMonthMap = new Map(lastMonthAggs.map((m) => [String(m._id), m.s || 0]));
 
-      result.push({
-        id: u._id,
-        name: u.name,
-        phone: u.phone,
-        email: u.email,
-        role: u.role,
-        balance: balance,
-        lastMonth: lastMonth.at(0)?.s || 0,
-        recent: txs.slice(0, 3).map((t) => ({ date: t.occurredAt, type: t.type, amount: t.amount, note: t.note })),
-      });
-    }
+    const result = users.map((u) => ({
+      id: u._id,
+      name: u.name,
+      phone: u.phone,
+      email: u.email,
+      role: u.role,
+      balance: balanceMap.get(String(u._id)) || 0,
+      lastMonth: lastMonthMap.get(String(u._id)) || 0,
+      recent: [],
+    }));
+
     res.json(result);
   } catch (e) {
     next(e);

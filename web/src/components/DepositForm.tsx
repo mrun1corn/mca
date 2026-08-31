@@ -7,6 +7,7 @@ import { useToast } from "./Toast";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import ModeCard from "./ui/ModeCard";
+import { motion, AnimatePresence } from "framer-motion";
 
 function DepositForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
@@ -75,11 +76,12 @@ function DepositForm({ userId }: { userId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.txs(userId) });
       qc.invalidateQueries({ queryKey: queryKeys.home() });
-      notify("Deposit recorded", "success");
+      notify("Deposit recorded successfully", "success");
       setAmount("");
     },
     onError: () => notify("Deposit failed", "error"),
   });
+
   const onlineMutation = useMutation({
     mutationFn: async () => {
       const raw = Number(amount);
@@ -89,6 +91,7 @@ function DepositForm({ userId }: { userId: string }) {
         throw new Error("Please enter a valid deposit amount");
       }
       const res = await api.post("/payments/initiate", {
+        userId,
         amount: effectiveAmt,
         mode,
         dueId: mode === "pay_due" ? dueId : undefined,
@@ -108,10 +111,8 @@ function DepositForm({ userId }: { userId: string }) {
     },
   });
 
-
   const onSubmit = () => {
     const raw = Number(amount);
-    // Normalize to 2dp to avoid floating-point drift (e.g. 1000.10 → 1000.0999...)
     const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
     const payload: Record<string, any> = { userId, mode, date, note, includePenalty };
     payload.amount = amt || suggested;
@@ -120,7 +121,12 @@ function DepositForm({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
       <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/60 space-y-4">
         <header className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Deposit Type</h3>
@@ -147,32 +153,45 @@ function DepositForm({ userId }: { userId: string }) {
           </div>
         )}
 
-        {mode === "pay_due" && hasOpenDues && (
-          <div className="rounded-xl border border-blue-200/70 dark:border-blue-500/30 bg-blue-50/70 dark:bg-blue-500/10 p-4 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Target Loan / Due</h4>
-              <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-full">
-                {dues.data?.length || 0} open
-              </span>
-            </div>
-            <Select className="h-11 text-sm" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
-              <option value="">Select due…</option>
-              {dues.data?.map((d: any) => (
-                <option key={d._id} value={d._id}>
-                  Principal {formatAmount(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
-                </option>
-              ))}
-            </Select>
-            <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-              <input type="checkbox" checked={includePenalty} onChange={(e) => setIncludePenalty(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-              Include penalty if past grace period
-            </label>
-            <div className="text-xs text-blue-800 dark:text-blue-200 bg-white/80 dark:bg-slate-900/60 rounded-lg px-3 py-2 inline-flex items-center gap-2 font-medium">
-              <span className="h-2 w-2 bg-blue-500 rounded-full" aria-hidden />
-              Suggested instalment: <strong className="font-bold">{formatAmount(suggested)}</strong>
-            </div>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {mode === "pay_due" && hasOpenDues && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="rounded-xl border border-blue-200/70 dark:border-blue-500/30 bg-blue-50/70 dark:bg-blue-500/10 p-4 space-y-3 overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Target Loan / Due</h4>
+                <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-full">
+                  {dues.data?.length || 0} open
+                </span>
+              </div>
+              <Select className="h-11 text-sm" value={dueId || (dues.data?.[0]?._id ?? "")} onChange={(e) => setDueId(e.target.value)}>
+                <option value="">Select due…</option>
+                {dues.data?.map((d: any) => (
+                  <option key={d._id} value={d._id}>
+                    Principal {formatAmount(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
+                  </option>
+                ))}
+              </Select>
+              <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includePenalty}
+                  onChange={(e) => setIncludePenalty(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                Include penalty if past grace period
+              </label>
+              <div className="text-xs text-blue-800 dark:text-blue-200 bg-white/80 dark:bg-slate-900/60 rounded-lg px-3 py-2 inline-flex items-center gap-2 font-medium">
+                <span className="h-2 w-2 bg-blue-500 rounded-full" aria-hidden />
+                Suggested instalment: <strong className="font-bold">{formatAmount(suggested)}</strong>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/60 space-y-4">
@@ -185,7 +204,7 @@ function DepositForm({ userId }: { userId: string }) {
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="h-11 text-sm"
+            className="h-11 text-sm font-semibold"
           />
           <Input
             label="Date"
@@ -212,13 +231,13 @@ function DepositForm({ userId }: { userId: string }) {
           isLoading={onlineMutation.isPending}
           className="px-5 h-11 text-sm font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
         >
-          Pay Online (bKash / Nagad)
+          💳 Pay Online (bKash / Nagad)
         </Button>
         <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20">
           Record Manual Deposit
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

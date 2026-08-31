@@ -170,23 +170,27 @@ router.post("/transactions/:id/revert", requireAuth as any, requireRole(["admin"
       if (tx.type !== "withdraw") throw new AppError("Only withdrawal transactions can be reverted", 400);
       if (tx.deletedAt) throw new AppError("Transaction already reverted/deleted", 400);
 
-      // Find the taker's name from the note (format: "Share for cash out of <name>")
-      const noteMatch = tx.note?.match(/^Share for cash out of (.+)$/);
-      const takerName = noteMatch?.[1];
-      if (!takerName) {
-        throw new AppError("Cannot identify related transactions. This may not be a split transaction.", 400);
+      const now = new Date();
+      let relatedTxs: any[] = [];
+      const targetDueId = (tx as any).dueId;
+      const splitGroupId = (tx as any).splitGroupId;
+
+      // 1. If direct splitGroupId exists, match exactly by foreign key
+      if (splitGroupId) {
+        relatedTxs = await Transaction.find({
+          splitGroupId,
+          deletedAt: { $exists: false },
+        }).session(session);
+      } else {
+        // Fallback for legacy transactions created before foreign key migration
+        relatedTxs = await Transaction.find({
+          occurredAt: tx.occurredAt,
+          note: tx.note,
+          type: "withdraw",
+          deletedAt: { $exists: false },
+        }).session(session);
       }
 
-      // Find all related split transactions:
-      // Same occurredAt, same note pattern, type "withdraw", not already deleted
-      const relatedTxs = await Transaction.find({
-        occurredAt: tx.occurredAt,
-        note: tx.note,
-        type: "withdraw",
-        deletedAt: { $exists: false },
-      }).session(session);
-
-      const now = new Date();
       const txIds = relatedTxs.map((t) => t._id);
 
       // Soft-delete all related split transactions
@@ -196,28 +200,39 @@ router.post("/transactions/:id/revert", requireAuth as any, requireRole(["admin"
         { session }
       );
 
-      // Find and cancel the associated Due document
-      // The Due's userId should be the taker. We match by the reason field and principal amount.
-      // Sum up the absolute amounts of the split transactions to get the original principal.
-      const principal = relatedTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
       const cancelledDues: string[] = [];
 
-      // Find dues for the taker that match this withdrawal
-      const possibleDues = await Due.find({
-        principal: { $gte: principal - 0.02, $lte: principal + 0.02 }, // floating point tolerance
-        status: "active",
-      }).session(session);
-
-      for (const due of possibleDues) {
-        // Cancel all schedule items
-        for (const item of due.schedule) {
-          if (item.status !== "paid") {
-            (item as any).status = "cancelled";
+      // 2. Cancel the exact Due document by direct foreign key ID
+      if (targetDueId) {
+        const exactDue = await Due.findById(targetDueId).session(session);
+        if (exactDue && exactDue.status !== "cancelled") {
+          for (const item of exactDue.schedule) {
+            if (item.status !== "paid") {
+              (item as any).status = "cancelled";
+            }
           }
+          (exactDue as any).status = "cancelled";
+          await exactDue.save({ session });
+          cancelledDues.push(String(exactDue._id));
         }
-        (due as any).status = "cancelled";
-        await due.save({ session });
-        cancelledDues.push(String(due._id));
+      } else {
+        // Legacy fallback
+        const principal = relatedTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const possibleDues = await Due.find({
+          principal: { $gte: principal - 0.02, $lte: principal + 0.02 },
+          status: "active",
+        }).session(session);
+
+        for (const due of possibleDues) {
+          for (const item of due.schedule) {
+            if (item.status !== "paid") {
+              (item as any).status = "cancelled";
+            }
+          }
+          (due as any).status = "cancelled";
+          await due.save({ session });
+          cancelledDues.push(String(due._id));
+        }
       }
 
       return {

@@ -52,7 +52,9 @@ export function createSplitTransactionPayloads(
   splitAmounts: number[],
   takerName: string,
   occurredAt: Date,
-  actorId?: Types.ObjectId
+  actorId?: Types.ObjectId,
+  splitGroupId?: Types.ObjectId,
+  dueId?: Types.ObjectId
 ) {
   return eligible.map((u, i) => ({
     userId: u._id,
@@ -61,6 +63,8 @@ export function createSplitTransactionPayloads(
     amount: -splitAmounts[i],
     occurredAt,
     note: `Share for cash out of ${takerName}`,
+    splitGroupId,
+    dueId,
     createdBy: actorId,
   }));
 }
@@ -154,6 +158,7 @@ export async function handleWithdraw(input: WithdrawInput) {
 
     const takerObjectId = new Types.ObjectId(takerId);
     const actorId = actorUserId ? new Types.ObjectId(actorUserId) : undefined;
+    const splitGroupId = new Types.ObjectId();
 
     // Determine eligible members for split funding
     const allActive = (await User.find({ status: "active" }).session(session)) as unknown as ActiveMember[];
@@ -162,12 +167,7 @@ export async function handleWithdraw(input: WithdrawInput) {
       throw new AppError("No eligible members available for split", 400);
     }
 
-    // Split amount and record funding transactions
-    const splitAmounts = math.distribute(amount, eligible.length);
-    const txPayloads = createSplitTransactionPayloads(eligible, splitAmounts, takerName, occurredAt, actorId);
-    const splitTxDocs = await Transaction.insertMany(txPayloads, { session });
-
-    // Generate repayment schedule and create Due document
+    // Generate repayment schedule and create Due document first to get its _id
     const dates = calculateScheduleDates(dueConfig.months, occurredAt, dueConfig);
     const schedule = generateRepaymentSchedule(dueConfig.months, amount, dueConfig.monthlyRatePct, dates);
 
@@ -186,6 +186,19 @@ export async function handleWithdraw(input: WithdrawInput) {
       ],
       { session }
     );
+
+    // Split amount and record funding transactions linked by splitGroupId and dueId
+    const splitAmounts = math.distribute(amount, eligible.length);
+    const txPayloads = createSplitTransactionPayloads(
+      eligible,
+      splitAmounts,
+      takerName,
+      occurredAt,
+      actorId,
+      splitGroupId,
+      dueDoc._id
+    );
+    const splitTxDocs = await Transaction.insertMany(txPayloads, { session });
 
     return { splitTxIds: splitTxDocs.map((t) => String(t._id)), due: dueDoc };
   });

@@ -4,7 +4,9 @@ import UserModel from "../models/User";
 import { AppError } from "../lib/errors";
 import PaymentSession from "../models/PaymentSession";
 import { handleDeposit } from "../services/deposit";
+import { getUserDues } from "../services/dues";
 import * as math from "../lib/math";
+
 const router = Router();
 
 type AuthenticatedRequest = Request & { user?: JwtPayload };
@@ -29,8 +31,139 @@ function getGatewayConfig() {
 }
 
 /**
+ * GET /api/payments/public-members
+ * Public search endpoint allowing members to find their profile by name/phone without logging in.
+ */
+router.get("/public-members", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const filter: Record<string, unknown> = { status: "active" };
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { phone: { $regex: q, $options: "i" } },
+      ];
+    }
+    const users = await UserModel.find(filter).select("name phone email").sort({ name: 1 }).limit(50);
+    res.json(users.map((u) => ({ id: u._id, name: u.name, phone: u.phone, email: u.email })));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/payments/public-dues/:userId
+ * Public endpoint to fetch active dues and suggested installment for a member.
+ */
+router.get("/public-dues/:userId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const user = await UserModel.findById(userId);
+    if (!user || user.status !== "active") {
+      throw new AppError("Member not found or inactive", 404);
+    }
+    const dues = await getUserDues(userId, "open");
+    res.json({
+      user: { id: user._id, name: user.name, phone: user.phone },
+      dues,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/payments/public-initiate
+ * Public checkout initiation for non-logged-in members (e.g. from WhatsApp/SMS direct link).
+ */
+router.post("/public-initiate", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, amount: rawAmount, mode = "simple", dueId, note } = req.body;
+    const amount = math.round(Number(rawAmount));
+
+    if (!userId) {
+      throw new AppError("Please select a member", 400);
+    }
+    if (!amount || amount <= 0 || !isFinite(amount)) {
+      throw new AppError("Invalid payment amount", 400);
+    }
+
+    const targetUser = await UserModel.findById(userId);
+    if (!targetUser || targetUser.status !== "active") {
+      throw new AppError("Member not found or inactive", 404);
+    }
+
+    const { baseUrl, apiKey, webBase, apiBase } = getGatewayConfig();
+
+    const payload = {
+      full_name: targetUser.name,
+      email: targetUser.email || `${targetUser._id}@mca.app`,
+      amount,
+      metadata: {
+        userId: String(targetUser._id),
+        mode,
+        dueId: dueId || null,
+        note: note || (mode === "pay_due" ? "Online Dues Payment" : "Online Deposit"),
+      },
+      redirect_url: `${webBase}/balances?payment=success`,
+      cancel_url: `${webBase}/balances?payment=cancelled`,
+      webhook_url: `${apiBase}/payments/webhook`,
+    };
+
+    const response = await fetch(`${baseUrl}/checkout-v2`, {
+      method: "POST",
+      headers: {
+        "RT-UDDOKTAPAY-API-KEY": apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = (await response.json()) as {
+      status?: boolean;
+      message?: string;
+      payment_url?: string;
+      invoice_id?: string;
+    };
+
+    if (!data?.status || !data?.payment_url) {
+      throw new AppError(data?.message || "Failed to initiate payment session with gateway", 502);
+    }
+
+    let invoiceId = data.invoice_id;
+    if (!invoiceId && typeof data.payment_url === "string") {
+      const urlParts = data.payment_url.split("/");
+      invoiceId = urlParts[urlParts.length - 1];
+    }
+
+    if (!invoiceId) {
+      invoiceId = `INV-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    await PaymentSession.create({
+      userId: targetUser._id,
+      invoiceId,
+      amount,
+      mode,
+      dueId: dueId || undefined,
+      status: "pending",
+      metadata: payload.metadata,
+    });
+
+    return res.json({
+      status: true,
+      paymentUrl: data.payment_url,
+      invoiceId,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/payments/initiate
- * Initiates an UddoktaPay / Paymently checkout session for a deposit or due payment.
+ * Initiates an UddoktaPay / Paymently checkout session for a deposit or due payment (Authenticated).
  */
 router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -85,12 +218,16 @@ router.post("/initiate", requireAuth as any, async (req: AuthenticatedRequest, r
       throw new AppError(data?.message || "Failed to initiate payment session with gateway", 502);
     }
 
-    // Extract invoice identifier from response or payment URL
     let invoiceId = data.invoice_id;
     if (!invoiceId && typeof data.payment_url === "string") {
       const urlParts = data.payment_url.split("/");
       invoiceId = urlParts[urlParts.length - 1];
     }
+
+    if (!invoiceId) {
+      invoiceId = `INV-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
     // Persist local payment session
     await PaymentSession.create({
       userId: (targetUser ? targetUser._id : user.sub) as any,
@@ -143,7 +280,6 @@ router.post("/webhook", async (req: Request, res: Response, next: NextFunction) 
     // 2. Fetch local session
     let session = await PaymentSession.findOne({ invoiceId: invoice_id });
 
-    // If session was initiated directly or not found by invoice_id, match via metadata
     if (!session && metadata?.userId && metadata?.mode) {
       session = await PaymentSession.create({
         userId: metadata.userId,
@@ -159,7 +295,6 @@ router.post("/webhook", async (req: Request, res: Response, next: NextFunction) 
       return res.status(200).json({ status: true, message: "No matching payment session found" });
     }
 
-    // Idempotency check: if already completed, do not credit twice
     if (session.status === "completed") {
       return res.status(200).json({ status: true, message: "Payment already processed" });
     }
@@ -208,7 +343,6 @@ router.get("/verify/:invoiceId", requireAuth as any, async (req: AuthenticatedRe
       return res.json({ status: true, completed: true, session });
     }
 
-    // Verify directly with gateway API
     const { baseUrl, apiKey } = getGatewayConfig();
     try {
       const response = await fetch(`${baseUrl}/verify-payment`, {

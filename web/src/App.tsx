@@ -49,6 +49,7 @@ const Export = lazy(() => import("./pages/Export"));
 const Setup = lazy(() => import("./pages/Setup"));
 const YearlyCollection = lazy(() => import("./pages/YearlyCollection"));
 const Balances = lazy(() => import("./pages/Balances"));
+const PublicPay = lazy(() => import("./pages/PublicPay"));
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, isAuthChecking } = useAuth();
@@ -164,6 +165,14 @@ export default function App() {
       <AuthContext.Provider value={{ user, setUser, isAuthChecking }}>
         <Routes>
           <Route path="/login" element={loginScreen} />
+          <Route
+            path="/pay"
+            element={
+              <Suspense fallback={<FullScreenLoader />}>
+                <PublicPay />
+              </Suspense>
+            }
+          />
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<Home />} />
             <Route

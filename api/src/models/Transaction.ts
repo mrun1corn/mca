@@ -8,6 +8,8 @@ const TransactionSchema = new Schema(
     amount: { type: Number, required: true }, // signed amount
     occurredAt: { type: Date, required: true },
     note: String,
+    splitGroupId: { type: Types.ObjectId, index: true },
+    dueId: { type: Types.ObjectId, ref: "Due", index: true },
     createdBy: { type: Types.ObjectId, ref: "User" },
     updatedBy: { type: Types.ObjectId, ref: "User" },
     deletedAt: Date,
@@ -15,5 +17,9 @@ const TransactionSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("Transaction", TransactionSchema);
+// Compound indexes for performant sorting, filtering, and foreign key traversals
+TransactionSchema.index({ userId: 1, deletedAt: 1, occurredAt: -1 });
+TransactionSchema.index({ type: 1, occurredAt: -1, deletedAt: 1 });
+TransactionSchema.index({ splitGroupId: 1, deletedAt: 1 });
 
+export default model("Transaction", TransactionSchema);

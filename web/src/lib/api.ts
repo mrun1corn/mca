@@ -46,9 +46,30 @@ api.interceptors.response.use(
   }
 );
 
-export function formatAmount(amount: number) {
-  return new Intl.NumberFormat("en-US", {
+let activeCurrencySymbol = localStorage.getItem("mca_currency_symbol") || "৳";
+let activeCurrencyCode = localStorage.getItem("mca_currency_code") || "BDT";
+
+export function setGlobalCurrency(symbol: string, code?: string) {
+  if (symbol) {
+    activeCurrencySymbol = symbol;
+    localStorage.setItem("mca_currency_symbol", symbol);
+  }
+  if (code) {
+    activeCurrencyCode = code;
+    localStorage.setItem("mca_currency_code", code);
+  }
+}
+
+export function getGlobalCurrency() {
+  return { symbol: activeCurrencySymbol, code: activeCurrencyCode };
+}
+
+export function formatAmount(amount: number, customSymbol?: string) {
+  const symbol = customSymbol !== undefined ? customSymbol : activeCurrencySymbol;
+  const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
+
+  return symbol ? `${symbol} ${formatted}` : formatted;
 }

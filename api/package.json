@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "test": "tsx tests/math.test.ts && tsx tests/deposit.test.ts && tsx tests/withdraw.test.ts && tsx tests/investment.test.ts",
+    "test": "tsx tests/math.test.ts && tsx tests/deposit.test.ts && tsx tests/withdraw.test.ts && tsx tests/investment.test.ts && tsx tests/payments.test.ts",
     "start": "node dist/server.js",
     "seed": "ts-node-dev --transpile-only src/seed/seed.ts",
     "create-admin": "ts-node-dev --transpile-only src/seed/createAdmin.ts",

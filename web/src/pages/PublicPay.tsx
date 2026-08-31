@@ -18,6 +18,20 @@ export default function PublicPay() {
   const [dueId, setDueId] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Fetch community currency settings
+  const settingsQuery = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const res = await api.get("/settings");
+      return res.data as { currency: string; currencySymbol: string; appName: string };
+    },
+    staleTime: 60_000,
+  });
+
+  const currencyCode = settingsQuery.data?.currency || "BDT";
+  const currencySymbol = settingsQuery.data?.currencySymbol || "৳";
+  const appName = settingsQuery.data?.appName || "Community Savings";
+
   // 1. Fetch public member directory
   const membersQuery = useQuery({
     queryKey: ["public-members", searchQuery],
@@ -133,7 +147,7 @@ export default function PublicPay() {
     const link = generateShareLink();
     const name = selectedMember?.name || "Member";
     const text = encodeURIComponent(
-      `Hi ${name}, here is your Community Savings payment link (bKash/Nagad): ${link}`
+      `Hi ${name}, here is your Community Savings payment link (${currencyCode}): ${link}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
@@ -142,11 +156,11 @@ export default function PublicPay() {
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between p-4 sm:p-6 md:p-10">
       <header className="max-w-xl mx-auto w-full flex items-center justify-between py-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
-            ৳
+          <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-500/20">
+            {currencySymbol}
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight">Community Savings</h1>
+            <h1 className="font-bold text-lg leading-tight">{appName}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">Instant Online Contribution</p>
           </div>
         </div>
@@ -244,7 +258,7 @@ export default function PublicPay() {
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-semibold text-blue-900 dark:text-blue-200">Active Installment</span>
                     <span className="font-bold text-blue-700 dark:text-blue-300">
-                      Suggested: {formatAmount(suggested)} BDT
+                      Suggested: {formatAmount(suggested, currencySymbol)}
                     </span>
                   </div>
                   {duesList.length > 1 && (
@@ -255,7 +269,7 @@ export default function PublicPay() {
                     >
                       {duesList.map((d: any) => (
                         <option key={d._id} value={d._id}>
-                          Principal {formatAmount(d.principal)} — {d.months} mo @ {d.monthlyRatePct}%
+                          Principal {formatAmount(d.principal, currencySymbol)} — {d.months} mo @ {d.monthlyRatePct}%
                         </option>
                       ))}
                     </Select>
@@ -265,7 +279,7 @@ export default function PublicPay() {
 
               <div className="space-y-2">
                 <Input
-                  label="Amount (BDT)"
+                  label={`Amount (${currencyCode})`}
                   type="number"
                   step="0.01"
                   placeholder="0.00"
@@ -282,11 +296,11 @@ export default function PublicPay() {
                   isLoading={checkoutMutation.isPending}
                   className="w-full h-14 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20 rounded-2xl flex items-center justify-center gap-2"
                 >
-                  <span>Pay with bKash / Nagad</span>
+                  <span>Pay with bKash / Nagad / Online ({currencyCode})</span>
                   <span className="text-emerald-200">→</span>
                 </Button>
                 <p className="text-center text-xs text-slate-400 mt-2">
-                  🔒 Secured with Paymently automated MFS verification
+                  🔒 Secured with automated MFS verification
                 </p>
               </div>
             </motion.div>
@@ -295,7 +309,7 @@ export default function PublicPay() {
       </main>
 
       <footer className="max-w-xl mx-auto w-full text-center text-xs text-slate-400 py-4">
-        Community Savings Platform · Powered by Paymently / UddoktaPay
+        {appName} · Powered by Paymently / UddoktaPay
       </footer>
     </div>
   );

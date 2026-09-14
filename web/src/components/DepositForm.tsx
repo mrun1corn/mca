@@ -15,6 +15,7 @@ function DepositForm({ userId }: { userId: string }) {
   const [mode, setMode] = useState<"simple" | "pay_due">("simple");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [cycleMonth, setCycleMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [note, setNote] = useState("Deposit");
   const [includePenalty, setIncludePenalty] = useState(true);
 
@@ -114,7 +115,7 @@ function DepositForm({ userId }: { userId: string }) {
   const onSubmit = () => {
     const raw = Number(amount);
     const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
-    const payload: Record<string, any> = { userId, mode, date, note, includePenalty };
+    const payload: Record<string, any> = { userId, mode, date, cycleMonth, note, includePenalty };
     payload.amount = amt || suggested;
     if (mode === "pay_due") payload.dueId = dueId;
     mutation.mutate(payload);
@@ -196,7 +197,7 @@ function DepositForm({ userId }: { userId: string }) {
 
       <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 bg-white/80 dark:bg-slate-900/60 space-y-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Transaction Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             label="Amount"
             type="number"
@@ -210,7 +211,20 @@ function DepositForm({ userId }: { userId: string }) {
             label="Date"
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              const newDate = e.target.value;
+              setDate(newDate);
+              if (newDate && newDate.length >= 7) {
+                setCycleMonth(newDate.slice(0, 7));
+              }
+            }}
+            className="h-11 text-sm"
+          />
+          <Input
+            label="Cycle Month"
+            type="month"
+            value={cycleMonth}
+            onChange={(e) => setCycleMonth(e.target.value)}
             className="h-11 text-sm"
           />
         </div>

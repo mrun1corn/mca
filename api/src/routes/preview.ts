@@ -1,23 +1,33 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../lib/auth";
 import User from "../models/User";
+import * as math from "../lib/math";
+import { filterEligibleMembers, calculateScheduleDates, generateRepaymentSchedule } from "../services/withdraw";
 
 const router = Router();
 
-// GET /api/preview/withdraw-split?amount=&excludeIds=
+// GET /api/preview/withdraw-split?amount=&takerId=&excludeIds=
 router.get("/preview/withdraw-split", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const amount = Number(req.query.amount) || 0;
-    const excludeIds = String(req.query.excludeIds || "").split(",").filter(Boolean);
-    const allActive = await User.find({ status: "active" });
-    const eligible = allActive.filter((u) => !excludeIds.includes(String(u._id)));
+    const takerId = String(req.query.takerId || "").trim();
+    const excludeIds = String(req.query.excludeIds || "").split(",").map((s) => s.trim()).filter(Boolean);
+
+    const allActive = await User.find({ status: "active" }).select("_id name status");
+    const eligible = filterEligibleMembers(allActive, takerId, excludeIds);
     const eligibleCount = eligible.length;
-    if (!eligibleCount) {
+
+    if (!eligibleCount || amount <= 0) {
       return res.json({ eligibleCount: 0, rows: [] });
     }
-    const base = Math.floor(amount / eligibleCount);
-    const remainder = amount - base * eligibleCount;
-    const rows = eligible.map((u, i) => ({ userId: u._id, name: u.name, share: (base + (i === eligibleCount - 1 ? remainder : 0)) }));
+
+    const splitAmounts = math.distribute(amount, eligibleCount);
+    const rows = eligible.map((u, i) => ({
+      userId: u._id,
+      name: u.name,
+      share: splitAmounts[i],
+    }));
+
     res.json({ eligibleCount, rows });
   } catch (e) {
     next(e);
@@ -28,25 +38,21 @@ router.get("/preview/withdraw-split", requireAuth as any, requireRole(["admin", 
 router.get("/preview/dues", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const amount = Number(req.query.amount) || 0;
-    const months = Number(req.query.months || 1);
+    const months = Math.max(1, Number(req.query.months || 1));
     const monthlyRatePct = Number(req.query.monthlyRatePct || 0);
-    const useDefaultDate = !!req.query.defaultDate;
-    const defaultDate = req.query.defaultDate ? new Date(String(req.query.defaultDate)) : null;
-    const startDate = req.query.startDate ? new Date(String(req.query.startDate)) : null;
-    const addMonths = (d: Date, m: number) => { const x = new Date(d); x.setMonth(x.getMonth() + m); return x; };
-    const perPrincipal = Math.floor(amount / months);
-    let rem = amount - perPrincipal * months;
-    let remaining = amount;
-    const dates: Date[] = [];
-    const first = useDefaultDate && defaultDate ? defaultDate : startDate || new Date();
-    for (let i = 0; i < months; i++) dates.push(addMonths(first, i));
-    const schedule = [] as any[];
-    for (let i = 0; i < months; i++) {
-      const p = perPrincipal + (i === months - 1 ? rem : 0);
-      const interest = Math.round((remaining * monthlyRatePct)) / 100;
-      schedule.push({ dueDate: dates[i], principalPart: p, interest: interest, totalDue: (p + interest) });
-      remaining -= p;
-    }
+    const useDefaultDate = String(req.query.useDefaultDate) === "true" || !!req.query.defaultDate;
+    const defaultDate = req.query.defaultDate ? String(req.query.defaultDate) : null;
+    const startDate = req.query.startDate ? String(req.query.startDate) : null;
+    const endDate = req.query.endDate ? String(req.query.endDate) : null;
+
+    const dates = calculateScheduleDates(months, new Date(), {
+      useDefaultDate,
+      defaultDate,
+      startDate,
+      endDate,
+    });
+
+    const schedule = generateRepaymentSchedule(months, amount, monthlyRatePct, dates);
     res.json({ schedule });
   } catch (e) {
     next(e);

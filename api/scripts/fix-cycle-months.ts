@@ -23,19 +23,23 @@ async function main() {
     const dateStr = t.occurredAt.toISOString().slice(0, 10);
     let targetCycle: string;
 
-    // 2025 Adjustments for late batch collections:
-    if (dateStr === "2025-08-14") {
-      targetCycle = "2025-07"; // July collection paid mid-August
-    } else if (dateStr === "2025-08-31" || dateStr === "2025-08-06") {
-      targetCycle = "2025-08"; // August collection
-    } else if (dateStr.startsWith("2025-09")) {
-      targetCycle = "2025-09"; // September collection
-    } else if (dateStr === "2025-10-08") {
-      targetCycle = "2025-10"; // October collection
+    // 2025 Collections (Option A: 8 continuous rounds from May to December):
+    if (dateStr === "2025-04-30") {
+      targetCycle = "2025-05"; // Round 1: Opening collection (5,000 BDT)
+    } else if (dateStr === "2025-05-31") {
+      targetCycle = "2025-06"; // Round 2
+    } else if (dateStr === "2025-06-30") {
+      targetCycle = "2025-07"; // Round 3
+    } else if (dateStr === "2025-08-06" || dateStr === "2025-08-14") {
+      targetCycle = "2025-08"; // Round 4 (Aug 6 Robin, Aug 14 others)
+    } else if (dateStr === "2025-08-31" || dateStr === "2025-09-08" || dateStr === "2025-09-13") {
+      targetCycle = "2025-09"; // Round 5 (Aug 31 others, Sep 8 Tushar, Sep 13 Robin)
+    } else if (dateStr === "2025-09-30" || dateStr === "2025-10-08") {
+      targetCycle = "2025-10"; // Round 6 (Sep 30 others, Oct 8 Robin)
     } else if (dateStr === "2025-11-08") {
-      targetCycle = "2025-11"; // November collection
+      targetCycle = "2025-11"; // Round 7 (All members paid on Nov 8)
     } else if (dateStr.startsWith("2025-12")) {
-      targetCycle = "2025-12"; // December collection
+      targetCycle = "2025-12"; // Round 8 (December payments)
     } else {
       // For all 2026 transactions, cycleMonth matches the exact occurred month!
       targetCycle = t.occurredAt.toISOString().slice(0, 7);

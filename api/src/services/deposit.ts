@@ -269,6 +269,12 @@ export async function handleDeposit(input: DepositInput) {
 
       if (changed) {
         duesAffected.push(String(due._id));
+        const allSettled = (due.schedule as any[]).every(
+          (it) => it.status === "paid" || it.status === "cancelled"
+        );
+        if (allSettled && (due.schedule as any[]).length > 0) {
+          (due as any).status = "completed";
+        }
         try {
           await due.save({ session });
         } catch (err: unknown) {

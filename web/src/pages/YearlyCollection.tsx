@@ -31,6 +31,7 @@ export default function YearlyCollectionPage() {
   const [selectedYear, setSelectedYear] = useState<number>(initialYear);
   const [yearTotals, setYearTotals] = useState<Record<number, number>>({});
   const [drawerUser, setDrawerUser] = useState<YearlyCollection["users"][number] | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   useEffect(() => {
     const param = Number(searchParams.get("year"));
@@ -71,7 +72,7 @@ export default function YearlyCollectionPage() {
       <PageHeader
         eyebrow="Yearly collection"
         title="See how much the circle collected each year"
-        description="Pick a year to break down deposits per member. Tap a card to open their month-by-month history."
+        description="Pick a year to break down deposits per member. Switch between Table and Cards view."
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -106,12 +107,38 @@ export default function YearlyCollectionPage() {
       </div>
 
       <Panel
-        title={`${selectedYear} deposits`}
-        description="Shows each member’s deposits for the selected year."
+        title={`${selectedYear} Deposits Ledger`}
+        description="Complete breakdown of deposits per member for the selected year."
+        actions={
+          <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                viewMode === "table"
+                  ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Table View
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                viewMode === "cards"
+                  ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Cards View
+            </button>
+          </div>
+        }
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Total collected: {typeof totalForSelected === "number" ? formatAmount(totalForSelected) : "—"}
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            Total collected: <span className="font-bold text-slate-900 dark:text-white">{typeof totalForSelected === "number" ? formatAmount(totalForSelected) : "—"}</span>
           </p>
           {drawerUser ? (
             <button
@@ -125,12 +152,20 @@ export default function YearlyCollectionPage() {
         </div>
         {yearlyCollection.isLoading ? (
           <div className="py-6">
-            <SkeletonTable rows={6} columns={4} />
+            <SkeletonTable rows={7} columns={14} />
           </div>
         ) : yearlyCollection.isError ? (
           <div className="text-sm text-rose-500">Could not load yearly collection data.</div>
         ) : yearlyCollection.data && yearlyCollection.data.users.length ? (
-          <YearlyCollectionCards data={yearlyCollection.data} onSelect={setDrawerUser} />
+          viewMode === "table" ? (
+            <YearlyCollectionTable
+              data={yearlyCollection.data}
+              year={selectedYear}
+              onSelect={setDrawerUser}
+            />
+          ) : (
+            <YearlyCollectionCards data={yearlyCollection.data} onSelect={setDrawerUser} />
+          )
         ) : (
           <div className="text-sm text-slate-500">No deposits recorded for this year yet.</div>
         )}
@@ -139,6 +174,111 @@ export default function YearlyCollectionPage() {
       {drawerUser ? (
         <YearlyCollectionDrawer year={selectedYear} user={drawerUser} onClose={() => setDrawerUser(null)} />
       ) : null}
+    </div>
+  );
+}
+
+function YearlyCollectionTable({
+  data,
+  year,
+  onSelect,
+}: {
+  data: YearlyCollection;
+  year: number;
+  onSelect: (user: YearlyCollection["users"][number]) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <table className="w-full text-left text-sm border-collapse">
+        <thead className="bg-slate-50/90 dark:bg-slate-900/90 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+          <tr>
+            <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 px-4 py-3 min-w-[140px] shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+              Member
+            </th>
+            {MONTH_LABELS.map((m) => (
+              <th key={m} className="px-3 py-3 text-right min-w-[65px]">
+                {m}
+              </th>
+            ))}
+            <th className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white min-w-[85px]">
+              Total
+            </th>
+            <th className="px-4 py-3 text-center min-w-[100px]">
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white/70 dark:bg-slate-900/40">
+          {data.users.map((user) => {
+            const isFullPaid = year === 2025 ? user.total >= 19000 : user.total >= 18000;
+            const isJoinedLater = user.total === 0;
+
+            return (
+              <tr
+                key={user.userId}
+                onClick={() => onSelect(user)}
+                className="cursor-pointer transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 group"
+              >
+                <td className="sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-blue-50/80 dark:group-hover:bg-slate-800/80 px-4 py-3.5 font-semibold text-slate-900 dark:text-white shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+                  {user.name}
+                </td>
+                {MONTH_LABELS.map((_, idx) => {
+                  const val = user.monthly[idx] || 0;
+                  return (
+                    <td
+                      key={`${user.userId}-month-${idx}`}
+                      className={`px-3 py-3.5 text-right font-mono text-xs ${
+                        val > 0
+                          ? "font-semibold text-slate-900 dark:text-slate-100"
+                          : "text-slate-300 dark:text-slate-600"
+                      }`}
+                    >
+                      {val > 0 ? formatAmount(val) : "—"}
+                    </td>
+                  );
+                })}
+                <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                  {formatAmount(user.total)}
+                </td>
+                <td className="px-4 py-3.5 text-center">
+                  {isJoinedLater ? (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Joined 2026
+                    </span>
+                  ) : isFullPaid ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                      Paid 100%
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      Partial
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot className="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/90 font-semibold text-slate-900 dark:text-white">
+          <tr>
+            <td className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-800 px-4 py-3.5 uppercase text-xs tracking-wider text-slate-600 dark:text-slate-300 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+              Monthly Total
+            </td>
+            {MONTH_LABELS.map((_, idx) => {
+              const colSum = data.monthlyTotals[idx] || 0;
+              return (
+                <td key={`total-col-${idx}`} className="px-3 py-3.5 text-right font-mono text-xs font-bold">
+                  {colSum > 0 ? formatAmount(colSum) : "—"}
+                </td>
+              );
+            })}
+            <td className="px-4 py-3.5 text-right font-mono text-sm font-extrabold text-blue-600 dark:text-blue-400">
+              {formatAmount(data.total)}
+            </td>
+            <td className="px-4 py-3.5"></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }
@@ -240,7 +380,10 @@ function YearlyCollectionDrawer({
               {user.name} · {year}
             </h2>
           </div>
-          <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" onClick={close}>
+          <button
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+            onClick={close}
+          >
             <CloseIcon className="w-4 h-4" /> Close
           </button>
         </div>

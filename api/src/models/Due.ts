@@ -21,7 +21,7 @@ const DueSchema = new Schema(
     months: { type: Number, required: true },
     monthlyRatePct: { type: Number, required: true },
     schedule: { type: [DueItem], default: [] },
-    status: { type: String, enum: ["active", "cancelled"], default: "active" },
+    status: { type: String, enum: ["active", "completed", "cancelled"], default: "active", index: true },
     reason: String,
     penaltyRule: {
       enabled: { type: Boolean, default: true },

@@ -4,7 +4,7 @@ export async function getUserDues(userId: string, status: "open" | "all") {
   const q: any = { userId };
   if (status === "open") {
     q["schedule.status"] = { $in: ["pending", "partial"] };
-    q.status = { $ne: "cancelled" };
+    q.status = { $nin: ["completed", "cancelled"] };
   }
   const dues = await Due.find(q).sort({ createdAt: -1 });
   return dues;

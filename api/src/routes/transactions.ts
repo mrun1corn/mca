@@ -9,6 +9,7 @@ import { handleDeposit } from "../services/deposit";
 import { handleWithdraw } from "../services/withdraw";
 import { AppError } from "../lib/errors";
 import { runInTransaction } from "../lib/db";
+import * as math from "../lib/math";
 
 const router = Router();
 
@@ -65,6 +66,7 @@ const DepositSchema = z.object({
   dueId: z.string().optional().nullable(),
   amount: amount2dp,
   date: z.string(),
+  cycleMonth: z.string().regex(/^\d{4}-\d{2}$/, "cycleMonth must be in YYYY-MM format").optional().nullable(),
   note: z.string().optional(),
   includePenalty: z.boolean().optional(),
   penaltyPctPerMonth: z.number().optional(),
@@ -149,12 +151,46 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
 // Soft-delete a transaction (admin/accountant). Disallow withdraw deletions (use revert instead).
 router.delete("/transactions/:id", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
-    const tx = await Transaction.findById(req.params.id);
-    if (!tx) return res.status(404).json({ error: "Not found" });
-    if (tx.type === "withdraw") {
-      return res.status(400).json({ error: "Cannot delete withdrawal transaction. Use POST /api/transactions/:id/revert instead." });
-    }
-    await Transaction.findByIdAndUpdate(tx._id, { deletedAt: new Date() });
+    await runInTransaction(async (session) => {
+      const tx = await Transaction.findById(req.params.id).session(session);
+      if (!tx) throw new AppError("Transaction not found", 404);
+      if (tx.deletedAt) throw new AppError("Transaction already deleted", 400);
+      if (tx.type === "withdraw") {
+        throw new AppError("Cannot delete withdrawal transaction. Use POST /api/transactions/:id/revert instead.", 400);
+      }
+
+      // If this deposit was linked to a Due, reverse the paid amounts on the schedule
+      if (tx.dueId) {
+        const due = await Due.findById(tx.dueId).session(session);
+        if (due) {
+          let toReverse = tx.amount;
+          for (let i = due.schedule.length - 1; i >= 0; i--) {
+            if (toReverse <= 0) break;
+            const item = due.schedule[i];
+            const itemPaid = item.paid || 0;
+            if (itemPaid > 0) {
+              const deduction = Math.min(toReverse, itemPaid);
+              item.paid = math.round(itemPaid - deduction);
+              toReverse = math.round(toReverse - deduction);
+              if (item.paid <= 0) {
+                item.status = "pending";
+                item.paid = 0;
+              } else {
+                item.status = "partial";
+              }
+            }
+          }
+          if (due.status === "completed") {
+            due.status = "active";
+          }
+          await due.save({ session });
+        }
+      }
+
+      tx.deletedAt = new Date();
+      await tx.save({ session });
+    });
+
     res.json({ ok: true });
   } catch (e) {
     next(e);

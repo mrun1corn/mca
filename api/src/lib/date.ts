@@ -1,16 +1,17 @@
-export function addMonths(date: Date, months: number, anchorDate?: Date) {
-  const d = new Date(anchorDate || date);
-  const startDay = d.getDate();
-  d.setMonth(d.getMonth() + months);
-  
-  // If the day changed (e.g. Jan 31 -> Feb 28), but the new month has fewer days,
-  // JS native setMonth handles it. But for a sequence, we want to stay as close
-  // to the original day as possible.
-  if (d.getDate() < startDay) {
-    // We hit a month boundary (e.g. Jan 31 -> Feb 28). 
-    // This is expected JS behavior.
-  }
-  return d;
+export function addMonths(date: Date, months: number, anchorDate?: Date): Date {
+  const anchor = anchorDate || date;
+  const target = new Date(date);
+  const desiredDay = anchor.getDate();
+
+  // Set day to 1 first to avoid native JS overflow (e.g. Jan 31 -> March 3)
+  target.setDate(1);
+  target.setMonth(target.getMonth() + months);
+
+  // Clamp to the last day of the target month
+  const daysInTargetMonth = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(desiredDay, daysInTargetMonth));
+
+  return target;
 }
 
 export function parseISO(date: string): Date {

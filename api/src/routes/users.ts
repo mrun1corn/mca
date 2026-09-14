@@ -145,16 +145,24 @@ router.delete("/users/:id", requireAuth as any, requireRole(["admin"]) as any, a
   try {
     const userId = req.params.id;
     
-    // Cascade delete: Remove all related records for this user
-    // This ensures no orphaned transactions, dues, or investment records
-    await Promise.all([
-      Transaction.deleteMany({ userId }),
-      Due.deleteMany({ userId }),
-      Investment.deleteMany({ contributors: { $elemMatch: { userId } } }),
-    ]);
+    // Check if user has financial history
+    const txCount = await Transaction.countDocuments({ userId });
+    const dueCount = await Due.countDocuments({ userId });
+
+    if (txCount > 0 || dueCount > 0) {
+      // Soft-deactivate to preserve immutable financial audit trail
+      await User.findByIdAndUpdate(userId, { status: "inactive" });
+      return res.json({ ok: true, deactivated: true, message: "User deactivated to preserve financial audit trail" });
+    }
+
+    // If completely clean (no financial records), pull contributor reference without deleting shared investments
+    await Investment.updateMany(
+      { "contributors.userId": userId },
+      { $pull: { contributors: { userId } as any } }
+    );
     
     await User.findByIdAndDelete(userId);
-    res.json({ ok: true });
+    res.json({ ok: true, deleted: true });
   } catch (e) {
     next(e);
   }

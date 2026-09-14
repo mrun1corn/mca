@@ -5,8 +5,12 @@ import User from "../models/User";
 
 function csvEscape(val: any) {
   if (val == null) return "";
-  const s = String(val);
-  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  let s = String(val);
+  // Neutralize CSV formula / command injection (=, +, -, @, tab, cr)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s;
+  }
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
   return s;
 }
 
@@ -22,7 +26,10 @@ const router = Router();
 router.get("/summary.csv", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
-    const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+    let to = req.query.to ? new Date(String(req.query.to)) : undefined;
+    if (to && !String(req.query.to).includes("T")) {
+      to = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999);
+    }
 
     const match: any = { deletedAt: { $exists: false } };
     if (from || to) {
@@ -88,7 +95,10 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
   try {
     const userId = String(req.query.userId || "");
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
-    const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+    let to = req.query.to ? new Date(String(req.query.to)) : undefined;
+    if (to && !String(req.query.to).includes("T")) {
+      to = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999);
+    }
     const q: any = { deletedAt: { $exists: false } };
     if (userId) q.userId = userId;
     if (from || to) q.occurredAt = {};

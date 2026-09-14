@@ -293,7 +293,7 @@ router.post("/webhook", async (req: Request, res: Response, next: NextFunction) 
     const incomingKey = req.headers["rt-uddoktapay-api-key"] || req.headers["x-api-key"];
 
     // 1. Verify Gateway Secret
-    if (incomingKey && incomingKey !== apiKey) {
+    if (!incomingKey || incomingKey !== apiKey) {
       return res.status(401).json({ status: false, message: "Unauthorized API key" });
     }
 
@@ -311,49 +311,71 @@ router.post("/webhook", async (req: Request, res: Response, next: NextFunction) 
       return res.status(200).json({ status: true, message: `Ignored status: ${status}` });
     }
 
-    // 2. Fetch local session
+    // 2. Fetch or create local session
     let session = await PaymentSession.findOne({ invoiceId: invoice_id });
 
     if (!session && metadata?.userId && metadata?.mode) {
-      session = await PaymentSession.create({
-        userId: metadata.userId,
-        invoiceId: invoice_id || `INV-${Date.now()}`,
-        amount: Number(req.body.amount || 0),
-        mode: metadata.mode,
-        dueId: metadata.dueId || undefined,
-        status: "pending",
-      });
+      try {
+        session = await PaymentSession.create({
+          userId: metadata.userId,
+          invoiceId: invoice_id || `INV-${Date.now()}`,
+          amount: Number(req.body.amount || 0),
+          mode: metadata.mode,
+          dueId: metadata.dueId || undefined,
+          status: "pending",
+        });
+      } catch {
+        session = await PaymentSession.findOne({ invoiceId: invoice_id });
+      }
     }
 
     if (!session) {
       return res.status(200).json({ status: true, message: "No matching payment session found" });
     }
 
-    if (session.status === "completed") {
+    // Atomic lock to prevent duplicate deposit execution
+    const lockedSession = await PaymentSession.findOneAndUpdate(
+      { _id: session._id, status: { $ne: "completed" } },
+      { $set: { status: "completed" } },
+      { new: false }
+    );
+
+    if (!lockedSession || lockedSession.status === "completed") {
       return res.status(200).json({ status: true, message: "Payment already processed" });
     }
 
     // 3. Execute deposit settlement in MongoDB
-    const depositResult = await handleDeposit({
-      userId: String(session.userId),
-      mode: session.mode,
-      dueId: session.dueId ? String(session.dueId) : undefined,
-      amount: session.amount,
-      date: new Date().toISOString(),
-      note: `Online payment via ${payment_method || "MFS"} (TrxID: ${transaction_id || "N/A"})`,
-      includePenalty: true,
-    });
+    try {
+      const depositResult = await handleDeposit({
+        userId: String(session.userId),
+        mode: session.mode,
+        dueId: session.dueId ? String(session.dueId) : undefined,
+        amount: session.amount,
+        date: new Date().toISOString(),
+        note: `Online payment via ${payment_method || "MFS"} (TrxID: ${transaction_id || "N/A"})`,
+        includePenalty: true,
+      });
 
-    // 4. Update session status
-    session.status = "completed";
-    session.paymentMethod = payment_method;
-    session.senderNumber = sender_number;
-    session.transactionId = transaction_id;
-    session.depositTxId = depositResult.tx._id;
-    session.duesAffected = depositResult.duesAffected;
-    await session.save();
+      // 4. Update session details
+      await PaymentSession.updateOne(
+        { _id: session._id },
+        {
+          $set: {
+            paymentMethod: payment_method,
+            senderNumber: sender_number,
+            transactionId: transaction_id,
+            depositTxId: depositResult.tx._id,
+            duesAffected: depositResult.duesAffected,
+          },
+        }
+      );
 
-    return res.status(200).json({ status: true, message: "Payment processed and ledger updated" });
+      return res.status(200).json({ status: true, message: "Payment processed and ledger updated" });
+    } catch (depositErr) {
+      // Revert status if deposit failed
+      await PaymentSession.updateOne({ _id: session._id }, { $set: { status: "pending" } });
+      throw depositErr;
+    }
   } catch (err) {
     next(err);
   }
@@ -396,27 +418,44 @@ router.get("/verify/:invoiceId", requireAuth as any, async (req: AuthenticatedRe
       };
 
       if (data?.status && (String(data.status).toUpperCase() === "COMPLETED" || data.status === true)) {
-        if ((session.status as string) !== "completed") {
-          const depositResult = await handleDeposit({
-            userId: String(session.userId),
-            mode: session.mode,
-            dueId: session.dueId ? String(session.dueId) : undefined,
-            amount: session.amount,
-            date: new Date().toISOString(),
-            note: `Online payment via ${data.payment_method || "MFS"} (TrxID: ${data.transaction_id || "N/A"})`,
-            includePenalty: true,
-          });
+        const lockedSession = await PaymentSession.findOneAndUpdate(
+          { _id: session._id, status: { $ne: "completed" } },
+          { $set: { status: "completed" } },
+          { new: false }
+        );
 
-          session.status = "completed";
-          session.paymentMethod = data.payment_method;
-          session.senderNumber = data.sender_number;
-          session.transactionId = data.transaction_id;
-          session.depositTxId = depositResult.tx._id;
-          session.duesAffected = depositResult.duesAffected;
-          await session.save();
+        if (lockedSession && lockedSession.status !== "completed") {
+          try {
+            const depositResult = await handleDeposit({
+              userId: String(session.userId),
+              mode: session.mode,
+              dueId: session.dueId ? String(session.dueId) : undefined,
+              amount: session.amount,
+              date: new Date().toISOString(),
+              note: `Online payment via ${data.payment_method || "MFS"} (TrxID: ${data.transaction_id || "N/A"})`,
+              includePenalty: true,
+            });
+
+            await PaymentSession.updateOne(
+              { _id: session._id },
+              {
+                $set: {
+                  paymentMethod: data.payment_method,
+                  senderNumber: data.sender_number,
+                  transactionId: data.transaction_id,
+                  depositTxId: depositResult.tx._id,
+                  duesAffected: depositResult.duesAffected,
+                },
+              }
+            );
+          } catch (depositErr) {
+            await PaymentSession.updateOne({ _id: session._id }, { $set: { status: "pending" } });
+            throw depositErr;
+          }
         }
 
-        return res.json({ status: true, completed: true, session });
+        const freshSession = await PaymentSession.findById(session._id);
+        return res.json({ status: true, completed: true, session: freshSession });
       }
     } catch {
       // Gateway verification failed or pending

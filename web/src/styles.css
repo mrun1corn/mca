@@ -129,11 +129,18 @@ body {
 
 /* Inputs */
 .input {
-  @apply border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-2.5 rounded-xl outline-none transition-colors shadow-sm;
+  @apply border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 py-2.5 rounded-xl outline-none transition-colors shadow-sm text-[16px] sm:text-sm;
   padding-left: 1rem;
   padding-right: 1rem;
 }
 .input:focus { @apply ring-2 ring-blue-500/30 border-blue-500 bg-white dark:bg-slate-900; }
+
+/* Prevent iOS Safari automatic zoom on inputs with font-size < 16px */
+@media (max-width: 639px) {
+  input, select, textarea, .input {
+    font-size: 16px !important;
+  }
+}
 
 /* Important padding utilities to prevent icon text overlap */
 .input.pl-9, input.pl-9 { padding-left: 2.25rem !important; }

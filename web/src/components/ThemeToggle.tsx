@@ -17,7 +17,7 @@ export default function ThemeToggle() {
   }, [theme]);
   return (
     <button
-      className="text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+      className="text-xs sm:text-sm px-3 py-1.5 min-h-[36px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 font-medium inline-flex items-center justify-center transition-colors"
       onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
       title="Toggle theme"
     >

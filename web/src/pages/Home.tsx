@@ -104,7 +104,6 @@ export default function Home() {
   const lastYear = currentYear - 1;
 
   useEffect(() => {
-    if (role !== "admin" && role !== "accountant") return;
     let cancelled = false;
     async function loadYearlyTotals() {
       setYearSummaryLoading(true);
@@ -314,52 +313,50 @@ export default function Home() {
         ))}
       </div>
 
-      {role === "admin" || role === "accountant" ? (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3">
-            {[
-              { label: "Running year collection", year: currentYear },
-              { label: "Last year collection", year: lastYear },
-            ].map((item) => {
-              const total = yearSummaries[item.year];
-              const maxVal = Math.max(yearSummaries[currentYear] || 1, yearSummaries[lastYear] || 1);
-              const pct = typeof total === "number" ? Math.min(100, Math.max(5, (total / maxVal) * 100)) : 0;
-              
-              const display =
-                typeof total === "number" ? (
-                  formatAmount(total)
-                ) : yearSummaryLoading ? (
-                  <SkeletonLine className="h-5 w-24" />
-                ) : (
-                  "Tap to view"
-                );
-              return (
-                <button
-                  key={item.year}
-                  type="button"
-                  onClick={() => navigate(`/yearly?year=${item.year}`)}
-                  className="text-left rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-3 sm:p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
-                >
-                  <div className="relative z-10">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors truncate">{item.label}</p>
-                    <p className="text-base sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 sm:mt-2 truncate">{display}</p>
-                    <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">{item.year}</p>
-                  </div>
-                  {typeof total === "number" && (
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                      className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"
-                    />
-                  )}
-                </button>
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3">
+          {[
+            { label: "Running year collection", year: currentYear },
+            { label: "Last year collection", year: lastYear },
+          ].map((item) => {
+            const total = yearSummaries[item.year];
+            const maxVal = Math.max(yearSummaries[currentYear] || 1, yearSummaries[lastYear] || 1);
+            const pct = typeof total === "number" ? Math.min(100, Math.max(5, (total / maxVal) * 100)) : 0;
+            
+            const display =
+              typeof total === "number" ? (
+                formatAmount(total)
+              ) : yearSummaryLoading ? (
+                <SkeletonLine className="h-5 w-24" />
+              ) : (
+                "Tap to view"
               );
-            })}
-          </div>
-          {yearSummaryError ? <div className="text-sm text-rose-500">{yearSummaryError}</div> : null}
+            return (
+              <button
+                key={item.year}
+                type="button"
+                onClick={() => navigate(`/yearly?year=${item.year}`)}
+                className="text-left rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-3 sm:p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
+              >
+                <div className="relative z-10">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors truncate">{item.label}</p>
+                  <p className="text-base sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 sm:mt-2 truncate">{display}</p>
+                  <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">{item.year}</p>
+                </div>
+                {typeof total === "number" && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
-      ) : null}
+        {yearSummaryError ? <div className="text-sm text-rose-500">{yearSummaryError}</div> : null}
+      </div>
 
       {isRefreshing ? <div className="text-xs text-slate-500 animate-pulse">Refreshing live data…</div> : null}
 

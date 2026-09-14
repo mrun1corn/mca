@@ -207,14 +207,7 @@ export default function App() {
                 </RequireRole>
               }
             />
-            <Route
-              path="/yearly"
-              element={
-                <RequireRole roles={["admin", "accountant"]}>
-                  <YearlyCollection />
-                </RequireRole>
-              }
-            />
+            <Route path="/yearly" element={<YearlyCollection />} />
             <Route
               path="/balances"
               element={

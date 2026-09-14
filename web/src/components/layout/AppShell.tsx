@@ -44,7 +44,6 @@ const navItems: NavItem[] = [
     description: "See deposit totals by year",
     to: "/yearly",
     icon: MoneyIcon,
-    roles: ["admin", "accountant"],
   },
   { label: "Setup", description: "Preferences and account", to: "/setup", icon: CogIcon },
 ];
@@ -152,21 +151,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
               transition={{ duration: 0.15, ease: "easeInOut" }}
               className="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 space-y-3 overflow-hidden shadow-lg z-20"
             >
-              <nav className="grid grid-cols-2 gap-1.5">
+              <nav className="flex flex-col gap-1.5">
                 {filteredNav.map((item) => {
                   const isActive = location.pathname === item.to;
                   return (
                     <NavLink
                       key={item.to}
                       to={item.to}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold border transition ${
                         isActive
                           ? "border-blue-500/30 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-200"
-                          : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300"
+                          : "border-slate-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                       }`}
                     >
                       <item.icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <div className="min-w-0">
+                        <span className="font-semibold block">{item.label}</span>
+                        {item.description && (
+                          <span className="block text-[11px] font-normal text-slate-400 dark:text-slate-500 truncate">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
                     </NavLink>
                   );
                 })}

@@ -7,9 +7,8 @@ const router = Router();
 
 router.get("/yearly-collection", requireAuth as any, async (req: any, res, next) => {
   try {
-    const role = req.user?.role;
-    if (role !== "admin" && role !== "accountant") {
-      return res.status(403).json({ error: "Forbidden" });
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const currentYear = new Date().getFullYear();

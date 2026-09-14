@@ -188,22 +188,22 @@ function YearlyCollectionTable({
   onSelect: (user: YearlyCollection["users"][number]) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-      <table className="w-full text-left text-sm border-collapse">
-        <thead className="bg-slate-50/90 dark:bg-slate-900/90 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+    <div className="overflow-x-auto rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <table className="w-full text-left text-xs sm:text-sm border-collapse">
+        <thead className="bg-slate-50/90 dark:bg-slate-900/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
           <tr>
-            <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 px-4 py-3 min-w-[140px] shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+            <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 px-2.5 sm:px-4 py-2.5 sm:py-3 min-w-[105px] sm:min-w-[140px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)]">
               Member
             </th>
             {MONTH_LABELS.map((m) => (
-              <th key={m} className="px-3 py-3 text-right min-w-[65px]">
+              <th key={m} className="px-1.5 sm:px-3 py-2.5 sm:py-3 text-right min-w-[52px] sm:min-w-[65px]">
                 {m}
               </th>
             ))}
-            <th className="px-4 py-3 text-right font-bold text-slate-900 dark:text-white min-w-[85px]">
+            <th className="px-2.5 sm:px-4 py-2.5 sm:py-3 text-right font-bold text-slate-900 dark:text-white min-w-[70px] sm:min-w-[85px]">
               Total
             </th>
-            <th className="px-4 py-3 text-center min-w-[100px]">
+            <th className="px-2 sm:px-4 py-2.5 sm:py-3 text-center min-w-[80px] sm:min-w-[100px]">
               Status
             </th>
           </tr>
@@ -219,7 +219,7 @@ function YearlyCollectionTable({
                 onClick={() => onSelect(user)}
                 className="cursor-pointer transition hover:bg-blue-50/50 dark:hover:bg-blue-900/10 group"
               >
-                <td className="sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-blue-50/80 dark:group-hover:bg-slate-800/80 px-4 py-3.5 font-semibold text-slate-900 dark:text-white shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+                <td className="sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-blue-50/80 dark:group-hover:bg-slate-800/80 px-2.5 sm:px-4 py-2 sm:py-3.5 font-semibold text-slate-900 dark:text-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)] truncate max-w-[110px] sm:max-w-none">
                   {user.name}
                 </td>
                 {MONTH_LABELS.map((_, idx) => {
@@ -227,7 +227,7 @@ function YearlyCollectionTable({
                   return (
                     <td
                       key={`${user.userId}-month-${idx}`}
-                      className={`px-3 py-3.5 text-right font-mono text-xs ${
+                      className={`px-1.5 sm:px-3 py-2 sm:py-3.5 text-right font-mono text-[11px] sm:text-xs ${
                         val > 0
                           ? "font-semibold text-slate-900 dark:text-slate-100"
                           : "text-slate-300 dark:text-slate-600"
@@ -237,20 +237,20 @@ function YearlyCollectionTable({
                     </td>
                   );
                 })}
-                <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                <td className="px-2.5 sm:px-4 py-2 sm:py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                   {formatAmount(user.total)}
                 </td>
-                <td className="px-4 py-3.5 text-center">
+                <td className="px-2 sm:px-4 py-2 sm:py-3.5 text-center">
                   {isJoinedLater ? (
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       Joined 2026
                     </span>
                   ) : isFullPaid ? (
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       Paid 100%
                     </span>
                   ) : (
-                    <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                    <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap">
                       Partial
                     </span>
                   )}
@@ -261,21 +261,21 @@ function YearlyCollectionTable({
         </tbody>
         <tfoot className="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/90 font-semibold text-slate-900 dark:text-white">
           <tr>
-            <td className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-800 px-4 py-3.5 uppercase text-xs tracking-wider text-slate-600 dark:text-slate-300 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:shadow-[1px_0_0_0_rgba(255,255,255,0.05)]">
+            <td className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-800 px-2.5 sm:px-4 py-2.5 sm:py-3.5 uppercase text-[10px] sm:text-xs tracking-wider text-slate-600 dark:text-slate-300 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)]">
               Monthly Total
             </td>
             {MONTH_LABELS.map((_, idx) => {
               const colSum = data.monthlyTotals[idx] || 0;
               return (
-                <td key={`total-col-${idx}`} className="px-3 py-3.5 text-right font-mono text-xs font-bold">
+                <td key={`total-col-${idx}`} className="px-1.5 sm:px-3 py-2.5 sm:py-3.5 text-right font-mono text-[11px] sm:text-xs font-bold">
                   {colSum > 0 ? formatAmount(colSum) : "—"}
                 </td>
               );
             })}
-            <td className="px-4 py-3.5 text-right font-mono text-sm font-extrabold text-blue-600 dark:text-blue-400">
+            <td className="px-2.5 sm:px-4 py-2.5 sm:py-3.5 text-right font-mono text-xs sm:text-sm font-extrabold text-blue-600 dark:text-blue-400">
               {formatAmount(data.total)}
             </td>
-            <td className="px-4 py-3.5"></td>
+            <td className="px-2 sm:px-4 py-2.5 sm:py-3.5"></td>
           </tr>
         </tfoot>
       </table>

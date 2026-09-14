@@ -300,7 +300,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 sm:gap-3">
         {summaryStats.map((stat) => (
           <StatCard
             key={String(stat.label)}
@@ -316,7 +316,7 @@ export default function Home() {
 
       {role === "admin" || role === "accountant" ? (
         <div className="space-y-2">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 sm:gap-3">
             {[
               { label: "Running year collection", year: currentYear },
               { label: "Last year collection", year: lastYear },
@@ -338,12 +338,12 @@ export default function Home() {
                   key={item.year}
                   type="button"
                   onClick={() => navigate(`/yearly?year=${item.year}`)}
-                  className="text-left rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
+                  className="text-left rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-3 sm:p-4 shadow-sm hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-blue-400/40 relative overflow-hidden group"
                 >
                   <div className="relative z-10">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400 group-hover:text-slate-500 transition-colors">{item.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{display}</p>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{item.year}</p>
+                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors truncate">{item.label}</p>
+                    <p className="text-base sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 sm:mt-2 truncate">{display}</p>
+                    <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">{item.year}</p>
                   </div>
                   {typeof total === "number" && (
                     <motion.div

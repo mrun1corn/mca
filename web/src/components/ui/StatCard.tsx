@@ -40,19 +40,19 @@ function StatCard({ label, value, icon, helper, variant = "default", onClick }: 
   const styles = palette[variant];
   const content = (
     <>
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-2.5 sm:gap-4">
         {icon ? (
-          <div className={`rounded-full p-2 shadow-inner ${styles.iconWrap}`}>
-            <div className={`text-lg ${styles.icon}`}>{icon}</div>
+          <div className={`rounded-full p-1.5 sm:p-2 shadow-inner shrink-0 ${styles.iconWrap}`}>
+            <div className={`text-base sm:text-lg ${styles.icon}`}>{icon}</div>
           </div>
         ) : null}
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
-          {helper ? <p className="text-xs text-gray-500 dark:text-gray-400">{helper}</p> : null}
+        <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate">{label}</p>
+          <p className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 truncate">{value}</p>
+          {helper ? <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">{helper}</p> : null}
         </div>
       </div>
-      <div className={`absolute -bottom-8 -right-8 h-24 w-24 rounded-full blur-2xl opacity-70 ${styles.iconWrap}`} aria-hidden="true" />
+      <div className={`absolute -bottom-8 -right-8 h-24 w-24 rounded-full blur-2xl opacity-70 pointer-events-none ${styles.iconWrap}`} aria-hidden="true" />
     </>
   );
   if (onClick) {
@@ -60,7 +60,7 @@ function StatCard({ label, value, icon, helper, variant = "default", onClick }: 
       <button
         type="button"
         onClick={onClick}
-        className={`relative overflow-hidden rounded-2xl p-5 text-left w-full transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${styles.wrapper}`}
+        className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-5 text-left w-full transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${styles.wrapper}`}
       >
         {content}
       </button>
@@ -68,7 +68,7 @@ function StatCard({ label, value, icon, helper, variant = "default", onClick }: 
   }
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl ${styles.wrapper}`}>{content}</div>
+    <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl ${styles.wrapper}`}>{content}</div>
   );
 }
 

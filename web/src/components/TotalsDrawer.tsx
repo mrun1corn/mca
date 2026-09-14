@@ -99,7 +99,7 @@ export default function TotalsDrawer({
                 <CloseIcon className="w-4 h-4" /> Close
               </button>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 sm:gap-3 mb-4">
               <StatCard label="Collected overall" value={formatAmount(totalDeposits)} icon={<MoneyIcon className="w-5 h-5" />} variant="success" />
               <StatCard label="Deducted / invested" value={formatAmount(totalWithdraws)} icon={<HomeIcon className="w-5 h-5" />} variant="danger" />
               <StatCard label="Net balance" value={formatAmount(net)} icon={<MoneyIcon className="w-5 h-5" />} variant="info" />

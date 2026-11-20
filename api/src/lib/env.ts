@@ -4,6 +4,25 @@ import dotenv from "dotenv";
 
 let loaded = false;
 
+/**
+ * Values that must never be accepted as a signing secret. These are the
+ * placeholders shipped in .env.example and the historical dev fallback.
+ */
+const PLACEHOLDER_SECRETS: Record<string, true> = {
+  change_me: true,
+  changeme: true,
+  secret: true,
+  your_secret_here: true,
+  insecure_dev_secret_change_me: true,
+  "your-super-secret-key": true,
+};
+
+const MIN_SECRET_LENGTH = 32;
+
+export function isTestRuntime(): boolean {
+  return process.env.NODE_ENV === "test";
+}
+
 export function loadEnv() {
   if (loaded) return;
   loaded = true;
@@ -24,25 +43,34 @@ export function loadEnv() {
   }
 }
 
+/**
+ * Fails closed. There is no insecure fallback secret in any environment:
+ * a missing or placeholder signing key is a configuration error, not a warning.
+ */
 export function validateEnv() {
   const required = ["MONGODB_URI", "JWT_SECRET", "DB_NAME"];
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    const msg = `[env] Warning: Missing environment variables: ${missing.join(", ")}`;
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`${msg}. Production requires all environment variables to be set.`);
-    } else {
-      // eslint-disable-next-line no-console
-      console.warn(msg);
-      // eslint-disable-next-line no-console
-      console.warn("[env] Default values will be used for some variables, which is insecure for production.");
-    }
+    throw new Error(
+      `[env] Missing required environment variables: ${missing.join(", ")}.\n` +
+        "Copy .env.example to .env and fill in the values before starting the API."
+    );
+  }
+
+  const secret = String(process.env.JWT_SECRET).trim();
+  if (secret.length < MIN_SECRET_LENGTH || PLACEHOLDER_SECRETS[secret.toLowerCase()]) {
+    throw new Error(
+      `[env] JWT_SECRET is too weak: it must be at least ${MIN_SECRET_LENGTH} characters and not a placeholder.\n` +
+        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+    );
   }
 }
 
 if (!process.env.__APP_ENV_LOADED) {
   loadEnv();
-  validateEnv();
+  if (!isTestRuntime()) {
+    validateEnv();
+  }
   process.env.__APP_ENV_LOADED = "1";
 }

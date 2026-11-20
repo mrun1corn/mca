@@ -64,16 +64,13 @@ function DepositForm({ userId }: { userId: string }) {
     }
   }, [mode, hasOpenDues, dues.data, dueId]);
 
+  // Auto-fill suggested amount when switching to pay_due or changing selected due
   useEffect(() => {
-    if (mode === "pay_due" && selected && amount === "") {
-      const suggestedAmount = suggested;
-      setAmount(suggestedAmount ? suggestedAmount.toFixed(2) : "");
+    if (mode === "pay_due" && selected) {
+      setAmount(suggested > 0 ? suggested.toFixed(2) : "");
+    } else if (mode === "simple") {
+      setAmount("");
     }
-  }, [mode, selected, suggested]);
-
-  // Reset amount when mode, target due, or penalty configuration changes
-  useEffect(() => {
-    setAmount("");
   }, [mode, dueId, includePenalty, userId]);
 
   useEffect(() => {
@@ -85,6 +82,7 @@ function DepositForm({ userId }: { userId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.txs(userId) });
       qc.invalidateQueries({ queryKey: queryKeys.home() });
+      qc.invalidateQueries({ queryKey: queryKeys.dues(userId) });
       notify("Deposit recorded successfully", "success");
       setAmount("");
     },
@@ -123,8 +121,12 @@ function DepositForm({ userId }: { userId: string }) {
   const onSubmit = () => {
     const raw = Number(amount);
     const amt = isFinite(raw) ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
+    if (!amt || amt <= 0) {
+      notify("Please enter a valid deposit amount", "error");
+      return;
+    }
     const payload: Record<string, any> = { userId, mode, date, cycleMonth, note, includePenalty };
-    payload.amount = amt || suggested;
+    payload.amount = amt;
     if (mode === "pay_due") payload.dueId = dueId;
     mutation.mutate(payload);
   };
@@ -257,7 +259,12 @@ function DepositForm({ userId }: { userId: string }) {
             💳 Pay Online (bKash / Nagad)
           </Button>
         ) : null}
-        <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20">
+        <Button
+          onClick={onSubmit}
+          disabled={!Number(amount) || Number(amount) <= 0 || mutation.isPending}
+          isLoading={mutation.isPending}
+          className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20"
+        >
           Record Manual Deposit
         </Button>
       </div>

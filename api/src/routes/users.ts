@@ -56,6 +56,7 @@ router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as
       phone: u.phone,
       email: u.email,
       role: u.role,
+      status: u.status || "active",
       balance: balanceMap.get(String(u._id)) || 0,
       lastMonth: lastMonthMap.get(String(u._id)) || 0,
       recent: [],

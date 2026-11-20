@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import ThemeInput from '../components/ui/ThemeInput';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -41,8 +42,9 @@ export default function Login({ navigation }: Props) {
   };
 
   return (
-    <Screen scroll style={{ justifyContent: 'center' }}>
-      <ThemedCard tone="surface" style={{ marginHorizontal: 4 }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Screen scroll style={{ justifyContent: 'center' }}>
+        <ThemedCard tone="surface" style={{ marginHorizontal: 4 }}>
         <ThemeText variant="title" style={{ fontWeight: '700', marginBottom: 6 }}>
           Welcome back
         </ThemeText>
@@ -82,5 +84,6 @@ export default function Login({ navigation }: Props) {
         />
       </ThemedCard>
     </Screen>
+    </SafeAreaView>
   );
 }

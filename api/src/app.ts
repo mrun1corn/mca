@@ -49,16 +49,6 @@ const authLimiter = rateLimit({
   keyGenerator: (req) => clientIp(req),
 });
 
-// Unauthenticated payment/member endpoints get their own, tighter budget.
-const publicLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  message: { error: "Too many requests, please try again later." },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => clientIp(req),
-});
-
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -69,19 +59,8 @@ app.use(helmet({
   },
 }));
 
-// Apply limits
-app.use("/api/", globalLimiter);
-app.use("/api/auth/", authLimiter);
-// Exact prefixes: Express 4 only applies a mounted middleware when the path
-// boundary lines up, which a single "public-" prefix does not.
-app.use("/api/payments/public-members", publicLimiter);
-app.use("/api/payments/public-dues", publicLimiter);
-app.use("/api/payments/public-initiate", publicLimiter);
-
-app.use(express.json());
-app.use(cookieParser());
-
-// CORS: dynamically allow process.env.CORS_ORIGIN, localhost, and incoming Host headers
+// CORS MUST be mounted before limiters so that 429 throttled responses still
+// receive Access-Control-Allow-Origin headers and do not manifest as net::ERR_FAILED.
 const allowedOrigins = buildAllowedOrigins(process.env.CORS_ORIGIN, PORT);
 
 app.use(
@@ -95,6 +74,14 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(express.json());
+app.use(cookieParser());
+
+// Apply limits
+app.use("/api/", globalLimiter);
+// authLimiter applies strictly to login attempts; heartbeats like auth-check must not burn the auth budget
+app.use("/api/auth/login", authLimiter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

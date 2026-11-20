@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Modal, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useTheme } from '../theme';
 import { useQuery } from '@tanstack/react-query';
 import { api, formatAmount } from '../lib/api';
@@ -45,7 +45,8 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
 
   return (
     <Modal visible animationType="fade" onRequestClose={onClose} transparent>
-      <View
+      <Pressable
+        onPress={onClose}
         style={{
           flex: 1,
           backgroundColor: colors.overlay,
@@ -53,50 +54,52 @@ export default function MemberDrawer({ userId, onClose }: { userId: string | nul
           padding: 16,
         }}
       >
-        <ThemedCard tone="default" title="Member details" style={{ maxHeight: '85%' }}>
-          <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
-            Recent activity
-          </ThemeText>
-          {txRows.length ? (
-            <View style={{ gap: 8, marginBottom: 16 }}>
-              {txRows.map((item) => (
-                <View
-                  key={item._id}
-                  style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
-                >
-                  <ThemeText tone="dim">{new Date(item.occurredAt).toISOString().slice(0, 10)}</ThemeText>
-                  <ThemeText tone={item.type === 'deposit' ? 'success' : 'danger'}>
-                    {formatAmount(item.amount)}
-                  </ThemeText>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <ThemeEmptyState message="No recent transactions." />
-          )}
+        <ThemedCard tone="default" title="Member details" style={{ maxHeight: '85%', paddingBottom: 12 }}>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }}>
+            <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
+              Recent activity
+            </ThemeText>
+            {txRows.length ? (
+              <View style={{ gap: 8, marginBottom: 16 }}>
+                {txRows.map((item) => (
+                  <View
+                    key={item._id}
+                    style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
+                  >
+                    <ThemeText tone="dim">{new Date(item.occurredAt).toISOString().slice(0, 10)}</ThemeText>
+                    <ThemeText tone={item.type === 'deposit' ? 'success' : 'danger'}>
+                      {formatAmount(item.amount)}
+                    </ThemeText>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <ThemeEmptyState message="No recent transactions." />
+            )}
 
-          <ThemeText variant="subtitle" style={{ fontWeight: '600', marginBottom: 12 }}>
-            Open dues
-          </ThemeText>
-          {upcomingDues.length ? (
-            <View style={{ gap: 8 }}>
-              {upcomingDues.map((item, index) => (
-                <View
-                  key={`${item.dueDate}-${index}`}
-                  style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
-                >
-                  <ThemeText tone="dim">{new Date(item.dueDate).toISOString().slice(0, 10)}</ThemeText>
-                  <ThemeText>{formatAmount((item.totalDue || 0) - (item.paid || 0))}</ThemeText>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <ThemeEmptyState message="No open dues." />
-          )}
+            <ThemeText variant="subtitle" style={{ fontWeight: '600', marginTop: 12, marginBottom: 12 }}>
+              Open dues
+            </ThemeText>
+            {upcomingDues.length ? (
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                {upcomingDues.map((item, index) => (
+                  <View
+                    key={`${item.dueDate}-${index}`}
+                    style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 6 }}
+                  >
+                    <ThemeText tone="dim">{new Date(item.dueDate).toISOString().slice(0, 10)}</ThemeText>
+                    <ThemeText>{formatAmount((item.totalDue || 0) - (item.paid || 0))}</ThemeText>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <ThemeEmptyState message="No open dues." />
+            )}
+          </ScrollView>
 
-          <ThemeButton title="Close" variant="secondary" onPress={onClose} style={{ marginTop: 20 }} />
+          <ThemeButton title="Close" variant="secondary" onPress={onClose} style={{ marginTop: 16 }} />
         </ThemedCard>
-      </View>
+      </Pressable>
     </Modal>
   );
 }

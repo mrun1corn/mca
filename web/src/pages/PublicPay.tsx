@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, formatAmount } from "../lib/api";
+import { useToast } from "../components/Toast";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "../components/Button";
 import { Input } from "../components/ui/Input";
@@ -27,8 +28,10 @@ interface PublicDue {
 export default function PublicPay() {
   const [searchParams] = useSearchParams();
   const initialMemberParam = (searchParams.get("member") || searchParams.get("userId") || "").trim();
+  const paymentStatus = searchParams.get("payment");
+  const { notify } = useToast();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(initialMemberParam);
   const [mode, setMode] = useState<"simple" | "pay_due">("simple");
   const [amount, setAmount] = useState<string>("");
   const [dueId, setDueId] = useState<string>("");
@@ -135,7 +138,7 @@ export default function PublicPay() {
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const raw = Number(amount);
-      const effectiveAmt = isFinite(raw) && raw > 0 ? Math.round(raw * 100 + Number.EPSILON) / 100 : suggested;
+      const effectiveAmt = isFinite(raw) && raw > 0 ? Math.round(raw * 100 + Number.EPSILON) / 100 : 0;
       if (!selectedUserId) throw new Error("Please select your member profile");
       if (!effectiveAmt || effectiveAmt <= 0) throw new Error("Please enter a valid deposit amount");
 
@@ -151,7 +154,12 @@ export default function PublicPay() {
     onSuccess: (data) => {
       if (data?.paymentUrl) {
         window.location.href = data.paymentUrl;
+      } else {
+        notify("Failed to obtain payment gateway redirect link", "error");
       }
+    },
+    onError: (err: any) => {
+      notify(err?.response?.data?.message || err?.message || "Failed to initiate payment", "error");
     },
   });
 
@@ -222,11 +230,42 @@ export default function PublicPay() {
           transition={{ duration: 0.3 }}
           className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 shadow-xl space-y-6"
         >
+          {/* Payment Status Banner */}
+          {paymentStatus === "success" && (
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-emerald-800 dark:text-emerald-200 space-y-1">
+              <div className="font-bold flex items-center gap-2">
+                <span>✓</span> Payment Received &amp; Verified
+              </div>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                Your online deposit has been processed and your account ledger updated.
+              </p>
+            </div>
+          )}
+          {paymentStatus === "cancelled" && (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-4 text-amber-800 dark:text-amber-200 space-y-1">
+              <div className="font-bold flex items-center gap-2">
+                <span>⚠</span> Payment Cancelled
+              </div>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                The transaction was cancelled. No money was deducted from your account.
+              </p>
+            </div>
+          )}
+
           {/* Step 1: Member Selection */}
           <div className="space-y-3">
             <label className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               1. Select Your Name / Profile
             </label>
+
+            <div className="space-y-2">
+              <Input
+                placeholder="Search member name, handle or code…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10 text-sm"
+              />
+            </div>
 
             <Select
               className="h-12 text-sm font-semibold"
@@ -340,6 +379,7 @@ export default function PublicPay() {
                 <Button
                   onClick={() => checkoutMutation.mutate()}
                   isLoading={checkoutMutation.isPending}
+                  disabled={!selectedUserId || !Number(amount) || Number(amount) <= 0 || checkoutMutation.isPending}
                   className="w-full h-14 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20 rounded-2xl flex items-center justify-center gap-2"
                 >
                   <span>Pay with bKash / Nagad / Online ({currencyCode})</span>

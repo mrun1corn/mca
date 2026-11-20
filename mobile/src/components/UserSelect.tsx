@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, TouchableOpacity, View } from 'react-native';
+import { FlatList, Modal, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTheme } from '../theme';
@@ -56,29 +56,33 @@ export default function UserSelect({ value, onChange, label = 'Member' }: { valu
             Choose a member
           </ThemeText>
           <ThemeInput placeholder="Search" value={q} onChangeText={setQ} style={{ marginBottom: 16 }} />
-          <ThemedCard tone="surface" style={{ flex: 1, padding: 0 }}>
+          <ThemedCard tone="surface" style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
             {filtered.length ? (
-              filtered.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => {
-                    onChange(item.id, item);
-                    setOpen(false);
-                    setQ('');
-                  }}
-                  style={{
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    minHeight: 48,
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ThemeText style={{ fontWeight: '600' }}>{item.name}</ThemeText>
-                  {item.email ? <ThemeText tone="dim">{item.email}</ThemeText> : null}
-                </TouchableOpacity>
-              ))
+              <FlatList
+                data={filtered}
+                keyExtractor={(item) => String(item.id)}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      onChange(item.id, item);
+                      setOpen(false);
+                      setQ('');
+                    }}
+                    style={{
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                      minHeight: 48,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ThemeText style={{ fontWeight: '600' }}>{item.name}</ThemeText>
+                    {item.email ? <ThemeText tone="dim">{item.email}</ThemeText> : null}
+                  </TouchableOpacity>
+                )}
+              />
             ) : (
               <View style={{ padding: 16 }}>
                 <ThemeText tone="dim">No members match your search.</ThemeText>

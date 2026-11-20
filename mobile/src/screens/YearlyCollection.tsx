@@ -72,7 +72,7 @@ export default function YearlyCollection() {
             tone="primary"
           />
 
-          <View style={styles.monthlyGrid}>
+          <View style={[styles.monthlyGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <ThemeText variant="subtitle" style={{ marginBottom: 8, fontWeight: '600' }}>Monthly Summary</ThemeText>
             <View style={styles.gridRow}>
               {MONTH_LABELS.map((month, i) => (
@@ -144,9 +144,9 @@ const styles = StyleSheet.create({
   monthlyGrid: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#f8fafc',
+    
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    
   },
   gridRow: {
     flexDirection: 'row',

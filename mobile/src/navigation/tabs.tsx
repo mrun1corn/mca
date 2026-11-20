@@ -12,6 +12,7 @@ import { api } from '../lib/api';
 import Screen from '../components/ui/Screen';
 import ThemeText from '../components/ui/ThemeText';
 import { useTheme } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +26,7 @@ function Loading() {
 
 export default function MainTabs() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const me = useQuery({ queryKey: ['me'], queryFn: async () => (await api.get('/me')).data });
   if (me.isLoading) return <Loading />;
   const role = me.data?.role as 'admin' | 'accountant' | 'user' | undefined;
@@ -40,7 +42,8 @@ export default function MainTabs() {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
           paddingTop: 4,
-          height: 60,
+          paddingBottom: Math.max(insets.bottom, 6),
+          height: 56 + Math.max(insets.bottom, 6),
         },
         headerStyle: { backgroundColor: colors.card },
         headerTitleStyle: { color: colors.text },

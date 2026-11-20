@@ -8,6 +8,7 @@ import { useToast } from "../components/Toast";
 import Button from "../components/Button";
 import Panel from "../components/ui/Panel";
 import PageHeader from "../components/layout/PageHeader";
+import { Modal } from "../components/ui/Modal";
 import { SkeletonCard } from "../components/Skeleton";
 
 export default function People() {
@@ -38,11 +39,18 @@ export default function People() {
     },
     onError: () => notify("Create failed", "error"),
   });
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<any | null>(null);
+
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/users/${id}`),
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["users"] });
-      notify("Member deleted", "success");
+      if (res.data?.deactivated) {
+        notify("Member deactivated — financial records preserved", "success");
+      } else {
+        notify("Member deleted", "success");
+      }
+      setConfirmDeleteUser(null);
     },
     onError: () => notify("Delete failed", "error"),
   });
@@ -179,13 +187,42 @@ export default function People() {
         ) : users.length ? (
           <div className="max-h-[460px] overflow-auto space-y-3 pr-1">
             {users.map((user: any) => (
-              <UserCard key={user.id} user={user} onEdit={() => setEditingUser(user)} onDelete={() => remove.mutate(user.id)} />
+              <UserCard key={user.id} user={user} onEdit={() => setEditingUser(user)} onDelete={() => setConfirmDeleteUser(user)} />
             ))}
           </div>
         ) : (
           <div className="text-sm text-slate-500 dark:text-slate-400">No members found. Try adjusting your search.</div>
         )}
       </Panel>
+
+      <Modal
+        isOpen={Boolean(confirmDeleteUser)}
+        title={confirmDeleteUser ? `Delete ${confirmDeleteUser.name}?` : "Delete Member"}
+        onClose={() => setConfirmDeleteUser(null)}
+      >
+        {confirmDeleteUser && (
+          <div className="text-sm text-slate-600 dark:text-slate-300 space-y-4">
+            <p>
+              Are you sure you want to delete <strong>{confirmDeleteUser.name}</strong>?
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Note: If this member has financial history (deposits, withdrawals, or dues), their profile will be deactivated rather than permanently erased to preserve the community audit trail.
+            </p>
+            <div className="flex gap-2 justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button variant="secondary" onClick={() => setConfirmDeleteUser(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                isLoading={remove.isPending}
+                onClick={() => remove.mutate(confirmDeleteUser.id)}
+              >
+                Confirm Delete
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -26,6 +26,11 @@ function UserCard({ user, onEdit, onDelete }: Props) {
                   {user.memberCode}
                 </span>
               )}
+              {user.status === "inactive" && (
+                <span className="text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-300 dark:border-rose-800">
+                  Inactive
+                </span>
+              )}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {user.email || "No email on file"} {user.phone ? `· ${user.phone}` : ""}

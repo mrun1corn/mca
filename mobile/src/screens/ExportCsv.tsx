@@ -6,7 +6,7 @@ import ThemedCard from '../components/ui/ThemedCard';
 import ThemeText from '../components/ui/ThemeText';
 import { api } from '../lib/api';
 import UserSelect from '../components/UserSelect';
-import { Linking } from 'react-native';
+import { Alert, Share } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
 
@@ -48,16 +48,30 @@ export default function ExportCsv() {
         {userName ? <ThemeText tone="dim" style={{ marginTop: 6 }}>Selected: {userName}</ThemeText> : null}
 
         <ThemeButton
-          title="Download summary CSV"
+          title="Share / Export summary CSV"
           variant="secondary"
           leftIcon={<Ionicons name="download-outline" size={18} color={colors.primary} />}
-          onPress={() => Linking.openURL(summaryHref)}
+          onPress={async () => {
+            try {
+              const res = await api.get(summaryHref, { responseType: 'text' });
+              await Share.share({ title: 'summary.csv', message: String(res.data) });
+            } catch (err: any) {
+              Alert.alert('Export Failed', err?.message || 'Could not fetch summary export.');
+            }
+          }}
           style={{ marginTop: 24 }}
         />
         <ThemeButton
-          title="Download ledger CSV"
+          title="Share / Export ledger CSV"
           leftIcon={<Ionicons name="document-text-outline" size={18} color={colors.onPrimary} />}
-          onPress={() => Linking.openURL(ledgerHref)}
+          onPress={async () => {
+            try {
+              const res = await api.get(ledgerHref, { responseType: 'text' });
+              await Share.share({ title: 'ledger.csv', message: String(res.data) });
+            } catch (err: any) {
+              Alert.alert('Export Failed', err?.message || 'Could not fetch ledger export.');
+            }
+          }}
           style={{ marginTop: 12 }}
         />
         <ThemeText tone="dim" style={{ marginTop: 12 }}>

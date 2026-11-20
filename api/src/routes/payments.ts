@@ -5,6 +5,7 @@ import UserModel from "../models/User";
 import { AppError } from "../lib/errors";
 import PaymentSession from "../models/PaymentSession";
 import { handleDeposit } from "../services/deposit";
+import { publicLimiter } from "../lib/limiters";
 import { getUserDues } from "../services/dues";
 import DueModel from "../models/Due";
 import * as math from "../lib/math";
@@ -109,7 +110,7 @@ router.get("/config", (_req: Request, res: Response) => {
  * GET /api/payments/public-members
  * Public search endpoint allowing members to find their profile by name/username/code/phone without logging in.
  */
-router.get("/public-members", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/public-members", publicLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = String(req.query.q || "").trim().slice(0, 64);
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -140,7 +141,7 @@ router.get("/public-members", async (req: Request, res: Response, next: NextFunc
  * GET /api/payments/public-dues/:identifier
  * Public endpoint to fetch active dues and suggested installment for a member (by ID, username, or code).
  */
-router.get("/public-dues/:identifier", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/public-dues/:identifier", publicLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier } = req.params;
     const user = await resolveMember(identifier);
@@ -192,7 +193,7 @@ router.get("/public-dues/:identifier", async (req: Request, res: Response, next:
  * POST /api/payments/public-initiate
  * Public checkout initiation for non-logged-in members (e.g. from WhatsApp/SMS direct link).
  */
-router.post("/public-initiate", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/public-initiate", publicLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId, amount: rawAmount, mode = "simple", dueId, note } = req.body;
     const amount = math.round(Number(rawAmount));
@@ -227,8 +228,8 @@ router.post("/public-initiate", async (req: Request, res: Response, next: NextFu
         dueId: dueId || null,
         note: note || (mode === "pay_due" ? "Online Dues Payment" : "Online Deposit"),
       },
-      redirect_url: `${webBase}/balances?payment=success`,
-      cancel_url: `${webBase}/balances?payment=cancelled`,
+      redirect_url: `${webBase}/pay?payment=success`,
+      cancel_url: `${webBase}/pay?payment=cancelled`,
       webhook_url: `${apiBase}/payments/webhook`,
     };
 

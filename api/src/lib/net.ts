@@ -103,6 +103,22 @@ function isPrivateAddress(address: string): boolean {
  */
 export function clientIp(req: Request): string {
   const socketIp = req.socket?.remoteAddress || "";
+
+  // Serverless platforms (Vercel) terminate the connection on our behalf and
+  // expose the client through their own headers; there is no socket peer to
+  // trust, so opt in explicitly and use the platform-supplied value.
+  const platformProxy = process.env.VERCEL === "1" || process.env.TRUST_PROXY_HEADERS === "1";
+  if (platformProxy) {
+    const realIp = req.headers["x-real-ip"];
+    if (typeof realIp === "string" && realIp.trim()) return realIp.trim();
+    const forwardedPlatform = req.headers["x-forwarded-for"];
+    if (typeof forwardedPlatform === "string" && forwardedPlatform.trim()) {
+      const parts = forwardedPlatform.split(",").map((part) => part.trim()).filter(Boolean);
+      if (parts.length > 0) return parts[parts.length - 1];
+    }
+    return socketIp;
+  }
+
   if (!isPrivateAddress(socketIp)) return socketIp;
 
   const forwarded = req.headers["x-forwarded-for"];

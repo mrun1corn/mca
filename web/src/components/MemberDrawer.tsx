@@ -207,8 +207,8 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
             <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">Upcoming dues</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Next three installments per plan</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Repayment dues</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Complete installment repayment schedule</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 text-xs uppercase tracking-wide text-slate-400 px-2">
@@ -224,14 +224,21 @@ export default function MemberDrawer({ userId, onClose }: { userId: string; onCl
                 <div className="mt-2 space-y-3 max-h-[420px] overflow-auto pr-1 text-sm">
                   {duesData.map((d: any) => (
                     <div key={d._id} className="rounded-2xl border border-slate-100 dark:border-slate-800">
-                      <div className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">Principal: {formatAmount(d.principal)}</div>
-                      {d.schedule.slice(0, 3).map((it: any, i: number) => (
-                        <div key={i} className="grid grid-cols-3 items-center px-3 py-2 border-t border-slate-50 dark:border-slate-800">
-                          <span>{new Date(it.dueDate).toLocaleDateString("en-BD")}</span>
-                          <span>{formatAmount(it.totalDue)}</span>
-                          <span className="text-right text-xs uppercase tracking-wide">{it.status}</span>
-                        </div>
-                      ))}
+                      <div className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 rounded-t-2xl">
+                        <span>Principal: <strong className="text-slate-800 dark:text-slate-200">{formatAmount(d.principal)}</strong> ({d.months || d.schedule?.length} months)</span>
+                        <span className="capitalize text-emerald-600 dark:text-emerald-400 font-semibold">{d.status}</span>
+                      </div>
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {d.schedule.map((it: any, i: number) => (
+                          <div key={i} className="grid grid-cols-3 items-center px-3 py-2">
+                            <span>{new Date(it.dueDate).toLocaleDateString("en-BD")}</span>
+                            <span className="font-medium">{formatAmount(it.totalDue)}</span>
+                            <span className={`text-right text-xs uppercase font-semibold ${it.status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {it.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

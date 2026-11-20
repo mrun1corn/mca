@@ -40,7 +40,18 @@ export function filterEligibleMembers<T extends { _id: unknown }>(
   takerId: string,
   excludeMemberIds: string[] = []
 ): T[] {
-  const excludedSet = new Set([takerId, ...excludeMemberIds.map(String)]);
+  const excludedSet = new Set(excludeMemberIds.map(String));
+
+  // If the caller explicitly excluded every other member so that only the taker is left (self-funding),
+  // honor that and allow the taker to fund themselves.
+  // Otherwise, default to excluding the taker from the peer-funded pool.
+  const otherMembers = allActive.filter((u) => String(u._id) !== String(takerId));
+  const allOthersExcluded = otherMembers.length > 0 && otherMembers.every((u) => excludedSet.has(String(u._id)));
+
+  if (!allOthersExcluded) {
+    excludedSet.add(String(takerId));
+  }
+
   return allActive.filter((u) => !excludedSet.has(String(u._id)));
 }
 

@@ -47,14 +47,10 @@ function WithdrawForm({ userId }: { userId?: string }) {
 
   const selectableMembers = useMemo(() => {
     if (!users.data) return [];
-    if (effectiveMode === "member") return users.data.filter((u: any) => u.id !== takerId);
     return users.data;
-  }, [users.data, takerId, effectiveMode]);
+  }, [users.data]);
 
   const [excluded, setExcluded] = useState<string[]>([]);
-  useEffect(() => {
-    if (effectiveMode === "member") setExcluded((prev) => prev.filter((id) => id !== takerId));
-  }, [effectiveMode, takerId]);
   const toggleExcluded = (id: string) => setExcluded((arr) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]));
 
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
@@ -66,7 +62,7 @@ function WithdrawForm({ userId }: { userId?: string }) {
     }
     const excludeIds = excluded.join(",");
     api
-      .get(`/preview/withdraw-split`, { params: { amount: amt, excludeIds } })
+      .get(`/preview/withdraw-split`, { params: { amount: amt, takerId: effectiveMode === "member" ? takerId : undefined, excludeIds } })
       .then((r) => setPreview(r.data))
       .catch(() => setPreview(null));
   }, [amount, excluded]);

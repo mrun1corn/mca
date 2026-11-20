@@ -33,17 +33,10 @@ export default function Withdraw() {
     }
   }, [users.data, takerId]);
 
-  useEffect(() => {
-    if (mode === 'member') {
-      setExclude((prev) => prev.filter((id) => id !== takerId));
-    }
-  }, [mode, takerId]);
-
   const contributable = useMemo(() => {
     if (!users.data) return [];
-    if (mode === 'member') return users.data.filter((u: any) => u.id !== takerId);
     return users.data;
-  }, [users.data, takerId, mode]);
+  }, [users.data]);
 
   const toggleExclude = (id: string) =>
     setExclude((arr) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]));

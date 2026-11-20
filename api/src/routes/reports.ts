@@ -17,7 +17,11 @@ router.get("/yearly-collection", requireAuth as any, async (req: any, res, next)
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
 
-    const users = await User.find({ status: "active" }).sort({ name: 1 });
+    // Regular members only ever see their own collection figures.
+    const isStaff = req.user.role === "admin" || req.user.role === "accountant";
+    const users = isStaff
+      ? await User.find({ status: "active" }).sort({ name: 1 })
+      : await User.find({ status: "active", _id: req.user.sub }).sort({ name: 1 });
     if (!users.length) {
       return res.json({ year, total: 0, monthlyTotals: Array(12).fill(0), users: [] });
     }

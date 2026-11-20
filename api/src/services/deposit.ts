@@ -153,7 +153,8 @@ export async function createDepositTxRecord(
   occurredAt: Date,
   note?: string,
   actorUserId?: string,
-  cycleMonth?: string | null
+  cycleMonth?: string | null,
+  dueAllocations: Array<{ dueId: Types.ObjectId; amount: number }> = []
 ) {
   const [tx] = await Transaction.create(
     [
@@ -166,12 +167,15 @@ export async function createDepositTxRecord(
         cycleMonth: cycleMonth || occurredAt.toISOString().slice(0, 7),
         note: note || "Deposit",
         createdBy: actorUserId ? new Types.ObjectId(actorUserId) : undefined,
+        dueAllocations,
       },
     ],
     { session }
   );
   return tx;
 }
+
+export const MAX_DEPOSIT_AMOUNT = 1_000_000;
 
 /**
  * Fetches open active dues and prioritizes specific dueId if supplied.
@@ -206,6 +210,9 @@ export async function handleDeposit(input: DepositInput) {
   return runInTransaction(async (session) => {
     const { userId, mode, amount: rawAmount, date, note, actorUserId, cycleMonth } = input;
     const amount = math.round(Number(rawAmount));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_DEPOSIT_AMOUNT) {
+      throw new AppError("Invalid deposit amount", 400);
+    }
     const occurredAt = parseISO(date);
 
     const user = await User.findById(userId).session(session);
@@ -243,8 +250,10 @@ export async function handleDeposit(input: DepositInput) {
       return { tx, duesAffected: [] };
     }
 
-    // Create deposit transaction record
-    const depositTx = await createDepositTxRecord(
+    let remaining = amount;
+    const duesAffected: string[] = [];
+    const dueAllocations: Array<{ dueId: Types.ObjectId; amount: number }> = [];
+    let depositTx = await createDepositTxRecord(
       session,
       userId,
       userName,
@@ -255,10 +264,8 @@ export async function handleDeposit(input: DepositInput) {
       cycleMonth
     );
 
-    let remaining = amount;
-    const duesAffected: string[] = [];
-
     for (const due of duesQueue) {
+      const beforeSettlement = remaining;
       const { remainingPayment, changed } = processDueSettlement(
         due as unknown as { schedule: DueScheduleItem[]; penaltyRule?: DuePenaltyRule },
         remaining,
@@ -268,6 +275,8 @@ export async function handleDeposit(input: DepositInput) {
       remaining = remainingPayment;
 
       if (changed) {
+        const applied = math.round(beforeSettlement - remaining);
+        if (applied > 0) dueAllocations.push({ dueId: due._id, amount: applied });
         duesAffected.push(String(due._id));
         const allSettled = (due.schedule as any[]).every(
           (it) => it.status === "paid" || it.status === "cancelled"
@@ -286,6 +295,11 @@ export async function handleDeposit(input: DepositInput) {
       }
 
       if (remaining <= 0) break;
+    }
+
+    if (dueAllocations.length > 0) {
+      depositTx.set("dueAllocations", dueAllocations);
+      await depositTx.save({ session });
     }
 
     return { tx: depositTx, duesAffected };

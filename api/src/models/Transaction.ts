@@ -11,6 +11,15 @@ const TransactionSchema = new Schema(
     note: String,
     splitGroupId: { type: Types.ObjectId, index: true },
     dueId: { type: Types.ObjectId, ref: "Due", index: true },
+    // Exact amount of this deposit applied to each Due, so a delete reverses
+    // what actually happened instead of inferring it from the schedule.
+    dueAllocations: [
+      {
+        _id: false,
+        dueId: { type: Types.ObjectId, ref: "Due", required: true },
+        amount: { type: Number, required: true },
+      },
+    ],
     createdBy: { type: Types.ObjectId, ref: "User" },
     updatedBy: { type: Types.ObjectId, ref: "User" },
     deletedAt: Date,

@@ -19,6 +19,14 @@ function DepositForm({ userId }: { userId: string }) {
   const [note, setNote] = useState("Deposit");
   const [includePenalty, setIncludePenalty] = useState(true);
 
+  const gateway = useQuery({
+    queryKey: ["payments-config"],
+    queryFn: async () => (await api.get("/payments/config")).data as { enabled: boolean },
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const paymentsEnabled = Boolean(gateway.data?.enabled);
+
   const dues = useQuery({
     queryKey: queryKeys.dues(userId),
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
@@ -238,15 +246,17 @@ function DepositForm({ userId }: { userId: string }) {
       </section>
 
       <div className="flex flex-wrap gap-3 justify-end items-center">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => onlineMutation.mutate()}
-          isLoading={onlineMutation.isPending}
-          className="px-5 h-11 text-sm font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-        >
-          💳 Pay Online (bKash / Nagad)
-        </Button>
+        {paymentsEnabled ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onlineMutation.mutate()}
+            isLoading={onlineMutation.isPending}
+            className="px-5 h-11 text-sm font-semibold border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+          >
+            💳 Pay Online (bKash / Nagad)
+          </Button>
+        ) : null}
         <Button onClick={onSubmit} isLoading={mutation.isPending} className="px-6 h-11 text-sm font-bold shadow-lg shadow-blue-500/20">
           Record Manual Deposit
         </Button>

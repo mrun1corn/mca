@@ -13,6 +13,16 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
+    // The API forces a password change for invited accounts; send the user to
+    // the screen that can complete it instead of showing generic errors.
+    if (
+      err.response?.status === 403 &&
+      err.response?.data?.details?.code === "password_change_required" &&
+      window.location.pathname !== "/setup"
+    ) {
+      window.location.assign("/setup?requirePassword=1");
+      return Promise.reject(err);
+    }
     // Do not intercept login or refresh requests themselves to avoid infinite loops
     if (
       err.response?.status === 401 &&

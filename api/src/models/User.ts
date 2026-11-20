@@ -11,6 +11,8 @@ export interface IUser extends Document {
   passwordHash: string;
   role: Role;
   status: "active" | "inactive";
+  tokenVersion: number; // bumped to invalidate every issued access/refresh token
+  mustChangePassword: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,12 +27,16 @@ const UserSchema = new Schema<IUser>(
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ["admin", "accountant", "user"], default: "user" },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    tokenVersion: { type: Number, default: 0 },
+    mustChangePassword: { type: Boolean, default: false },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (_doc, ret: Record<string, unknown>) => {
         delete ret.passwordHash;
+        delete ret.tokenVersion;
+        delete ret.mustChangePassword;
         return ret;
       },
     },

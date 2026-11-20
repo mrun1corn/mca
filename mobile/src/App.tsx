@@ -41,7 +41,16 @@ export default function App() {
     <SafeAreaProvider>
       <PersistQueryClientProvider
         client={queryClient}
-        persistOptions={{ persister: asyncStoragePersister }}
+        persistOptions={{
+          persister: asyncStoragePersister,
+          // Only non-sensitive queries reach disk. Member directories, balances
+          // and transactions stay in memory so a stolen or backed-up device
+          // cannot yield the community's contact list or financial records.
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) =>
+              ['public-settings', 'settings', 'me', 'auth-check', 'currency'].includes(String(query.queryKey[0])),
+          },
+        }}
       >
         <ThemeProvider>
           <ToastProvider>

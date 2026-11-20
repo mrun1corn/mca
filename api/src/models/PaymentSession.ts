@@ -21,7 +21,7 @@ const PaymentSessionSchema = new Schema<IPaymentSession>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     invoiceId: { type: String, required: true, unique: true, index: true },
-    amount: { type: Number, required: true },
+    amount: { type: Number, required: true, min: 0.01 },
     mode: { type: String, enum: ["simple", "pay_due"], default: "simple" },
     dueId: { type: Schema.Types.ObjectId, ref: "Due" },
     status: {
@@ -32,7 +32,7 @@ const PaymentSessionSchema = new Schema<IPaymentSession>(
     },
     paymentMethod: { type: String },
     senderNumber: { type: String },
-    transactionId: { type: String },
+    transactionId: { type: String, unique: true, sparse: true, index: true },
     depositTxId: { type: Schema.Types.ObjectId, ref: "Transaction" },
     duesAffected: [{ type: String }],
     metadata: { type: Schema.Types.Mixed },

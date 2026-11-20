@@ -13,8 +13,15 @@ export interface PublicMember {
   name: string;
   username: string;
   memberCode: string;
-  phone?: string;
-  email?: string;
+}
+
+interface PublicDue {
+  _id: string;
+  months?: number;
+  status?: string;
+  outstanding?: number;
+  nextDueDate?: string | null;
+  nextAmount?: number;
 }
 
 export default function PublicPay() {
@@ -26,6 +33,14 @@ export default function PublicPay() {
   const [amount, setAmount] = useState<string>("");
   const [dueId, setDueId] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Online payments are optional: hide the whole checkout when unconfigured.
+  const paymentsQuery = useQuery({
+    queryKey: ["payments-config"],
+    queryFn: async () => (await api.get("/payments/config")).data as { enabled: boolean },
+    staleTime: 5 * 60_000,
+  });
+  const paymentsEnabled = Boolean(paymentsQuery.data?.enabled);
 
   // Fetch community currency settings
   const settingsQuery = useQuery({
@@ -60,8 +75,7 @@ export default function PublicPay() {
           m.id === initialMemberParam ||
           (m.username && m.username.toLowerCase() === normalizedParam) ||
           (m.memberCode && m.memberCode.toLowerCase() === normalizedParam) ||
-          (m.name && m.name.toLowerCase() === normalizedParam) ||
-          (m.phone && m.phone.includes(initialMemberParam))
+          (m.name && m.name.toLowerCase() === normalizedParam)
       );
       if (match) {
         setSelectedUserId(match.id);
@@ -76,8 +90,8 @@ export default function PublicPay() {
       if (!selectedUserId) return null;
       const res = await api.get(`/payments/public-dues/${selectedUserId}`);
       return res.data as {
-        user: { id: string; name: string; username?: string; memberCode?: string; phone?: string };
-        dues: any[];
+        user: { id: string; name: string; username?: string; memberCode?: string };
+        dues: PublicDue[];
       };
     },
     enabled: Boolean(selectedUserId),
@@ -88,18 +102,14 @@ export default function PublicPay() {
     return membersQuery.data?.find((m) => m.id === selectedUserId);
   }, [membersQuery.data, selectedUserId]);
 
-  const duesList = duesQuery.data?.dues || [];
+  const duesList: PublicDue[] = duesQuery.data?.dues || [];
   const hasOpenDues = duesList.length > 0;
-  const selectedDue = useMemo(() => duesList.find((d: any) => d._id === dueId) || duesList[0], [duesList, dueId]);
+  const selectedDue = useMemo(() => duesList.find((d) => d._id === dueId) || duesList[0], [duesList, dueId]);
 
   const suggested = useMemo(() => {
-    if (!selectedDue) return 0;
-    for (const item of selectedDue.schedule || []) {
-      if (item.status === "paid") continue;
-      const base = (item.totalDue || 0) - (item.paid || 0);
-      if (base > 0) return Math.round(base * 100 + Number.EPSILON) / 100;
-    }
-    return 0;
+    // The API returns only the next instalment and the outstanding total.
+    const amount = selectedDue?.nextAmount || 0;
+    return amount > 0 ? Math.round(amount * 100 + Number.EPSILON) / 100 : 0;
   }, [selectedDue]);
 
   useEffect(() => {
@@ -167,6 +177,23 @@ export default function PublicPay() {
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
+
+  if (!paymentsEnabled) {
+    return (
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center space-y-3 rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl">
+          <h1 className="text-xl font-bold">Online payments are not available</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            This community has not enabled the online payment gateway. Please pay through your
+            administrator or use the member portal.
+          </p>
+          <Link to="/login" className="inline-block text-sm font-semibold text-blue-600 dark:text-blue-400">
+            Member Login →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between p-4 sm:p-6 md:p-10">

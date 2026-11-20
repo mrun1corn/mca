@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => {
   const server: any = {
     host: true,
     port: Number(env.VITE_DEV_PORT || 5173),
-    allowedHosts: allowedHosts.length ? allowedHosts : true,
+    // Default to localhost-only host checking; opt in with VITE_ALLOWED_HOSTS.
+    allowedHosts: allowedHosts.length ? allowedHosts : ["localhost", "127.0.0.1"],
   };
 
   if (env.VITE_HMR_HOST) {

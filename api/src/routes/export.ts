@@ -3,18 +3,22 @@ import { requireAuth, requireRole } from "../lib/auth";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
 
-function csvEscape(val: any) {
+function csvEscape(val: unknown) {
   if (val == null) return "";
   let s = String(val);
-  // Neutralize CSV formula / command injection (=, +, -, @, tab, cr)
-  if (/^[=+\-@\t\r]/.test(s)) {
+  // Neutralize CSV formula injection. A leading +/- is only dangerous on a
+  // non-numeric cell, so real numbers (negative balances, +880 phones) survive.
+  const formulaPrefix = /^[=@\t\r]/.test(s) || (/^[+-]/.test(s) && !/^[+-]?\d+(\.\d+)?$/.test(s));
+  if (formulaPrefix) {
     s = "'" + s;
   }
   if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
   return s;
 }
 
-function toCsv(rows: any[], headers: string[]) {
+const MAX_EXPORT_ROWS = 20_000;
+
+function toCsv(rows: Array<Record<string, unknown>>, headers: string[]) {
   const head = headers.join(",");
   const lines = rows.map((r) => headers.map((h) => csvEscape(r[h])).join(","));
   return [head, ...lines].join("\n");
@@ -99,12 +103,16 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
     if (to && !String(req.query.to).includes("T")) {
       to = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999);
     }
-    const q: any = { deletedAt: { $exists: false } };
+    const occurredAtRange: Record<string, Date> = {};
+    if (from) occurredAtRange.$gte = from;
+    if (to) occurredAtRange.$lte = to;
+    const q: Record<string, unknown> = { deletedAt: { $exists: false } };
     if (userId) q.userId = userId;
-    if (from || to) q.occurredAt = {};
-    if (from) q.occurredAt.$gte = from;
-    if (to) q.occurredAt.$lte = to;
-    const txs = await Transaction.find(q).sort({ occurredAt: 1 }).lean();
+    if (from || to) q.occurredAt = occurredAtRange;
+    const txs = await Transaction.find(q)
+      .sort({ occurredAt: 1 })
+      .limit(MAX_EXPORT_ROWS + 1)
+      .lean();
     const userIds = Array.from(new Set(txs.map((t) => String(t.userId)))).filter(Boolean);
     const users = userIds.length ? await User.find({ _id: { $in: userIds } }).lean() : [];
     const userMap = new Map(users.map((u) => [String(u._id), u]));
@@ -126,6 +134,9 @@ router.get("/ledger.csv", requireAuth as any, requireRole(["admin", "accountant"
       };
     });
 
+    if (rows.length > MAX_EXPORT_ROWS) {
+      return res.status(413).json({ error: `Too many rows (${rows.length}). Narrow the date range or filter by member.` });
+    }
     const csv = toCsv(rows, ["date", "userId", "name", "email", "type", "amount", "note"]);
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", "attachment; filename=ledger.csv");

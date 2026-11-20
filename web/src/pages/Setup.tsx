@@ -98,7 +98,10 @@ export default function Setup() {
       setMsg("Password changed");
       setPassword("");
       setCurrentPassword("");
-      notify("Password updated", "success");
+      notify("Password updated. Please sign in again.", "success");
+      // The server revokes every session on password change; force a clean login.
+      window.localStorage.removeItem("hasSession");
+      window.location.assign("/login");
     } catch (e) {
       setMsg("Failed");
       notify("Password update failed", "error");

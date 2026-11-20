@@ -27,6 +27,12 @@ export default function Deposit() {
   const [amount, setAmount] = useState('');
   const [mode, setMode] = useState<'simple' | 'pay_due'>('simple');
   const [dueId, setDueId] = useState<string | null>(null);
+  const gateway = useQuery({
+    queryKey: ['payments-config'],
+    queryFn: async () => (await api.get('/payments/config')).data as { enabled: boolean },
+    staleTime: 5 * 60_000,
+  });
+  const paymentsEnabled = Boolean(gateway.data?.enabled);
   const dues = useQuery({
     queryKey: ['dues', userId],
     queryFn: async () => (await api.get(`/users/${userId}/dues`)).data,
@@ -231,12 +237,14 @@ export default function Deposit() {
         ) : null}
 
         <View style={{ marginTop: 24, gap: 12 }}>
-          <ThemeButton
-            title={onlineMutate.isPending ? 'Connecting gateway…' : '💳 Pay with bKash / Nagad'}
-            variant="secondary"
-            onPress={() => onlineMutate.mutate()}
-            disabled={!userId || (!amount && !suggested) || onlineMutate.isPending}
-          />
+          {paymentsEnabled ? (
+            <ThemeButton
+              title={onlineMutate.isPending ? 'Connecting gateway…' : '💳 Pay with bKash / Nagad'}
+              variant="secondary"
+              onPress={() => onlineMutate.mutate()}
+              disabled={!userId || (!amount && !suggested) || onlineMutate.isPending}
+            />
+          ) : null}
           <ThemeButton
             title={mutate.isPending ? 'Saving…' : 'Save Manual Deposit'}
             onPress={() => mutate.mutate()}

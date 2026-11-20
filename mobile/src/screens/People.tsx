@@ -24,10 +24,15 @@ export default function People() {
   const [form, setForm] = useState({ name: '', email: '', role: 'user' });
 
   const create = useMutation({
-    mutationFn: (body: any) => api.post('/users', body),
-    onSuccess: () => {
+    mutationFn: (body: { name: string; email: string; role: string }) => api.post('/users', body),
+    onSuccess: (res, variables) => {
       qc.invalidateQueries({ queryKey: ['users'] });
-      notify('Member created');
+      const password = (res.data as { starterPassword?: string }).starterPassword;
+      notify(
+        password
+          ? `${variables.name} created.\n\nStarter password (shown once):\n${password}\n\nThey must change it at first sign-in.`
+          : 'Member created'
+      );
       setForm({ name: '', email: '', role: 'user' });
     },
     onError: () => notify('Could not create member'),
@@ -89,7 +94,7 @@ export default function People() {
         </View>
         <ThemeButton
           title={create.isPending ? 'Creating…' : 'Create member'}
-          onPress={() => create.mutate({ ...form, password: 'ChangeMe123!' })}
+          onPress={() => create.mutate({ ...form })}
           disabled={!canManage || !form.name || create.isPending}
         />
         {!canManage ? (

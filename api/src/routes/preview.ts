@@ -38,7 +38,7 @@ router.get("/preview/withdraw-split", requireAuth as any, requireRole(["admin", 
 router.get("/preview/dues", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
     const amount = Number(req.query.amount) || 0;
-    const months = Math.max(1, Number(req.query.months || 1));
+    const months = Math.min(Math.max(1, Math.trunc(Number(req.query.months || 1))), 360);
     const monthlyRatePct = Number(req.query.monthlyRatePct || 0);
     const useDefaultDate = String(req.query.useDefaultDate) === "true" || !!req.query.defaultDate;
     const defaultDate = req.query.defaultDate ? String(req.query.defaultDate) : null;

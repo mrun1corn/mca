@@ -8,6 +8,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./lib/errors";
+import { clientIp } from "./lib/net";
 import authRoutes from "./routes/auth";
 import homeRoutes from "./routes/home";
 import userRoutes from "./routes/users";
@@ -24,8 +25,9 @@ const app = express();
 const PORT = Number(process.env.PORT || 4000);
 const isProd = process.env.NODE_ENV === "production";
 
-// Trust the reverse proxy so rate-limiter gets the correct client IP
-app.set("trust proxy", 1);
+// Never trust client-supplied forwarding headers implicitly. The proxy chain is
+// resolved explicitly in clientIp() (Cloudflare -> local reverse proxy -> Node).
+app.set("trust proxy", false);
 
 // Global rate limiter
 const globalLimiter = rateLimit({
@@ -34,6 +36,7 @@ const globalLimiter = rateLimit({
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => clientIp(req),
 });
 
 // Stricter limiter for auth routes
@@ -43,6 +46,17 @@ const authLimiter = rateLimit({
   message: { error: "Too many login attempts, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => clientIp(req),
+});
+
+// Unauthenticated payment/member endpoints get their own, tighter budget.
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => clientIp(req),
 });
 
 app.use(helmet({
@@ -50,7 +64,7 @@ app.use(helmet({
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       "img-src": ["'self'", "data:", "https:"],
-      "script-src": ["'self'", "'unsafe-inline'"],
+      "script-src": ["'self'"],
     },
   },
 }));
@@ -58,6 +72,7 @@ app.use(helmet({
 // Apply limits
 app.use("/api/", globalLimiter);
 app.use("/api/auth/", authLimiter);
+app.use("/api/payments/public-", publicLimiter);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -128,47 +143,61 @@ app.use(errorHandler);
 export { app };
 
 function buildAllowedOrigins(envValue: string | undefined, port: number) {
-  const defaults = [
-    `http://localhost:${port}`,
-    `http://127.0.0.1:${port}`,
-    `http://localhost:5173`,
-    `http://127.0.0.1:5173`,
-  ];
   const list = (envValue || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return Array.from(new Set([...list, ...defaults]));
+
+  const devDefaults =
+    process.env.NODE_ENV === "production"
+      ? []
+      : [
+          `http://localhost:${port}`,
+          `http://127.0.0.1:${port}`,
+          `http://localhost:5173`,
+          `http://127.0.0.1:5173`,
+        ];
+
+  return Array.from(new Set([...list, ...devDefaults]));
 }
 
+/**
+ * Absolute origins only. Scheme-less entries and wildcards are matched with the
+ * same protocol/port rules as exact entries, so `credentials: true` responses
+ * can never be read from a downgraded (http) or off-port origin.
+ */
 function isOriginAllowed(origin: string, allowed: string[]) {
   if (allowed.includes("*")) return true;
+  let url: URL;
   try {
-    const url = new URL(origin);
-    const hostname = url.hostname;
-
-    return allowed.some((entry) => {
-      if (entry === "*") return true;
-      if (entry.startsWith("*.")) {
-        const rootDomain = entry.slice(2);
-        return hostname === rootDomain || hostname.endsWith("." + rootDomain);
-      }
-      try {
-        const hasProtocol = /^https?:\/\//i.test(entry);
-        const entryStr = hasProtocol ? entry : `${url.protocol}//${entry}`;
-        const allowedUrl = new URL(entryStr);
-
-        if (allowedUrl.hostname !== hostname) return false;
-        if (hasProtocol && allowedUrl.protocol !== url.protocol) return false;
-
-        const allowedPort = allowedUrl.port || (allowedUrl.protocol === "https:" ? "443" : "80");
-        const urlPort = url.port || (url.protocol === "https:" ? "443" : "80");
-        return allowedPort === urlPort;
-      } catch {
-        return entry.toLowerCase() === hostname.toLowerCase();
-      }
-    });
+    url = new URL(origin);
   } catch {
     return false;
   }
+
+  return allowed.some((entry) => {
+    if (entry === "*") return true;
+
+    const wildcard = entry.includes("*");
+    const parsedEntry = entry.replace("*.", "");
+    const withProtocol = /^https?:\/\//i.test(parsedEntry) ? parsedEntry : null;
+    if (!withProtocol) return false; // scheme-less entries are a misconfiguration
+
+    let allowedUrl: URL;
+    try {
+      allowedUrl = new URL(withProtocol);
+    } catch {
+      return false;
+    }
+
+    if (allowedUrl.protocol !== url.protocol) return false;
+    const entryPort = allowedUrl.port || (allowedUrl.protocol === "https:" ? "443" : "80");
+    const originPort = url.port || (url.protocol === "https:" ? "443" : "80");
+    if (entryPort !== originPort) return false;
+
+    if (!wildcard) return allowedUrl.hostname === url.hostname;
+
+    const rootDomain = allowedUrl.hostname;
+    return url.hostname === rootDomain || url.hostname.endsWith(`.${rootDomain}`);
+  });
 }

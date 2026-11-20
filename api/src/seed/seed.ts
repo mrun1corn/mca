@@ -4,6 +4,7 @@ import { connectDb } from "../lib/db";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
 import Due from "../models/Due";
+import crypto from "node:crypto";
 import { hashPassword } from "../lib/auth";
 import { handleWithdraw } from "../services/withdraw";
 
@@ -14,7 +15,8 @@ async function main() {
   await Transaction.deleteMany({});
   await Due.deleteMany({});
 
-  const passwordHash = await hashPassword("ChangeMe123!");
+  const seedPassword = process.env.SEED_PASSWORD || crypto.randomBytes(12).toString("base64url");
+  const passwordHash = await hashPassword(seedPassword);
   const u1 = await User.create({ name: "Alice", email: "alice@example.com", role: "user", passwordHash });
   const u2 = await User.create({ name: "Bob", email: "bob@example.com", role: "user", passwordHash });
   const u3 = await User.create({ name: "Carol", email: "carol@example.com", role: "user", passwordHash });
@@ -46,7 +48,10 @@ async function main() {
   await Transaction.create({ userId: u2._id, userName: u2.name, type: "deposit", amount: 4500, occurredAt: new Date(), note: "Weekly saving" });
 
   // eslint-disable-next-line no-console
-  console.log("Seed complete", { users: [u1.email, u2.email, u3.email, u4.email], defaultPassword: "ChangeMe123!" });
+  console.log("Seed complete", { users: [u1.email, u2.email, u3.email, u4.email] });
+  if (!process.env.SEED_PASSWORD) {
+    console.log(`Generated seed password (shown once): ${seedPassword}`);
+  }
   process.exit(0);
 }
 

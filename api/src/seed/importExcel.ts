@@ -35,7 +35,9 @@ async function upsertUser({ name, email, phone }: { name: string; email?: string
       ? await User.findOne({ phone })
       : null;
   if (existing) return existing;
-  const passwordHash = await hashPassword(process.env.DEFAULT_USER_PASSWORD || "ChangeMe123!");
+  const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+  if (!defaultPassword) throw new Error("DEFAULT_USER_PASSWORD must be set for imports");
+  const passwordHash = await hashPassword(defaultPassword);
   return User.create({ name, email, phone, role: "user", passwordHash, status: "active" });
 }
 
@@ -61,7 +63,8 @@ export async function importExcel() {
   if (!admin) {
     const adminName = process.env.ADMIN_NAME || "Admin";
     const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-    const adminPassword = process.env.ADMIN_PASSWORD || "StrongPassword123!";
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) throw new Error("ADMIN_PASSWORD must be set for imports");
     const adminHash = await hashPassword(adminPassword);
     admin = await User.create({ name: adminName, email: adminEmail, role: "admin", passwordHash: adminHash, status: "active" });
     console.log("Created admin:", adminEmail);

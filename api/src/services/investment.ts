@@ -104,7 +104,15 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
 
     const investment = await Investment.findById(investmentId).session(session);
     if (!investment) throw new AppError("Investment not found", 404);
+    if (investment.status !== "active") throw new AppError("Investment is not active", 400);
     if (!investment.contributors?.length) throw new AppError("Investment has no contributors", 400);
+
+    const expectedTotal = investment.amount + (investment.expectedInterest || 0);
+    const outstanding = math.round(expectedTotal - (investment.returnedAmount || 0));
+    if (!Number.isFinite(amount) || amount <= 0) throw new AppError("Invalid return amount", 400);
+    if (amount > outstanding) {
+      throw new AppError(`Return exceeds outstanding balance (${outstanding})`, 400);
+    }
 
     const totalShare = investment.contributors.reduce((sum, c) => sum + (c.share || 0), 0);
     if (!totalShare) throw new AppError("Invalid contributor shares", 400);
@@ -137,7 +145,6 @@ export async function handleInvestmentReturn(input: InvestmentReturnInput) {
     if (markCompleted) {
       investment.status = "completed";
     } else {
-      const expectedTotal = investment.amount + (investment.expectedInterest || 0);
       if ((investment.returnedAmount || 0) >= expectedTotal) {
         investment.status = "completed";
       }

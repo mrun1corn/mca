@@ -26,10 +26,13 @@ export default function People() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+  const [starterCredential, setStarterCredential] = useState<{ name: string; password: string } | null>(null);
   const create = useMutation({
-    mutationFn: (body: any) => api.post("/users", body),
-    onSuccess: () => {
+    mutationFn: (body: { name: string; email: string; role: string }) => api.post("/users", body),
+    onSuccess: (res, variables) => {
       qc.invalidateQueries({ queryKey: ["users"] });
+      const password = (res.data as { starterPassword?: string }).starterPassword;
+      if (password) setStarterCredential({ name: variables.name, password });
       notify("Member created", "success");
       setForm({ name: "", email: "", role: "user" });
     },
@@ -91,6 +94,31 @@ export default function People() {
         />
       )}
 
+      {starterCredential ? (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold">Starter password for {starterCredential.name}</div>
+              <div className="mt-1 font-mono text-base select-all">{starterCredential.password}</div>
+              <div className="mt-1 text-xs opacity-80">
+                Shown once. The member must change it at first sign-in.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => navigator.clipboard?.writeText(starterCredential.password)}
+              >
+                Copy
+              </Button>
+              <Button variant="secondary" onClick={() => setStarterCredential(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <Panel
         title="Add someone new"
         description="Admins can invite new members or staff. We’ll auto-generate a starter password unless you provide one."
@@ -98,7 +126,7 @@ export default function People() {
           <Button
             disabled={!isAdmin || !form.name.trim()}
             title={isAdmin ? undefined : "Admin only"}
-            onClick={() => create.mutate({ ...form, password: "ChangeMe123!" })}
+            onClick={() => create.mutate({ ...form })}
           >
             Add member
           </Button>

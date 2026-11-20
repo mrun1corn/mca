@@ -1,6 +1,7 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import { z } from "zod";
-import { requireAuth, requireRole, hashPassword } from "../lib/auth";
+import { requireAuth, requireRole, hashPassword, revokeAllSessions } from "../lib/auth";
 import { parseBody } from "../lib/validation";
 import User from "../models/User";
 import Transaction from "../models/Transaction";
@@ -12,8 +13,11 @@ const router = Router();
 // GET /api/users?q=
 router.get("/users", requireAuth as any, requireRole(["admin", "accountant"]) as any, async (req, res, next) => {
   try {
-    const q = String(req.query.q || "").trim();
-    const filter: any = q ? { name: { $regex: q, $options: "i" } } : {};
+    const rawQuery = String(req.query.q || "").trim().slice(0, 100);
+    const safeQuery = rawQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const filter: Record<string, unknown> = safeQuery
+      ? { name: { $regex: safeQuery, $options: "i" } }
+      : {};
     const users = await User.find(filter).sort({ name: 1 });
     if (!users.length) return res.json([]);
 
@@ -76,10 +80,16 @@ const UpsertUserSchema = z.object({
   status: z.enum(["active", "inactive"]).optional(),
 });
 
+function generateStarterPassword() {
+  // 20 URL-safe characters, ~118 bits: never printed in source, shown once to the admin.
+  return crypto.randomBytes(15).toString("base64url");
+}
+
 router.post("/users", requireAuth as any, requireRole(["admin"]) as any, async (req, res, next) => {
   try {
     const body = parseBody(UpsertUserSchema, req.body);
-    const passwordHash = await hashPassword(body.password || "ChangeMe123!");
+    const starterPassword = body.password || generateStarterPassword();
+    const passwordHash = await hashPassword(starterPassword);
     const count = await User.countDocuments();
     const defaultCode = `MCA-${String(count + 1).padStart(3, "0")}`;
     const defaultUsername = (body.username || body.name).toLowerCase().trim().replace(/[^a-z0-9_]/g, "");
@@ -93,8 +103,11 @@ router.post("/users", requireAuth as any, requireRole(["admin"]) as any, async (
       passwordHash,
       role: body.role || "user",
       status: body.status || "active",
+      mustChangePassword: !body.password,
     });
-    res.status(201).json({ id: user._id });
+    // The plaintext starter password is returned exactly once so the admin can
+    // hand it over; it is never stored or logged.
+    res.status(201).json({ id: user._id, starterPassword: body.password ? undefined : starterPassword });
 
   } catch (e) {
     next(e);
@@ -131,10 +144,23 @@ router.get("/me", requireAuth as any, async (req: any, res, next) => {
 router.patch("/users/:id", requireAuth as any, requireRole(["admin"]) as any, async (req, res, next) => {
   try {
     const body = parseBody(UpsertUserSchema, req.body);
-    const update: any = { ...body };
-    delete update.password;
-    if (body.password) update.passwordHash = await hashPassword(body.password);
-    await User.findByIdAndUpdate(req.params.id, update);
+    const { password, ...rest } = body;
+    const update: Record<string, unknown> = { ...rest };
+    if (password) update.passwordHash = await hashPassword(password);
+    const changesCredentials = Boolean(password);
+    const current = await User.findById(req.params.id);
+    if (!current) return res.status(404).json({ error: "Not found" });
+    const changesAccess =
+      changesCredentials ||
+      current.role !== (rest.role ?? current.role) ||
+      current.status !== (rest.status ?? current.status);
+
+    const updated = await User.findByIdAndUpdate(
+      req.params.id,
+      changesAccess ? { ...update, $inc: { tokenVersion: 1 } } : update,
+      { new: true, runValidators: true }
+    );
+    if (changesAccess && updated) await revokeAllSessions(String(updated._id));
     res.json({ ok: true });
   } catch (e) {
     next(e);
@@ -151,7 +177,8 @@ router.delete("/users/:id", requireAuth as any, requireRole(["admin"]) as any, a
 
     if (txCount > 0 || dueCount > 0) {
       // Soft-deactivate to preserve immutable financial audit trail
-      await User.findByIdAndUpdate(userId, { status: "inactive" });
+      await User.findByIdAndUpdate(userId, { status: "inactive", $inc: { tokenVersion: 1 } });
+      await revokeAllSessions(String(userId));
       return res.json({ ok: true, deactivated: true, message: "User deactivated to preserve financial audit trail" });
     }
 

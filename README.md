@@ -40,8 +40,8 @@ COOKIE_DOMAIN=""
 # Optional (used by scripts)
 ADMIN_NAME="Robin"
 ADMIN_EMAIL="robin@example.com"
-ADMIN_PASSWORD="StrongPassword123!"
-DEFAULT_USER_PASSWORD="ChangeMe123!"
+ADMIN_PASSWORD=""            # required by import scripts, no default
+DEFAULT_USER_PASSWORD=""     # required by import scripts, no default
 EXCEL_PATH="/absolute/path/to/all_payments_summary_admin.xlsx"
 
 # Frontend branding/API base
@@ -73,7 +73,7 @@ Cloudflare Zero Trust / Custom Hostnames
 - Include your web origin in `CORS_ORIGIN`, e.g. `https://mydomain.com`.
 
 Seeding, Admin, Import
-- Seed sample users: `npm run seed` (pwd: `ChangeMe123!`)
+- Seed sample users: `npm run seed` (prints a random password once, or set `SEED_PASSWORD`)
 - Create admin: set `ADMIN_EMAIL/ADMIN_PASSWORD` then `npm run create-admin`
 - Import monthly summary Excel: set `EXCEL_PATH` then `npm run import-summary`
   - Headers like: Username, 2025‑05, 2025‑06, …

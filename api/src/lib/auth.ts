@@ -165,12 +165,12 @@ function getBearerToken(req: Request): string | undefined {
 
 export function getAccessTokenFromReq(req: Request): string | undefined {
   // Prefer cookie for web, else Authorization header for mobile
-  const cookie = (req as any).cookies?.["access"] as string | undefined;
+  const cookie = (req as RequestWithCookies).cookies?.["access"];
   return cookie ?? getBearerToken(req);
 }
 
 export function getRefreshTokenFromReq(req: Request): string | undefined {
-  const cookie = (req as any).cookies?.["refresh"] as string | undefined;
+  const cookie = (req as RequestWithCookies).cookies?.["refresh"];
   return cookie ?? getBearerToken(req);
 }
 

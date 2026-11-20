@@ -24,7 +24,7 @@ const amount2dp = z.number().positive().refine(
 router.get("/transactions", requireAuth as any, async (req: any, res, next) => {
   try {
     const { userId, type, from, to, limit: limitStr = "100", cursor } = req.query;
-    const limit = Math.min(Number(limitStr) || 100, 500);
+    const limit = Math.min(Math.max(Math.trunc(Number(limitStr)) || 100, 1), 500);
     const q: any = { deletedAt: { $exists: false } };
     if (userId) q.userId = userId;
     if (type) q.type = type;
@@ -95,8 +95,8 @@ const WithdrawSchema = z.object({
     defaultDate: z.string().nullable(),
     startDate: z.string().nullable(),
     endDate: z.string().nullable(),
-    months: z.number().int().min(1),
-    monthlyRatePct: z.number().min(0),
+    months: z.number().int().min(1).max(360),
+    monthlyRatePct: z.number().min(0).max(100),
   }),
   penalty: z.object({ enabled: z.boolean(), monthlyPenaltyPct: z.number(), graceDays: z.number() }),
   excludeMemberIds: z.array(z.string()).optional(),
@@ -129,11 +129,20 @@ router.patch("/transactions/:id", requireAuth as any, requireRole(["admin", "acc
     const tx = await Transaction.findById(req.params.id);
     if (!tx) return res.status(404).json({ error: "Not found" });
     
+    if (tx.deletedAt) {
+      return res.status(400).json({ error: "Cannot edit a deleted transaction." });
+    }
+
     const body = parseBody(UpdateTransactionSchema, req.body);
     const { amount, date, note } = body;
     
     if (tx.type === "withdraw" && amount !== undefined) {
       return res.status(400).json({ error: "Cannot edit withdrawal amount. Use the revert endpoint instead." });
+    }
+    if (amount !== undefined && (tx.dueId || (tx.dueAllocations && tx.dueAllocations.length > 0))) {
+      return res.status(400).json({
+        error: "This deposit settled dues. Delete it and re-enter the payment instead of editing the amount.",
+      });
     }
     const update: any = {};
     if (note !== undefined) update.note = note;
@@ -159,11 +168,19 @@ router.delete("/transactions/:id", requireAuth as any, requireRole(["admin", "ac
         throw new AppError("Cannot delete withdrawal transaction. Use POST /api/transactions/:id/revert instead.", 400);
       }
 
-      // If this deposit was linked to a Due, reverse the paid amounts on the schedule
-      if (tx.dueId) {
-        const due = await Due.findById(tx.dueId).session(session);
+      // Reverse exactly the amounts this deposit applied to each Due. Legacy
+      // rows without allocations fall back to reverse-allocating tx.amount.
+      const allocations =
+        tx.dueAllocations && tx.dueAllocations.length > 0
+          ? tx.dueAllocations.map((entry) => ({ dueId: entry.dueId, amount: entry.amount }))
+          : tx.dueId
+            ? [{ dueId: tx.dueId, amount: tx.amount }]
+            : [];
+
+      for (const allocation of allocations) {
+        const due = await Due.findById(allocation.dueId).session(session);
         if (due) {
-          let toReverse = tx.amount;
+          let toReverse = allocation.amount;
           for (let i = due.schedule.length - 1; i >= 0; i--) {
             if (toReverse <= 0) break;
             const item = due.schedule[i];

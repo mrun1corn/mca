@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import { z } from "zod";
 import {
   authenticateByIdentifierPassword,
@@ -13,6 +13,7 @@ import {
   setAuthCookies,
   usedBearerAuth,
   verifyPassword,
+  type AuthedRequest,
 } from "../lib/auth";
 import { loginGuard } from "../lib/loginGuard";
 import { parseBody } from "../lib/validation";

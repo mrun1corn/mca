@@ -34,7 +34,8 @@ function extractAmountAndDate(cell: any): { amount: number; dateISO: string | nu
 async function ensureAdmin() {
   const name = process.env.ADMIN_NAME || "Robin";
   const email = process.env.ADMIN_EMAIL || "robin@example.com";
-  const password = process.env.ADMIN_PASSWORD || "ChangeMe123!";
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) throw new Error("ADMIN_PASSWORD must be set for imports");
   const passwordHash = await hashPassword(password);
   let admin = await User.findOne({ email });
   if (!admin) admin = await User.create({ name, email, role: "admin", passwordHash, status: "active" });
@@ -49,7 +50,9 @@ async function upsertUserByUsername(username: string) {
   const name = username;
   let user = await User.findOne({ name });
   if (!user) {
-    const passwordHash = await hashPassword(process.env.DEFAULT_USER_PASSWORD || "ChangeMe123!");
+    const defaultUserPassword = process.env.DEFAULT_USER_PASSWORD;
+    if (!defaultUserPassword) throw new Error("DEFAULT_USER_PASSWORD must be set for imports");
+    const passwordHash = await hashPassword(defaultUserPassword);
     user = await User.create({ name, role: "user", passwordHash, status: "active" });
   }
   return user;

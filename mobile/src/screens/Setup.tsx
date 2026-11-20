@@ -25,7 +25,11 @@ export default function Setup() {
       await api.post('/auth/me/change-password', { currentPassword, newPassword: password });
       setPassword('');
       setCurrentPassword('');
-      Alert.alert('Settings', 'Password updated successfully.');
+      // Sessions are revoked server-side; clear local tokens and return to login.
+      await clearTokens();
+      queryClient.clear();
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      Alert.alert('Settings', 'Password updated. Please sign in again.');
     } catch {
       Alert.alert('Settings', 'Password update failed.');
     } finally {
@@ -36,6 +40,7 @@ export default function Setup() {
   const logout = async () => {
     setLogoutLoading(true);
     try {
+      await api.post('/auth/logout').catch(() => undefined);
       await clearTokens();
       queryClient.clear();
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });

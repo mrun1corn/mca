@@ -3,7 +3,8 @@ import axios from 'axios';
 declare const process: { env: Record<string, string | undefined> };
 import * as SecureStore from 'expo-secure-store';
 
-const baseURL = process.env.EXPO_PUBLIC_API_BASE || 'http://localhost:4000/api';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE || 'http://localhost:4000/api';
+const baseURL = API_BASE_URL;
 
 export type Tokens = { access: string; refresh: string };
 

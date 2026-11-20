@@ -5,7 +5,8 @@ import Screen from '../components/ui/Screen';
 import ThemeText from '../components/ui/ThemeText';
 import ThemedCard from '../components/ui/ThemedCard';
 import { useTheme } from '../theme';
-import { api, clearTokens } from '../lib/api';
+import axios from 'axios';
+import { api, API_BASE_URL, clearTokens, getRefreshToken } from '../lib/api';
 import { Alert, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -40,7 +41,14 @@ export default function Setup() {
   const logout = async () => {
     setLogoutLoading(true);
     try {
-      await api.post('/auth/logout').catch(() => undefined);
+      // The request interceptor always sends the access token; logout needs the
+      // refresh token so the server can revoke this session, so call it raw.
+      const refresh = await getRefreshToken();
+      if (refresh) {
+        await axios
+          .post(`${API_BASE_URL}/auth/logout`, {}, { headers: { Authorization: `Bearer ${refresh}` }, withCredentials: false })
+          .catch(() => undefined);
+      }
       await clearTokens();
       queryClient.clear();
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });

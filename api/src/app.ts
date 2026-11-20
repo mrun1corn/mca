@@ -72,7 +72,11 @@ app.use(helmet({
 // Apply limits
 app.use("/api/", globalLimiter);
 app.use("/api/auth/", authLimiter);
-app.use("/api/payments/public-", publicLimiter);
+// Exact prefixes: Express 4 only applies a mounted middleware when the path
+// boundary lines up, which a single "public-" prefix does not.
+app.use("/api/payments/public-members", publicLimiter);
+app.use("/api/payments/public-dues", publicLimiter);
+app.use("/api/payments/public-initiate", publicLimiter);
 
 app.use(express.json());
 app.use(cookieParser());
